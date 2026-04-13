@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADHD Focus App - Con Punti!</title>
+    <style>
+        /* CSS: Abbiamo aggiunto lo stile per il nostro contatore di punti */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+            position: relative; /* Ci aiuta a posizionare i punti in alto */
+        }
+        
+        /* Stile per il punteggio */
+        .score-board {
+            background-color: #f1c40f; /* Un bel giallo dorato per dare l'idea di un premio */
+            color: #fff;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            display: inline-block;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        h1 { margin-top: 0; color: #2c3e50; font-size: 24px; }
+        
+        input[type="text"] {
+            width: 90%;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+        }
+        input[type="text"]:focus { border-color: #3498db; }
+        
+        #timer {
+            font-size: 60px;
+            font-weight: bold;
+            margin: 20px 0;
+            color: #e74c3c;
+        }
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+            transition: 0.3s;
+            margin: 5px;
+        }
+        button:hover { background-color: #2980b9; }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="score-board">Punti Focus: <span id="scoreValue">0</span> 🏆</div>
+
+        <h1>Una cosa alla volta</h1>
+        <input type="text" id="taskInput" placeholder="Su cosa ti focalizzi ora?">
+        
+        <div id="timer">25:00</div>
+        
+        <button id="startBtn">Inizia Focus</button>
+        <button id="resetBtn" disabled>Pausa/Reset</button>
+    </div>
+
+    <script>
+        /* JavaScript: Ora gestiamo anche i punti! */
+        let timeLeft = 25 * 60; 
+        let timerId = null; 
+        let currentScore = 0; // Nuova variabile per tenere traccia dei punti
+
+        const timerDisplay = document.getElementById('timer');
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const scoreDisplay = document.getElementById('scoreValue'); // Prendiamo il testo del punteggio
+
+        function updateDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerDisplay.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+
+        function startTimer() {
+            if (timerId !== null) return; 
+            
+            startBtn.disabled = true; 
+            resetBtn.disabled = false; 
+
+            timerId = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerId); 
+                    timerId = null;
+                    
+                    // AGGIUNTA PUNTI: Il timer è finito, diamo la ricompensa!
+                    currentScore += 10; // Aggiungiamo 10 punti
+                    scoreDisplay.textContent = currentScore; // Aggiorniamo il numero sullo schermo
+                    
+                    alert("Fantastico! Hai guadagnato 10 Punti Focus! 🏆 Ora prenditi 5 minuti di pausa meritata.");
+                    
+                    timeLeft = 25 * 60; 
+                    updateDisplay();
+                    startBtn.disabled = false;
+                    resetBtn.disabled = true;
+                }
+            }, 1000); 
+        }
+
+        function resetTimer() {
+            clearInterval(timerId);
+            timerId = null;
+            timeLeft = 25 * 60;
+            updateDisplay();
+            startBtn.disabled = false;
+            resetBtn.disabled = true;
+        }
+
+        startBtn.addEventListener('click', startTimer);
+        resetBtn.addEventListener('click', resetTimer);
+    </script>
+</body>
+</html>
