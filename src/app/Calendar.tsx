@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase'; // <-- MODIFICA PER VERCEL FATTA QUI
+import { supabase } from '../lib/supabase';
 import { 
   format, addMonths, subMonths, startOfMonth, endOfMonth, 
   startOfWeek, endOfWeek, isSameMonth, isSameDay, eachDayOfInterval 
@@ -20,8 +20,10 @@ export default function CalendarWidget() {
     const { data: tasks } = await supabase.from('tasks').select('*').gte('deadline', start).lte('deadline', end);
     const { data: activities } = await supabase.from('activities').select('*').gte('deadline', start).lte('deadline', end);
     
-    const formattedTasks = (tasks || []).map(t => ({ ...t, eventType: 'task' }));
-    const formattedActivities = (activities || []).map(a => ({ ...a, eventType: 'activity' }));
+    // MODIFICA QUI: Aggiunto (t: any) e (a: any) per far felice TypeScript
+    const formattedTasks = (tasks || []).map((t: any) => ({ ...t, eventType: 'task' }));
+    const formattedActivities = (activities || []).map((a: any) => ({ ...a, eventType: 'activity' }));
+    
     setEvents([...formattedTasks, ...formattedActivities]);
   }, [currentMonth]);
 
