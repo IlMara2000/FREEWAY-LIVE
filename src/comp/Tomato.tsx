@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react';
 import Tomato from './Tomato';
-import CalendarWidget from '../app/Calendar';
+import CalendarWidget from '../app/calendar';
 import Planner from './comp/Planner';
 import MobileNav from './comp/MobileNav';
 
