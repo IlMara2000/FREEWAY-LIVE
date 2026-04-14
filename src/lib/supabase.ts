@@ -1,5 +1,3 @@
-// Questo è un finto database temporaneo per non far crashare l'app
-// Lo sostituiremo con quello vero nel prossimo passaggio!
 export const supabase = {
     from: () => ({
       select: () => ({
