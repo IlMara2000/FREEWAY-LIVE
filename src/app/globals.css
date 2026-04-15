@@ -1,21 +1,19 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   /* Freeway-Life Signature Palette */
   --background: #000000; /* Nero assoluto per il massimo contrasto */
   --foreground: #f4f4f5; /* Zinc 50 per il testo, meno stancante del bianco puro */
   --brand-accent: #FF914D; /* L'arancione Freeway */
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-accent: var(--brand-accent);
+  
+  /* Font personalizzati Geist (passati dal layout.tsx) */
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 }
 
-/* Forziamo l'ambiente scuro e l'anti-aliasing per testi nitidissimi */
+/* Forziamo l'ambiente scuro, i font e l'anti-aliasing per testi nitidissimi */
 body {
   background-color: var(--background);
   color: var(--foreground);
