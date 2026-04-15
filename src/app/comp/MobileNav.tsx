@@ -15,13 +15,13 @@ export default function MobileNav() {
         layout 
         // Aggiunta la "molla" per un effetto di ridimensionamento fluido e organico
         transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        className={`pointer-events-auto rounded-full flex items-center justify-center shadow-2xl backdrop-blur-md overflow-hidden ${
-          !isOpen ? 'bg-[#FF914D]' : 'glass-panel p-1.5 bg-black/80 border border-white/10'
+        className={`pointer-events-auto rounded-full flex items-center justify-center shadow-2xl backdrop-blur-md overflow-hidden transition-colors ${
+          !isOpen ? 'bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)]' : 'glass-panel p-1.5 bg-black/50 border border-white/10'
         }`}
       >
         <AnimatePresence mode="popLayout" initial={false}>
           {!isOpen ? (
-            // STATO CHIUSO (HAMBURGER)
+            // STATO CHIUSO (HAMBURGER SMERALDO)
             <motion.button 
               key="hamburger" 
               onClick={() => setIsOpen(true)}
@@ -57,7 +57,7 @@ export default function MobileNav() {
               <Link 
                 href="/" 
                 onClick={() => setIsOpen(false)} 
-                className="p-3 text-black bg-[#FF914D] hover:bg-white hover:scale-105 rounded-full transition-all shadow-lg shadow-[#FF914D]/20"
+                className="p-3 text-black bg-emerald-500 hover:bg-emerald-400 hover:scale-105 rounded-full transition-all shadow-[0_0_15px_rgba(16,185,129,0.4)]"
               >
                 <Home size={22} />
               </Link>
@@ -65,7 +65,7 @@ export default function MobileNav() {
               {/* Tasto Chiudi */}
               <button 
                 onClick={() => setIsOpen(false)} 
-                className="p-3 text-[#FF914D] hover:text-white hover:bg-white/10 rounded-full transition-all"
+                className="p-3 text-emerald-500 hover:text-white hover:bg-white/10 rounded-full transition-all"
               >
                 <X size={22} />
               </button>

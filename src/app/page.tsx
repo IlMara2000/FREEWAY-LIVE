@@ -4,6 +4,7 @@ import Tomato from './Tomato';
 import CalendarWidget from './Calendar';
 import Planner from './comp/Planner';
 import MobileNav from './comp/MobileNav';
+import { motion } from 'framer-motion';
 
 export default function Home() {
   const [username, setUsername] = useState('');
@@ -32,56 +33,66 @@ export default function Home() {
     setUsername('');
   };
 
+  // SCHERMATA LOGIN PREMIUM
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="glass-panel p-8 rounded-3xl w-full max-w-md text-center border-t-2 border-[#FF914D]">
-          <h1 className="text-2xl font-black text-white uppercase italic tracking-widest mb-2">Freeway<span className="text-[#FF914D]">-</span>Life</h1>
-          <p className="text-xs font-mono text-zinc-500 mb-8 uppercase">Accesso Operativo</p>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          className="glass-panel p-10 rounded-[2rem] w-full max-w-md text-center border-t border-emerald-500/50 shadow-2xl shadow-emerald-500/10"
+        >
+          <h1 className="text-3xl font-black text-white tracking-widest mb-2">FREEWAY<span className="text-emerald-500 text-4xl">.</span>LIFE</h1>
+          <p className="text-[10px] font-mono text-emerald-400 mb-10 uppercase tracking-[0.3em]">Accesso Operativo</p>
           
           <input 
             type="text" 
             placeholder="INSERISCI IL TUO ID..." 
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            className="w-full bg-black/50 border border-white/10 p-4 rounded-xl font-mono text-sm uppercase text-white mb-4 outline-none focus:border-[#FF914D]"
+            className="w-full bg-black/40 border border-white/5 p-4 rounded-xl font-mono text-sm uppercase text-white mb-6 outline-none focus:border-emerald-500/50 transition-colors text-center"
           />
           <button 
             onClick={handleLogin}
-            className="w-full bg-[#FF914D] text-black font-black uppercase italic py-4 rounded-xl hover:bg-white transition-all"
-          >
+            className="btn-emerald-loading w-full py-4 rounded-xl font-black uppercase tracking-widest text-sm"          >
             Inizializza
           </button>
-        </div>
+        </motion.div>
       </div>
     );
   }
 
+  // DASHBOARD
   return (
     <div className="min-h-screen pb-24 p-4 md:p-8">
-      <header className="flex justify-between items-center mb-8 max-w-6xl mx-auto">
+      <header className="flex justify-between items-center mb-10 max-w-7xl mx-auto px-2">
         <div>
-          <h1 className="text-xl md:text-3xl font-black text-white uppercase italic tracking-widest">
-            Freeway<span className="text-[#FF914D]">-</span>Life
+          <h1 className="text-2xl md:text-3xl font-black text-white tracking-widest">
+            FREEWAY<span className="text-emerald-500 text-4xl leading-none">.</span>LIFE
           </h1>
-          <p className="text-[10px] font-mono text-[#FF914D] uppercase mt-1">Operatore: {username}</p>
+          <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mt-1">Operatore: <span className="text-emerald-400">{username}</span></p>
         </div>
         <button 
           onClick={handleLogout}
-          className="text-[10px] font-mono text-zinc-500 border border-zinc-800 px-4 py-2 rounded-lg hover:text-red-500 hover:border-red-500 transition-all"
+          className="text-[10px] font-mono text-zinc-500 hover:text-red-400 transition-colors tracking-widest uppercase"
         >
-          LOGOUT
+          Disconnetti
         </button>
       </header>
 
-      <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-6">
+      {/* Grid rivista per respirare di più */}
+      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+        
+        {/* Colonna Timer e Calendario (più stretta) */}
+        <div className="lg:col-span-4 flex flex-col gap-6 lg:gap-8">
           <Tomato />
           <CalendarWidget />
         </div>
-        <div>
+        
+        {/* Colonna Planner (più larga, prende il resto dello spazio) */}
+        <div className="lg:col-span-8 flex flex-col h-full">
           <Planner />
         </div>
+
       </main>
 
       <MobileNav />

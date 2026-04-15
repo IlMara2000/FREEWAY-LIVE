@@ -111,7 +111,7 @@ export default function Planner() {
   const getPriorityDot = (p: string) => {
     switch(p) {
       case 'high': return 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]';
-      case 'medium': return 'bg-[#FF914D] shadow-[0_0_8px_rgba(255,145,77,0.8)]';
+      case 'medium': return 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]';
       case 'low': return 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]';
       default: return 'bg-zinc-600';
     }
@@ -134,14 +134,14 @@ export default function Planner() {
       {/* HEADER */}
       <div className="p-5 border-b border-white/5 flex justify-between items-center bg-zinc-900/30">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-[#FF914D]/10 rounded-xl">
-            <ClipboardList className="text-[#FF914D]" size={18} />
+          <div className="p-2 bg-emerald-500/10 rounded-xl">
+            <ClipboardList className="text-emerald-500" size={18} />
           </div>
           <h2 className="text-sm font-black uppercase italic tracking-widest text-white">Planner Hub</h2>
         </div>
         <button 
           onClick={() => showForm ? resetForm() : setShowForm(true)} 
-          className={`p-2 rounded-xl transition-all ${showForm ? 'bg-red-500/10 text-red-500' : 'bg-[#FF914D] text-black hover:scale-105 shadow-lg shadow-[#FF914D]/20'}`}
+          className={`p-2 rounded-xl transition-all ${showForm ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500 text-black hover:scale-105 shadow-lg shadow-emerald-500/20'}`}
         >
           {showForm ? <X size={16} /> : <Plus size={16} />}
         </button>
@@ -157,14 +157,14 @@ export default function Planner() {
             onSubmit={handleSubmit} 
             className="p-5 border-b border-white/5 bg-black/40 flex flex-col gap-4 overflow-hidden"
           >
-            {editingId && <span className="text-[10px] font-bold text-[#FF914D] animate-pulse">MODIFICA IN CORSO...</span>}
+            {editingId && <span className="text-[10px] font-bold text-emerald-400 animate-pulse">MODIFICA IN CORSO...</span>}
             
-            <input type="text" placeholder="TITOLO ATTIVITÀ" value={title} onChange={(e) => setTitle(e.target.value)} required className="w-full bg-zinc-900/80 border border-white/5 p-4 rounded-2xl font-sans text-sm text-white outline-none focus:border-[#FF914D]/50 transition-colors shadow-inner" />
+            <input type="text" placeholder="TITOLO ATTIVITÀ" value={title} onChange={(e) => setTitle(e.target.value)} required className="w-full bg-zinc-900/80 border border-white/5 p-4 rounded-2xl font-sans text-sm text-white outline-none focus:border-emerald-500/50 transition-colors shadow-inner" />
             
             <div>
               <span className="text-[9px] text-zinc-500 font-mono uppercase mb-2 block tracking-wider">Referenti</span>
               <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={() => toggleAssignee("")} className={`px-4 py-2 rounded-xl text-[10px] font-mono border transition-all ${assigneeIds.length === 0 ? 'bg-[#FF914D] text-black font-bold border-[#FF914D] shadow-lg shadow-[#FF914D]/20' : 'bg-zinc-900 border-white/5 text-zinc-400 hover:bg-zinc-800'}`}>CHIUNQUE</button>
+                <button type="button" onClick={() => toggleAssignee("")} className={`px-4 py-2 rounded-xl text-[10px] font-mono border transition-all ${assigneeIds.length === 0 ? 'bg-blue-500 text-black font-bold border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-zinc-900 border-white/5 text-zinc-400 hover:bg-zinc-800'}`}>CHIUNQUE</button>
                 {users.map(u => (
                   <button key={u.id} type="button" onClick={() => toggleAssignee(u.id)} className={`px-4 py-2 rounded-xl text-[10px] font-mono border transition-all ${assigneeIds.includes(u.id) ? 'bg-emerald-500 text-black font-bold border-emerald-500 shadow-lg shadow-emerald-500/20' : 'bg-zinc-900 border-white/5 text-zinc-400 hover:bg-zinc-800'}`}>
                     {(u.username || u.email.split('@')[0]).toUpperCase()}
@@ -174,17 +174,17 @@ export default function Planner() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="bg-zinc-900/80 border border-white/5 p-3 rounded-xl font-mono text-[10px] text-zinc-300 outline-none focus:border-[#FF914D]/40" />
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="bg-zinc-900/80 border border-white/5 p-3 rounded-xl font-mono text-[10px] text-zinc-300 outline-none focus:border-[#FF914D]/40" />
-              <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="bg-zinc-900/80 border border-white/5 p-3 rounded-xl font-mono text-[10px] text-zinc-300 outline-none focus:border-[#FF914D]/40" />
-              <select value={priority} onChange={(e) => setPriority(e.target.value)} className="bg-zinc-900/80 border border-white/5 p-3 rounded-xl font-mono text-[10px] text-zinc-300 outline-none focus:border-[#FF914D]/40">
+              <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="bg-zinc-900/80 border border-white/5 p-3 rounded-xl font-mono text-[10px] text-zinc-300 outline-none focus:border-emerald-500/40" />
+              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="bg-zinc-900/80 border border-white/5 p-3 rounded-xl font-mono text-[10px] text-zinc-300 outline-none focus:border-emerald-500/40" />
+              <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="bg-zinc-900/80 border border-white/5 p-3 rounded-xl font-mono text-[10px] text-zinc-300 outline-none focus:border-emerald-500/40" />
+              <select value={priority} onChange={(e) => setPriority(e.target.value)} className="bg-zinc-900/80 border border-white/5 p-3 rounded-xl font-mono text-[10px] text-zinc-300 outline-none focus:border-emerald-500/40">
                 <option value="low">PRIORITÀ BASSA</option><option value="medium">PRIORITÀ MEDIA</option><option value="high">PRIORITÀ ALTA</option>
               </select>
             </div>
 
-            <textarea placeholder="NOTE AGGIUNTIVE..." value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-zinc-900/80 border border-white/5 p-4 rounded-2xl font-mono text-[10px] text-zinc-300 outline-none min-h-[80px] focus:border-[#FF914D]/40" />
+            <textarea placeholder="NOTE AGGIUNTIVE..." value={description} onChange={(e) => setDescription(e.target.value)} className="w-full bg-zinc-900/80 border border-white/5 p-4 rounded-2xl font-mono text-[10px] text-zinc-300 outline-none min-h-[80px] focus:border-emerald-500/40" />
 
-            <button type="submit" disabled={isAdding} className={`w-full py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-xl ${editingId ? 'bg-emerald-500 text-black hover:bg-emerald-400' : 'bg-[#FF914D] text-black hover:bg-white'}`}>
+            <button type="submit" disabled={isAdding} className={`w-full py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-xl ${editingId ? 'bg-blue-500 text-white hover:bg-blue-400' : 'bg-emerald-500 text-black hover:bg-emerald-400'}`}>
               {isAdding ? 'SINCRO IN CORSO...' : editingId ? 'AGGIORNA TASK' : 'AGGIUNGI TASK'}
             </button>
           </motion.form>
@@ -194,7 +194,7 @@ export default function Planner() {
       {/* LISTA TASK MODERNA (NO TABELLA) */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {loading ? (
-          <div className="flex justify-center py-10"><span className="text-[10px] font-mono text-[#FF914D] animate-pulse tracking-widest">CARICAMENTO DATI...</span></div>
+          <div className="flex justify-center py-10"><span className="text-[10px] font-mono text-emerald-500 animate-pulse tracking-widest">CARICAMENTO DATI...</span></div>
         ) : activeTasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-zinc-600 opacity-50">
             <ClipboardList size={48} className="mb-4" />
@@ -212,7 +212,7 @@ export default function Planner() {
                   exit={{ opacity: 0, scale: 0.95, filter: "blur(4px)" }}
                   key={task.id}
                   onClick={() => handleEditClick(task)}
-                  className="group relative bg-black/40 border border-white/5 hover:border-[#FF914D]/30 p-4 rounded-2xl cursor-pointer transition-all hover:bg-zinc-900/60 flex items-center justify-between"
+                  className="group relative bg-black/40 border border-white/5 hover:border-emerald-500/30 p-4 rounded-2xl cursor-pointer transition-all hover:bg-zinc-900/60 flex items-center justify-between"
                 >
                   <div className="flex items-center gap-4 flex-1 overflow-hidden">
                     {/* Tasto Complete */}

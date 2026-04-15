@@ -4,67 +4,92 @@
 
 :root {
   /* Sapphire & Emerald Theme */
-  --background: #020617; /* Sfondo ultra scuro (profondità zaffiro notturno) */
-  --foreground: #e2e8f0; /* Testo chiaro, morbido e leggibile */
-  --brand-accent: #10b981; /* Smeraldo brillante per i dettagli e bottoni */
-  --brand-secondary: #3b82f6; /* Zaffiro/Blu per i riflessi del vetro */
+  --background: #01030b; /* Ancora più scuro: l'abisso totale */
+  --foreground: rgba(255, 255, 255, 0.9); /* Testo bianco traslucido, effetto vetro */
+  --brand-accent: #10b981; /* Smeraldo brillante */
+  --brand-secondary: #3b82f6; /* Zaffiro profondo */
   
-  /* Font personalizzati Geist (passati dal layout.tsx) */
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 }
 
 /* Forziamo l'ambiente scuro, i font e l'anti-aliasing per testi nitidissimi */
 body {
-  /* Creiamo uno sfondo dinamico con leggerissime auree zaffiro e smeraldo agli angoli */
-  background: radial-gradient(circle at top left, rgba(16, 185, 129, 0.04), transparent 40%),
-              radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.04), transparent 40%),
-              var(--background);
+  /* BACKGROUND "PROFONDITÀ ASSURDA": 4 strati di luce volumetrica */
+  background-color: var(--background);
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(16, 185, 129, 0.08), transparent 45%),
+    radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.08), transparent 45%),
+    radial-gradient(circle at 50% 120%, rgba(16, 185, 129, 0.12), transparent 50%),
+    radial-gradient(circle at 50% -20%, rgba(59, 130, 246, 0.12), transparent 50%);
   background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-sans);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Blocca il rimbalzo noioso quando tiri giù la pagina da smartphone */
   overscroll-behavior: none; 
 }
 
-/* Personalizzazione colore di selezione del testo */
 ::selection {
   background-color: var(--brand-accent);
   color: #000000;
 }
 
 /* --- SCROLLBAR PREMIUM --- */
-/* Customizziamo le barre di scorrimento a tema smeraldo */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(16, 185, 129, 0.2); /* Smeraldo in trasparenza */
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--brand-accent);
-}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.2); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--brand-accent); }
 
 /* --- EFFETTO VETRO (ZAFFIRO & SMERALDO) --- */
 .glass-panel {
-  /* Gradiente che fonde un blu zaffiro profondo a un verde smeraldo scuro */
   background: linear-gradient(145deg, rgba(30, 58, 138, 0.15) 0%, rgba(6, 78, 59, 0.15) 100%);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  /* Bordi illuminati: zaffiro sopra, smeraldo ai lati */
   border: 1px solid rgba(16, 185, 129, 0.15);
   border-top-color: rgba(59, 130, 246, 0.25);
-  /* Ombra profonda e un bagliore interno smeraldo leggerissimo */
-  box-shadow: 0 20px 40px 0 rgba(0, 0, 0, 0.8), 
+  box-shadow: 0 30px 60px 0 rgba(0, 0, 0, 0.9), /* Ombra maggiorata per staccarlo dallo sfondo */
               inset 0 1px 0 0 rgba(255, 255, 255, 0.05),
               inset 0 0 20px 0 rgba(16, 185, 129, 0.05);
+}
+
+/* --- BOTTONE CARICAMENTO SMERALDO (NOVITÀ) --- */
+.btn-emerald-loading {
+  position: relative;
+  background: rgba(16, 185, 129, 0.1);
+  color: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(16, 185, 129, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Raggio di luce dinamico che scorre */
+.btn-emerald-loading::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 50%; height: 100%;
+  background: linear-gradient(to right, transparent, rgba(16, 185, 129, 0.4), transparent);
+  transform: skewX(-20deg);
+  animation: emerald-sweep 3s infinite linear;
+}
+
+/* Effetto Hover (quando ci passi sopra col mouse) */
+.btn-emerald-loading:hover {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: rgba(16, 185, 129, 0.8);
+  box-shadow: 0 0 25px rgba(16, 185, 129, 0.4), inset 0 0 20px rgba(16, 185, 129, 0.2);
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+  transform: translateY(-2px) scale(1.02);
+}
+
+/* Animazione del raggio */
+@keyframes emerald-sweep {
+  0% { left: -100%; }
+  50% { left: 200%; }
+  100% { left: 200%; } /* Pausa prima di ripartire */
 }
