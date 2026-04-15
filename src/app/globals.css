@@ -1,38 +1,65 @@
 @import "tailwindcss";
 
 :root {
-  /* Tema chiaro di default */
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Freeway-Life Signature Palette */
+  --background: #000000; /* Nero assoluto per il massimo contrasto */
+  --foreground: #f4f4f5; /* Zinc 50 per il testo, meno stancante del bianco puro */
+  --brand-accent: #FF914D; /* L'arancione Freeway */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-accent: var(--brand-accent);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Tema scuro in stile "Freeway-Life" (Nero assoluto e testo bianco) */
-    --background: #000000;
-    --foreground: #ffffff;
-  }
-}
-
+/* Forziamo l'ambiente scuro e l'anti-aliasing per testi nitidissimi */
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  /* Applica il font di sistema di Next.js se disponibile, altrimenti usa i tuoi */
-  font-family: var(--font-sans), 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: var(--font-sans);
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Blocca il rimbalzo noioso quando tiri giù la pagina da smartphone */
+  overscroll-behavior: none; 
 }
 
-/* Questa è la classe per l'effetto vetro (Glassmorphism) */
+/* Personalizzazione colore di selezione del testo */
+::selection {
+  background-color: var(--brand-accent);
+  color: #000000;
+}
+
+/* --- SCROLLBAR PREMIUM --- */
+/* Customizziamo le barre di scorrimento (soprattutto per la tabella del Planner) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-accent);
+}
+
+/* --- EFFETTO VETRO (GLASSMORPHISM 2.0) --- */
 .glass-panel {
-  background: rgba(24, 24, 27, 0.4);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  /* Gradiente scuro per dare profondità 3D */
+  background: linear-gradient(145deg, rgba(24, 24, 27, 0.6) 0%, rgba(9, 9, 11, 0.8) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  /* Bordo illuminato sopra e laterale */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top-color: rgba(255, 255, 255, 0.15);
+  /* Ombra morbida sotto e bagliore interno */
+  box-shadow: 0 20px 40px 0 rgba(0, 0, 0, 0.7), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
 }
