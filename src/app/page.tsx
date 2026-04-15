@@ -53,7 +53,8 @@ export default function Home() {
           />
           <button 
             onClick={handleLogin}
-            className="btn-emerald-loading w-full py-4 rounded-xl font-black uppercase tracking-widest text-sm"          >
+            className="btn-emerald-loading w-full py-4 rounded-xl font-black uppercase tracking-widest text-sm"
+          >
             Inizializza
           </button>
         </motion.div>
@@ -63,8 +64,8 @@ export default function Home() {
 
   // DASHBOARD
   return (
-    <div className="min-h-screen pb-24 p-4 md:p-8">
-      <header className="flex justify-between items-center mb-10 max-w-7xl mx-auto px-2">
+    <div className="min-h-screen pb-32 p-4 md:p-8">
+      <header className="flex justify-between items-center mb-8 max-w-7xl mx-auto px-2">
         <div>
           <h1 className="text-2xl md:text-3xl font-black text-white tracking-widest">
             FREEWAY<span className="text-emerald-500 text-4xl leading-none">.</span>LIFE
@@ -79,17 +80,17 @@ export default function Home() {
         </button>
       </header>
 
-      {/* Grid rivista per respirare di più */}
-      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+      {/* GRIGLIA SISTEMATA: 1 colonna su mobile, 3 colonne su PC */}
+      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 px-2">
         
-        {/* Colonna Timer e Calendario (più stretta) */}
-        <div className="lg:col-span-4 flex flex-col gap-6 lg:gap-8">
+        {/* Colonna Sinistra (Occupa 1 spazio su 3) */}
+        <div className="flex flex-col gap-6 lg:gap-8 lg:col-span-1">
           <Tomato />
           <CalendarWidget />
         </div>
         
-        {/* Colonna Planner (più larga, prende il resto dello spazio) */}
-        <div className="lg:col-span-8 flex flex-col h-full">
+        {/* Colonna Destra (Occupa 2 spazi su 3) */}
+        <div className="flex flex-col gap-6 lg:gap-8 lg:col-span-2 h-full">
           <Planner />
         </div>
 
