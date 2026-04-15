@@ -20,7 +20,6 @@ export default function CalendarWidget() {
     const { data: tasks } = await supabase.from('tasks').select('*').gte('deadline', start).lte('deadline', end);
     const { data: activities } = await supabase.from('activities').select('*').gte('deadline', start).lte('deadline', end);
     
-    // MODIFICA QUI: Aggiunto (t: any) e (a: any) per far felice TypeScript
     const formattedTasks = (tasks || []).map((t: any) => ({ ...t, eventType: 'task' }));
     const formattedActivities = (activities || []).map((a: any) => ({ ...a, eventType: 'activity' }));
     

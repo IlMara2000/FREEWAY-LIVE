@@ -10,7 +10,6 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [inputValue, setInputValue] = useState('');
 
-  // Controlla se abbiamo già fatto il login in passato
   useEffect(() => {
     const savedName = localStorage.getItem('freeway_user');
     if (savedName) {
@@ -33,7 +32,6 @@ export default function Home() {
     setUsername('');
   };
 
-  // 1. SCHERMATA DI LOGIN
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -59,10 +57,8 @@ export default function Home() {
     );
   }
 
-  // 2. SCHERMATA DELL'APP (DASHBOARD COMPLETA)
   return (
     <div className="min-h-screen pb-24 p-4 md:p-8">
-      {/* Header con Logout */}
       <header className="flex justify-between items-center mb-8 max-w-6xl mx-auto">
         <div>
           <h1 className="text-xl md:text-3xl font-black text-white uppercase italic tracking-widest">
@@ -78,23 +74,16 @@ export default function Home() {
         </button>
       </header>
 
-      {/* Griglia della Dashboard: Qui vengono caricati tutti i tuoi widget! */}
       <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Colonna di sinistra: Timer e Calendario */}
         <div className="space-y-6">
           <Tomato />
           <CalendarWidget />
         </div>
-        
-        {/* Colonna di destra: Planner */}
         <div>
           <Planner />
         </div>
-
       </main>
 
-      {/* Navigazione Mobile in basso */}
       <MobileNav />
     </div>
   );

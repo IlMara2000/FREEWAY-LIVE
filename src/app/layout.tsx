@@ -12,7 +12,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Ho aggiornato i metadati per la tua app!
 export const metadata: Metadata = {
   title: "Freeway-Life | Focus Hub",
   description: "Webapp per potenziare il focus e superare le sfide dell'ADHD",
@@ -24,7 +23,6 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // Ho impostato la lingua su "it"
     <html
       lang="it"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
