@@ -3,10 +3,11 @@
 @tailwind utilities;
 
 :root {
-  /* Freeway-Life Signature Palette */
-  --background: #000000; /* Nero assoluto per il massimo contrasto */
-  --foreground: #f4f4f5; /* Zinc 50 per il testo, meno stancante del bianco puro */
-  --brand-accent: #FF914D; /* L'arancione Freeway */
+  /* Sapphire & Emerald Theme */
+  --background: #020617; /* Sfondo ultra scuro (profondità zaffiro notturno) */
+  --foreground: #e2e8f0; /* Testo chiaro, morbido e leggibile */
+  --brand-accent: #10b981; /* Smeraldo brillante per i dettagli e bottoni */
+  --brand-secondary: #3b82f6; /* Zaffiro/Blu per i riflessi del vetro */
   
   /* Font personalizzati Geist (passati dal layout.tsx) */
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
@@ -15,7 +16,11 @@
 
 /* Forziamo l'ambiente scuro, i font e l'anti-aliasing per testi nitidissimi */
 body {
-  background-color: var(--background);
+  /* Creiamo uno sfondo dinamico con leggerissime auree zaffiro e smeraldo agli angoli */
+  background: radial-gradient(circle at top left, rgba(16, 185, 129, 0.04), transparent 40%),
+              radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.04), transparent 40%),
+              var(--background);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-sans);
   min-height: 100vh;
@@ -32,7 +37,7 @@ body {
 }
 
 /* --- SCROLLBAR PREMIUM --- */
-/* Customizziamo le barre di scorrimento (soprattutto per la tabella del Planner) */
+/* Customizziamo le barre di scorrimento a tema smeraldo */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -42,22 +47,24 @@ body {
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(16, 185, 129, 0.2); /* Smeraldo in trasparenza */
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--brand-accent);
 }
 
-/* --- EFFETTO VETRO (GLASSMORPHISM 2.0) --- */
+/* --- EFFETTO VETRO (ZAFFIRO & SMERALDO) --- */
 .glass-panel {
-  /* Gradiente scuro per dare profondità 3D */
-  background: linear-gradient(145deg, rgba(24, 24, 27, 0.6) 0%, rgba(9, 9, 11, 0.8) 100%);
+  /* Gradiente che fonde un blu zaffiro profondo a un verde smeraldo scuro */
+  background: linear-gradient(145deg, rgba(30, 58, 138, 0.15) 0%, rgba(6, 78, 59, 0.15) 100%);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  /* Bordo illuminato sopra e laterale */
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-top-color: rgba(255, 255, 255, 0.15);
-  /* Ombra morbida sotto e bagliore interno */
-  box-shadow: 0 20px 40px 0 rgba(0, 0, 0, 0.7), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  /* Bordi illuminati: zaffiro sopra, smeraldo ai lati */
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  border-top-color: rgba(59, 130, 246, 0.25);
+  /* Ombra profonda e un bagliore interno smeraldo leggerissimo */
+  box-shadow: 0 20px 40px 0 rgba(0, 0, 0, 0.8), 
+              inset 0 1px 0 0 rgba(255, 255, 255, 0.05),
+              inset 0 0 20px 0 rgba(16, 185, 129, 0.05);
 }
