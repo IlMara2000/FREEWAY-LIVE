@@ -1,19 +1,16 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 :root {
   /* Sapphire & Emerald Theme */
-  --background: #01030b; /* Ancora più scuro: l'abisso totale */
-  --foreground: rgba(255, 255, 255, 0.9); /* Testo bianco traslucido, effetto vetro */
-  --brand-accent: #10b981; /* Smeraldo brillante */
-  --brand-secondary: #3b82f6; /* Zaffiro profondo */
+  --background: #01030b; 
+  --foreground: rgba(255, 255, 255, 0.9); 
+  --brand-accent: #10b981; 
+  --brand-secondary: #3b82f6; 
   
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 }
 
-/* Forziamo l'ambiente scuro, i font e l'anti-aliasing per testi nitidissimi */
 body {
   /* BACKGROUND "PROFONDITÀ ASSURDA": 4 strati di luce volumetrica */
   background-color: var(--background);
@@ -31,30 +28,24 @@ body {
   overscroll-behavior: none; 
 }
 
-::selection {
-  background-color: var(--brand-accent);
-  color: #000000;
-}
+::selection { background-color: var(--brand-accent); color: #000000; }
 
-/* --- SCROLLBAR PREMIUM --- */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 10px; }
 ::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.2); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--brand-accent); }
 
-/* --- EFFETTO VETRO (ZAFFIRO & SMERALDO) --- */
+/* --- EFFETTO VETRO --- */
 .glass-panel {
   background: linear-gradient(145deg, rgba(30, 58, 138, 0.15) 0%, rgba(6, 78, 59, 0.15) 100%);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid rgba(16, 185, 129, 0.15);
   border-top-color: rgba(59, 130, 246, 0.25);
-  box-shadow: 0 30px 60px 0 rgba(0, 0, 0, 0.9), /* Ombra maggiorata per staccarlo dallo sfondo */
-              inset 0 1px 0 0 rgba(255, 255, 255, 0.05),
-              inset 0 0 20px 0 rgba(16, 185, 129, 0.05);
+  box-shadow: 0 30px 60px 0 rgba(0, 0, 0, 0.9), inset 0 1px 0 0 rgba(255, 255, 255, 0.05), inset 0 0 20px 0 rgba(16, 185, 129, 0.05);
 }
 
-/* --- BOTTONE CARICAMENTO SMERALDO (NOVITÀ) --- */
+/* --- BOTTONE CARICAMENTO SMERALDO ANIMATO --- */
 .btn-emerald-loading {
   position: relative;
   background: rgba(16, 185, 129, 0.1);
@@ -66,19 +57,14 @@ body {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(16, 185, 129, 0.1);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
-/* Raggio di luce dinamico che scorre */
 .btn-emerald-loading::before {
   content: '';
   position: absolute;
-  top: 0; left: -100%;
-  width: 50%; height: 100%;
+  top: 0; left: -100%; width: 50%; height: 100%;
   background: linear-gradient(to right, transparent, rgba(16, 185, 129, 0.4), transparent);
   transform: skewX(-20deg);
   animation: emerald-sweep 3s infinite linear;
 }
-
-/* Effetto Hover (quando ci passi sopra col mouse) */
 .btn-emerald-loading:hover {
   background: rgba(16, 185, 129, 0.25);
   border-color: rgba(16, 185, 129, 0.8);
@@ -86,10 +72,4 @@ body {
   text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
   transform: translateY(-2px) scale(1.02);
 }
-
-/* Animazione del raggio */
-@keyframes emerald-sweep {
-  0% { left: -100%; }
-  50% { left: 200%; }
-  100% { left: 200%; } /* Pausa prima di ripartire */
-}
+@keyframes emerald-sweep { 0% { left: -100%; } 50% { left: 200%; } 100% { left: 200%; } }
