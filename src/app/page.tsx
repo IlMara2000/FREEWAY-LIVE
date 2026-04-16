@@ -8,10 +8,12 @@ import MobileNav from './comp/MobileNav';
 import BrainDump from './comp/BrainDump'; 
 import ThemeStore from './comp/ThemeStore';
 import { motion } from 'framer-motion';
+// Importiamo il tipo Session per garantire che il build su Vercel vada a buon fine
+import type { Session } from '@supabase/supabase-js';
 
 export default function Home() {
   const [user, setUser] = useState<any>(null);
-  const userRef = useRef<any>(null); // Ci serve per avere l'utente sempre aggiornato nell'ascoltatore globale
+  const userRef = useRef<any>(null); // Riferimento persistente per l'utente (necessario per gli event listener)
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,7 +26,7 @@ export default function Home() {
   const [level, setLevel] = useState(1);
 
   useEffect(() => {
-    // Funzione per scaricare gli XP dal Cloud
+    // Funzione per caricare i dati del profilo dal Cloud
     const loadUserData = async (userId: string) => {
       const { data, error } = await supabase.from('profiles').select('xp').eq('id', userId).single();
       if (data) {
@@ -34,8 +36,8 @@ export default function Home() {
       }
     };
 
-    // 1. Controlla sessione all'avvio
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // 1. Controlla sessione all'avvio (Tipizzato per evitare errori di build)
+    supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       userRef.current = currentUser;
@@ -43,15 +45,15 @@ export default function Home() {
       setAuthChecking(false);
     });
 
-    // 2. Ascolta i cambiamenti di login
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // 2. Ascolta i cambiamenti di stato autenticazione
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session: Session | null) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       userRef.current = currentUser;
       if (currentUser) loadUserData(currentUser.id);
     });
 
-    // 3. Ascoltatore globale: quando prendi punti, salvali NEL CLOUD
+    // 3. Gestore globale per l'accredito XP (connesso al Cloud)
     const handleAddXp = (e: Event) => {
       const customEvent = e as CustomEvent;
       const points = customEvent.detail || 0;
@@ -60,7 +62,7 @@ export default function Home() {
         const newXp = prev + points;
         setLevel(Math.floor(newXp / 100) + 1);
         
-        // SALVATAGGIO CLOUD ISTANTANEO
+        // Sincronizzazione Cloud istantanea
         if (userRef.current) {
           supabase.from('profiles').update({ xp: newXp }).eq('id', userRef.current.id).then();
         }
@@ -89,7 +91,7 @@ export default function Home() {
       } else {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        alert("Operatore registrato con successo! Inizializzazione sistema...");
+        alert("Operatore registrato! Controlla l'email per la conferma (se richiesto).");
       }
     } catch (err: any) {
       alert(`ERRORE DI ACCESSO: ${err.message}`);
@@ -104,12 +106,23 @@ export default function Home() {
 
   const xpInCurrentLevel = xp % 100;
 
-  if (authChecking) return <div className="min-h-screen bg-black flex items-center justify-center"><span className="text-emerald-500 animate-pulse font-mono text-xs">CONNESSIONE AL DATABASE...</span></div>;
+  if (authChecking) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <span className="text-emerald-500 animate-pulse font-mono text-xs uppercase tracking-[0.3em]">
+          Inizializzazione Core...
+        </span>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-panel p-10 rounded-[2rem] w-full max-w-md text-center border-t border-emerald-500/50 shadow-2xl shadow-emerald-500/10">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} 
+          className="glass-panel p-10 rounded-[2rem] w-full max-w-md text-center border-t border-emerald-500/50 shadow-2xl shadow-emerald-500/10"
+        >
           <h1 className="text-3xl font-black text-white tracking-widest mb-2">FREEWAY<span className="text-emerald-500 text-4xl">.</span>LIFE</h1>
           <p className="text-[10px] font-mono text-emerald-400 mb-8 uppercase tracking-[0.3em]">Accesso Operativo</p>
           
@@ -139,6 +152,7 @@ export default function Home() {
   return (
     <div className="min-h-screen pb-32 p-4 md:p-8 overflow-x-hidden">
       
+      {/* HEADER + REATTORE XP CLOUD */}
       <header className={`flex flex-col md:flex-row justify-between items-center gap-6 mb-8 max-w-[1400px] mx-auto px-2 transition-all duration-700 ease-in-out ${isHyperFocus ? 'opacity-10 blur-md pointer-events-none scale-95' : 'opacity-100'}`}>
         <div className="flex flex-col items-center md:items-start">
           <h1 className="text-2xl md:text-3xl font-black text-white tracking-widest">
