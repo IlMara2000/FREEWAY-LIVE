@@ -24,7 +24,7 @@ export default function Planner() {
   const [time, setTime] = useState('');         
   const [isAdding, setIsAdding] = useState(false);
   
-  // Nuovo stato per capire quale task sta venendo "affettato" dall'IA
+  // Stato per capire quale task sta venendo "affettato" dall'IA
   const [splittingId, setSplittingId] = useState<string | null>(null);
 
   const today = startOfDay(new Date());
@@ -105,7 +105,6 @@ export default function Planner() {
   async function handleMagicSplit(task: any) {
     setSplittingId(task.id);
     try {
-      // Chiama la nostra API Route ultra-veloce
       const res = await fetch('/api/slicer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -115,7 +114,6 @@ export default function Planner() {
       const data = await res.json();
       
       if (data.steps && data.steps.length > 0) {
-        // Prepariamo i nuovi micro-task da inserire nel database
         const newTasks = data.steps.map((step: string) => ({
           title: step.toUpperCase(),
           description: `Generato scomponendo: ${task.title}`,
@@ -125,9 +123,7 @@ export default function Planner() {
           assigned_to: task.assigned_to
         }));
 
-        // Inseriamo i micro-task
         await supabase.from('tasks').insert(newTasks);
-        // Cancelliamo il task originale per pulire la vista
         await supabase.from('tasks').delete().eq('id', task.id);
         
         await fetchTasks();
@@ -162,9 +158,16 @@ export default function Planner() {
     }
   };
 
+  // Funzione unificata: Cambia stato sul DB e spara Punti XP Globali
   async function updateStatus(id: string, currentStatus: string) {
     const newStatus = currentStatus === 'done' ? 'todo' : 'done';
     await supabase.from('tasks').update({ status: newStatus }).eq('id', id);
+    
+    // NUOVO: SE COMPLETATA, SPARA DOPAMINA (+10 XP)
+    if (newStatus === 'done') {
+      window.dispatchEvent(new CustomEvent('addXp', { detail: 10 }));
+    }
+    
     fetchTasks(); notifyCalendar();
   }
 

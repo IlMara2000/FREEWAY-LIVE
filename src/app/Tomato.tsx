@@ -9,7 +9,6 @@ interface TomatoProps {
 export default function Tomato({ onFocusChange }: TomatoProps) {
   const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [isActive, setIsActive] = useState(false);
-  const [score, setScore] = useState(0);
 
   useEffect(() => {
     let interval: any = null;
@@ -18,8 +17,11 @@ export default function Tomato({ onFocusChange }: TomatoProps) {
     } else if (isActive && timeLeft === 0) {
       clearInterval(interval);
       toggleFocus(false);
-      setScore((s) => s + 10);
-      alert("Focus completato! +10 Punti. Pausa!");
+      
+      // SPARA IL SEGNALE DEI PUNTI GLOBALI (DOPAMINA!)
+      window.dispatchEvent(new CustomEvent('addXp', { detail: 15 }));
+      
+      alert("Focus completato! +15 XP Guadagnati. Fai una pausa!");
       setTimeLeft(25 * 60);
     }
     return () => clearInterval(interval);
@@ -38,13 +40,14 @@ export default function Tomato({ onFocusChange }: TomatoProps) {
   const seconds = timeLeft % 60;
 
   return (
-    <div className={`glass-panel p-8 rounded-3xl flex flex-col items-center justify-center relative overflow-hidden border transition-all duration-700 shadow-2xl min-h-[250px] ${
+    <div className={`glass-panel p-8 rounded-3xl flex flex-col items-center justify-center relative overflow-hidden border transition-all duration-700 shadow-2xl min-h-[260px] ${
       isActive ? 'border-emerald-500/50 shadow-[0_0_40px_rgba(16,185,129,0.2)]' : 'border-white/5'
     }`}>
       
-      <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 px-3 py-1.5 rounded-full border border-emerald-500/20">
+      {/* Reminder visivo della ricompensa */}
+      <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 px-3 py-1.5 rounded-full border border-emerald-500/20 opacity-80">
         <Trophy size={12} />
-        <span className="text-[10px] font-black">{score}</span>
+        <span className="text-[10px] font-black">+15 XP</span>
       </div>
 
       <h2 className={`text-[10px] font-mono uppercase tracking-[0.2em] mb-4 mt-2 transition-colors ${isActive ? 'text-emerald-500 font-bold animate-pulse' : 'text-zinc-500'}`}>
