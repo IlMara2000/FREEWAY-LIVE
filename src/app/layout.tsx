@@ -21,7 +21,7 @@ export default function RootLayout({
     <html lang="it" className="h-full scroll-smooth">
       <head>
         {/* CONFIGURAZIONE PWA & MOBILE OPTIMIZATION */}
-        <link rel="manifest" href="/manifest.json" />
+        <link rel="manifest" href="/site.webmanifest" />
         <meta name="theme-color" content="#10b981" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
