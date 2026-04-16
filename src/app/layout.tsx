@@ -1,6 +1,6 @@
-'use client'
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import type { Metadata, Viewport } from "next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -9,8 +9,28 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
-  subsets: ["latin"],
 });
+
+// Configurazione ufficiale Metadati (Sostituisce il tag <head>)
+export const metadata: Metadata = {
+  title: "Freeway-Life | Focus Hub",
+  description: "Webapp per potenziare il focus e superare le sfide dell'ADHD",
+  manifest: "/site.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Freeway-Life",
+  },
+};
+
+// Configurazione ufficiale Viewport
+export const viewport: Viewport = {
+  themeColor: "#10b981",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
 
 export default function RootLayout({
   children,
@@ -19,20 +39,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="it" className="h-full scroll-smooth">
-      <head>
-        {/* CONFIGURAZIONE PWA & MOBILE OPTIMIZATION */}
-        <link rel="manifest" href="/site.webmanifest" />
-        <meta name="theme-color" content="#10b981" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        
-        {/* Titolo di fallback se non caricato dai metadati */}
-        <title>Freeway-Life | Focus Hub</title>
-        <meta name="description" content="Webapp per potenziare il focus e superare le sfide dell'ADHD" />
-        
-        {/* Prevenzione Zoom automatico su input (ottimo per mobile) */}
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" /> 
-      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} min-h-full flex flex-col bg-black text-white antialiased`}
       >
