@@ -8,12 +8,12 @@ import MobileNav from './comp/MobileNav';
 import BrainDump from './comp/BrainDump'; 
 import ThemeStore from './comp/ThemeStore';
 import { motion } from 'framer-motion';
-// Importiamo il tipo Session per garantire che il build su Vercel vada a buon fine
-import type { Session } from '@supabase/supabase-js';
+// Importiamo i tipi necessari per far tacere TypeScript e garantire un build pulito
+import type { Session, AuthChangeEvent } from '@supabase/supabase-js';
 
 export default function Home() {
   const [user, setUser] = useState<any>(null);
-  const userRef = useRef<any>(null); // Riferimento persistente per l'utente (necessario per gli event listener)
+  const userRef = useRef<any>(null); // Riferimento persistente per l'utente sincronizzato con gli event listener
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,17 +26,17 @@ export default function Home() {
   const [level, setLevel] = useState(1);
 
   useEffect(() => {
-    // Funzione per caricare i dati del profilo dal Cloud
+    // Funzione per caricare i dati del profilo e XP dal Cloud
     const loadUserData = async (userId: string) => {
       const { data, error } = await supabase.from('profiles').select('xp').eq('id', userId).single();
-      if (data) {
+      if (data && !error) {
         const cloudXp = data.xp || 0;
         setXp(cloudXp);
         setLevel(Math.floor(cloudXp / 100) + 1);
       }
     };
 
-    // 1. Controlla sessione all'avvio (Tipizzato per evitare errori di build)
+    // 1. Controlla sessione all'avvio (Tipizzato correttamente per Vercel)
     supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
@@ -45,15 +45,15 @@ export default function Home() {
       setAuthChecking(false);
     });
 
-    // 2. Ascolta i cambiamenti di stato autenticazione
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session: Session | null) => {
+    // 2. Ascolta i cambiamenti di stato (Login/Logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       userRef.current = currentUser;
       if (currentUser) loadUserData(currentUser.id);
     });
 
-    // 3. Gestore globale per l'accredito XP (connesso al Cloud)
+    // 3. Gestore globale XP (Sincronizzazione istantanea con il DB Cloud)
     const handleAddXp = (e: Event) => {
       const customEvent = e as CustomEvent;
       const points = customEvent.detail || 0;
@@ -62,7 +62,7 @@ export default function Home() {
         const newXp = prev + points;
         setLevel(Math.floor(newXp / 100) + 1);
         
-        // Sincronizzazione Cloud istantanea
+        // Sincronizzazione persistente su Supabase
         if (userRef.current) {
           supabase.from('profiles').update({ xp: newXp }).eq('id', userRef.current.id).then();
         }
@@ -81,7 +81,7 @@ export default function Home() {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return alert("Inserisci email e password!");
+    if (!email || !password) return alert("Inserisci credenziali valide!");
     
     setAuthLoading(true);
     try {
@@ -91,7 +91,7 @@ export default function Home() {
       } else {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        alert("Operatore registrato! Controlla l'email per la conferma (se richiesto).");
+        alert("Operatore registrato! Controlla l'email se la conferma è attiva.");
       }
     } catch (err: any) {
       alert(`ERRORE DI ACCESSO: ${err.message}`);
@@ -119,10 +119,7 @@ export default function Home() {
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} 
-          className="glass-panel p-10 rounded-[2rem] w-full max-w-md text-center border-t border-emerald-500/50 shadow-2xl shadow-emerald-500/10"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-panel p-10 rounded-[2rem] w-full max-w-md text-center border-t border-emerald-500/50 shadow-2xl shadow-emerald-500/10">
           <h1 className="text-3xl font-black text-white tracking-widest mb-2">FREEWAY<span className="text-emerald-500 text-4xl">.</span>LIFE</h1>
           <p className="text-[10px] font-mono text-emerald-400 mb-8 uppercase tracking-[0.3em]">Accesso Operativo</p>
           
@@ -151,8 +148,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen pb-32 p-4 md:p-8 overflow-x-hidden">
-      
-      {/* HEADER + REATTORE XP CLOUD */}
       <header className={`flex flex-col md:flex-row justify-between items-center gap-6 mb-8 max-w-[1400px] mx-auto px-2 transition-all duration-700 ease-in-out ${isHyperFocus ? 'opacity-10 blur-md pointer-events-none scale-95' : 'opacity-100'}`}>
         <div className="flex flex-col items-center md:items-start">
           <h1 className="text-2xl md:text-3xl font-black text-white tracking-widest">
@@ -207,7 +202,6 @@ export default function Home() {
       </div>
 
       <BrainDump />
-
     </div>
   );
 }
