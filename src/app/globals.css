@@ -3,33 +3,35 @@
 :root {
   --background: #01030b;
   
-  /* Emerald Theme (Default) */
-  --theme-color-rgb: 16, 185, 129; /* Smeraldo */
-  --theme-secondary-rgb: 59, 130, 246; /* Zaffiro */
+  /* Emerald Theme (Default) - Focus Puro */
+  --theme-color-rgb: 16, 185, 129; 
+  --theme-secondary-rgb: 59, 130, 246; 
+  --glow-opacity: 0.15;
   
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 }
 
-/* --- TEMA RUBINO (Sbloccato al Lvl 2) --- */
+/* --- TEMA RUBINO (Lvl 2) - Energia Magmatica --- */
 body[data-theme="ruby"] {
   --background: #0a0101;
-  --theme-color-rgb: 239, 68, 68; /* Rosso Rubino */
-  --theme-secondary-rgb: 249, 115, 22; /* Arancio Magma */
-  
-  /* Sovrascriviamo i colori di Tailwind! */
+  --theme-color-rgb: 239, 68, 68; 
+  --theme-secondary-rgb: 249, 115, 22; 
+  --glow-opacity: 0.2;
+
   --color-emerald-300: #fca5a5;
   --color-emerald-400: #f87171;
   --color-emerald-500: #ef4444;
   --color-emerald-600: #dc2626;
 }
 
-/* --- TEMA AMETISTA (Sbloccato al Lvl 4) --- */
+/* --- TEMA AMETISTA (Lvl 4) - Flusso Galattico --- */
 body[data-theme="amethyst"] {
   --background: #07010a;
-  --theme-color-rgb: 168, 85, 247; /* Viola Ametista */
-  --theme-secondary-rgb: 236, 72, 153; /* Rosa Galassia */
-  
+  --theme-color-rgb: 168, 85, 247; 
+  --theme-secondary-rgb: 236, 72, 153; 
+  --glow-opacity: 0.2;
+
   --color-emerald-300: #d8b4fe;
   --color-emerald-400: #c084fc;
   --color-emerald-500: #a855f7;
@@ -38,64 +40,101 @@ body[data-theme="amethyst"] {
 
 body {
   background-color: var(--background);
+  /* Sfondo dinamico con Scanlines cybernetiche */
   background-image: 
-    radial-gradient(circle at 15% 50%, rgba(var(--theme-color-rgb), 0.08), transparent 45%),
-    radial-gradient(circle at 85% 30%, rgba(var(--theme-secondary-rgb), 0.08), transparent 45%),
-    radial-gradient(circle at 50% 120%, rgba(var(--theme-color-rgb), 0.12), transparent 50%),
-    radial-gradient(circle at 50% -20%, rgba(var(--theme-secondary-rgb), 0.12), transparent 50%);
+    linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
+    radial-gradient(circle at 15% 50%, rgba(var(--theme-color-rgb), var(--glow-opacity)), transparent 45%),
+    radial-gradient(circle at 85% 30%, rgba(var(--theme-secondary-rgb), var(--glow-opacity)), transparent 45%),
+    radial-gradient(circle at 50% 120%, rgba(var(--theme-color-rgb), 0.15), transparent 50%);
+  background-size: 100% 4px, 100% 100%, 100% 100%, 100% 100%;
   background-attachment: fixed;
   color: rgba(255, 255, 255, 0.9);
   font-family: var(--font-sans);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overscroll-behavior: none; 
-  transition: all 1s ease-in-out; /* Animazione morbida cambio tema */
+  transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-x: hidden;
 }
 
-::selection { background-color: rgb(var(--theme-color-rgb)); color: #000000; }
+/* --- LOGO & ICONE REATTIVE --- 
+   Applica queste classi ai tuoi SVG per farli cambiare col tema! */
+.svg-main-color { fill: rgb(var(--theme-color-rgb)); transition: fill 1s ease; }
+.svg-secondary-color { fill: rgb(var(--theme-secondary-rgb)); transition: fill 1s ease; }
+.svg-glow { filter: drop-shadow(0 0 8px rgba(var(--theme-color-rgb), 0.6)); }
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 10px; }
-::-webkit-scrollbar-thumb { background: rgba(var(--theme-color-rgb), 0.2); border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: rgb(var(--theme-color-rgb)); }
-
-/* --- EFFETTO VETRO DINAMICO --- */
+/* --- EFFETTO VETRO DINAMICO (GLASSMORPHISM 2.0) --- */
 .glass-panel {
-  background: linear-gradient(145deg, rgba(var(--theme-secondary-rgb), 0.05) 0%, rgba(var(--theme-color-rgb), 0.05) 100%);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(var(--theme-color-rgb), 0.15);
-  border-top-color: rgba(var(--theme-secondary-rgb), 0.25);
-  box-shadow: 0 30px 60px 0 rgba(0, 0, 0, 0.9), inset 0 1px 0 0 rgba(255, 255, 255, 0.05), inset 0 0 20px 0 rgba(var(--theme-color-rgb), 0.05);
-  transition: all 1s ease-in-out;
+  background: linear-gradient(165deg, 
+    rgba(255, 255, 255, 0.05) 0%, 
+    rgba(var(--theme-color-rgb), 0.02) 100%
+  );
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(var(--theme-color-rgb), 0.3);
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.7),
+    inset 0 1px 1px rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+  transition: all 0.8s ease;
 }
 
-/* --- BOTTONE CARICAMENTO ANIMATO DINAMICO --- */
+.glass-panel:hover {
+  border-top-color: rgb(var(--theme-color-rgb));
+  box-shadow: 
+    0 30px 60px -12px rgba(0, 0, 0, 0.8),
+    0 0 20px rgba(var(--theme-color-rgb), 0.1);
+}
+
+/* --- BOTTONE CORE MOMENTUM --- */
 .btn-emerald-loading {
   position: relative;
-  background: rgba(var(--theme-color-rgb), 0.1);
-  color: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(var(--theme-color-rgb), 0.3);
+  background: rgba(var(--theme-color-rgb), 0.15);
+  color: #fff;
+  border: 1px solid rgba(var(--theme-color-rgb), 0.4);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   overflow: hidden;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(var(--theme-color-rgb), 0.1);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
+
 .btn-emerald-loading::before {
   content: '';
   position: absolute;
-  top: 0; left: -100%; width: 50%; height: 100%;
-  background: linear-gradient(to right, transparent, rgba(var(--theme-color-rgb), 0.4), transparent);
-  transform: skewX(-20deg);
-  animation: emerald-sweep 3s infinite linear;
+  top: 0; left: -100%; width: 100%; height: 100%;
+  background: linear-gradient(
+    90deg, 
+    transparent, 
+    rgba(var(--theme-color-rgb), 0.4), 
+    transparent
+  );
+  transition: 0.5s;
 }
+
 .btn-emerald-loading:hover {
-  background: rgba(var(--theme-color-rgb), 0.25);
-  border-color: rgba(var(--theme-color-rgb), 0.8);
-  box-shadow: 0 0 25px rgba(var(--theme-color-rgb), 0.4), inset 0 0 20px rgba(var(--theme-color-rgb), 0.2);
-  text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
-  transform: translateY(-2px) scale(1.02);
+  background: rgb(var(--theme-color-rgb));
+  color: #000;
+  transform: scale(1.05) translateY(-2px);
+  box-shadow: 0 0 30px rgba(var(--theme-color-rgb), 0.5);
 }
-@keyframes emerald-sweep { 0% { left: -100%; } 50% { left: 200%; } 100% { left: 200%; } }
+
+.btn-emerald-loading:hover::before {
+  left: 100%;
+}
+
+/* Scrollbar Cyberpunk */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--background); }
+::-webkit-scrollbar-thumb { 
+  background: rgba(var(--theme-color-rgb), 0.3); 
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--theme-color-rgb)); }
+
+/* Animazione di entrata per i pannelli */
+@keyframes panel-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-panel { animation: panel-in 0.6s ease-out forwards; }
