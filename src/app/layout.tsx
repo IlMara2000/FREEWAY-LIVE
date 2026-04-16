@@ -9,9 +9,10 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
 });
 
-// Configurazione ufficiale Metadati (Sostituisce il tag <head>)
+// Configurazione Metadati unificata (Metadata API di Next.js)
 export const metadata: Metadata = {
   title: "Freeway-Life | Focus Hub",
   description: "Webapp per potenziare il focus e superare le sfide dell'ADHD",
@@ -21,9 +22,13 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "Freeway-Life",
   },
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
-// Configurazione ufficiale Viewport
+// Configurazione Viewport per ottimizzazione mobile e PWA
 export const viewport: Viewport = {
   themeColor: "#10b981",
   width: "device-width",
