@@ -8,6 +8,7 @@ import MobileNav from './comp/MobileNav';
 import BrainDump from './comp/BrainDump'; 
 import ThemeStore from './comp/ThemeStore';
 import { motion, AnimatePresence } from 'framer-motion';
+// Importazione dei tipi per blindare il codice
 import type { Session, AuthChangeEvent } from '@supabase/supabase-js';
 
 export default function Home() {
@@ -25,7 +26,6 @@ export default function Home() {
   const [level, setLevel] = useState(1);
 
   useEffect(() => {
-    // Funzione per caricare i dati del profilo e XP dal Cloud con gestione errori
     const loadUserData = async (userId: string) => {
       try {
         const { data, error } = await supabase
@@ -40,12 +40,12 @@ export default function Home() {
           setLevel(Math.floor(cloudXp / 100) + 1);
         }
       } catch (e) {
-        console.error("Errore critico caricamento XP:", e);
+        console.error("Errore recupero dati:", e);
       }
     };
 
-    // 1. Sincronizzazione sessione iniziale
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // 1. FIX DEFINITIVO PER VERCEL: Tipizzazione esplicita dell'argomento della Promise
+    supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       userRef.current = currentUser;
@@ -53,7 +53,7 @@ export default function Home() {
       setAuthChecking(false);
     });
 
-    // 2. Listener per cambiamenti di stato Autenticazione
+    // 2. Listener Auth tipizzato
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
@@ -61,7 +61,7 @@ export default function Home() {
       if (currentUser) loadUserData(currentUser.id);
     });
 
-    // 3. Gestore Eventi XP (Detail castato correttamente per TypeScript)
+    // 3. Gestore XP
     const handleAddXp = (e: Event) => {
       const customEvent = e as CustomEvent;
       const points = customEvent.detail || 0;
@@ -70,7 +70,6 @@ export default function Home() {
         const newXp = prev + points;
         setLevel(Math.floor(newXp / 100) + 1);
         
-        // Sincronizzazione asincrona con Supabase
         if (userRef.current) {
           supabase.from('profiles')
             .update({ xp: newXp })
@@ -91,7 +90,7 @@ export default function Home() {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return alert("Inserisci credenziali valide!");
+    if (!email || !password) return alert("Dati incompleti!");
     
     setAuthLoading(true);
     try {
@@ -101,7 +100,7 @@ export default function Home() {
       } else {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        alert("Operatore registrato! Controlla l'email per confermare l'account.");
+        alert("Controlla l'email per confermare l'accesso.");
       }
     } catch (err: any) {
       alert(`ERRORE: ${err.message}`);
@@ -112,32 +111,30 @@ export default function Home() {
 
   const xpInCurrentLevel = xp % 100;
 
-  // Schermata di caricamento iniziale
   if (authChecking) return (
-    <div className="min-h-screen bg-black flex items-center justify-center">
-      <div className="text-emerald-500 font-mono text-xs animate-pulse tracking-[0.2em]">
-        SINCRO_SISTEMA_IN_CORSO...
+    <div className="min-h-screen bg-[#01030b] flex items-center justify-center">
+      <div className="text-emerald-500 font-mono text-xs animate-pulse tracking-[0.3em]">
+        CONNESSIONE_CORE...
       </div>
     </div>
   );
 
-  // Schermata di Login (Stile Glassmorphism)
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-[#01030b]">
         <motion.div 
           initial={{ opacity: 0, y: 20 }} 
           animate={{ opacity: 1, y: 0 }} 
-          className="glass-panel p-10 rounded-[2.5rem] w-full max-w-md text-center border-t border-emerald-500/30 shadow-2xl shadow-emerald-500/5"
+          className="glass-panel p-10 rounded-[2.5rem] w-full max-w-md text-center border-t border-emerald-500/30 shadow-2xl"
         >
           <h1 className="text-3xl font-black text-white tracking-widest mb-2 uppercase">
             Freeway<span className="text-emerald-500">.</span>life
           </h1>
-          <p className="text-[10px] font-mono text-emerald-400/60 mb-8 uppercase tracking-[0.3em]">Accesso Operativo</p>
+          <p className="text-[10px] font-mono text-emerald-400/60 mb-8 uppercase tracking-[0.3em]">Sistema Operativo</p>
           
           <form onSubmit={handleAuth} className="space-y-4">
             <input 
-              type="email" placeholder="EMAIL OPERATORE" value={email} onChange={(e) => setEmail(e.target.value)} required
+              type="email" placeholder="EMAIL" value={email} onChange={(e) => setEmail(e.target.value)} required
               className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl font-mono text-sm text-white outline-none focus:border-emerald-500/50 transition-all text-center"
             />
             <input 
@@ -148,7 +145,7 @@ export default function Home() {
               disabled={authLoading}
               className="btn-emerald-loading w-full py-4 rounded-2xl font-black uppercase tracking-widest text-sm"
             >
-              {authLoading ? 'Sincronizzazione...' : (isLoginMode ? 'Inizializza' : 'Crea Account')}
+              {authLoading ? 'SINCRO...' : (isLoginMode ? 'ENTRA' : 'REGISTRATI')}
             </button>
           </form>
 
@@ -156,32 +153,30 @@ export default function Home() {
             onClick={() => setIsLoginMode(!isLoginMode)} 
             className="mt-6 text-[10px] font-mono text-zinc-500 hover:text-emerald-400 transition-colors uppercase tracking-wider"
           >
-            {isLoginMode ? 'Nuova Recluta? Registrati qui' : 'Hai già gli accessi? Entra'}
+            {isLoginMode ? 'Nuovo Operatore? Registrati' : 'Torna al Login'}
           </button>
         </motion.div>
       </div>
     );
   }
 
-  // Dashboard Principale
   return (
     <div className="min-h-screen pb-32 p-4 md:p-8 overflow-x-hidden bg-[#01030b]">
       
-      {/* Header con Reattore XP */}
       <header className={`max-w-[1400px] mx-auto flex flex-col md:flex-row justify-between items-center mb-12 gap-6 transition-all duration-700 ease-in-out ${isHyperFocus ? 'opacity-10 blur-md pointer-events-none scale-95' : 'opacity-100'}`}>
         <div className="flex flex-col items-center md:items-start">
           <h1 className="text-2xl md:text-3xl font-black text-white tracking-tighter">
             FREEWAY<span className="text-emerald-500">.</span>LIFE
           </h1>
           <p className="text-[10px] font-mono text-emerald-500/80 uppercase tracking-[0.2em] mt-1">
-            Operatore: <span className="text-zinc-400">{user.email?.split('@')[0]}</span>
+            OPERATORE: <span className="text-zinc-400">{user.email?.split('@')[0]}</span>
           </p>
         </div>
 
         <div className="flex-1 w-full max-w-md px-4">
           <div className="flex justify-between items-center text-[10px] font-mono text-zinc-400 mb-2 uppercase tracking-widest">
             <div className="flex items-center gap-3">
-              <span className="text-zinc-500">Livello <span className="text-white">{level}</span></span>
+              <span>LVL <span className="text-white">{level}</span></span>
               <ThemeStore level={level} /> 
             </div>
             <span className="text-emerald-400 font-bold">{xp} XP</span>
@@ -200,11 +195,10 @@ export default function Home() {
           onClick={() => supabase.auth.signOut()} 
           className="text-[10px] font-mono text-zinc-500 hover:text-red-400 transition-colors tracking-widest uppercase"
         >
-          Disconnetti
+          DISCONNETTI
         </button>
       </header>
 
-      {/* Main Layout Grid */}
       <main className="max-w-[1400px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 px-2 relative">
         <div className="flex flex-col gap-6 lg:gap-8 md:col-span-1 z-10">
           <Tomato onFocusChange={setIsHyperFocus} />
@@ -214,7 +208,7 @@ export default function Home() {
               <motion.div 
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0, transition: { duration: 0.3 } }}
+                exit={{ opacity: 0, height: 0 }}
                 className="overflow-hidden"
               >
                 <CalendarWidget />
@@ -228,13 +222,7 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Navigazione e Strumenti */}
-      {!isHyperFocus && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <MobileNav />
-        </motion.div>
-      )}
-      
+      {!isHyperFocus && <MobileNav />}
       <BrainDump />
 
     </div>
