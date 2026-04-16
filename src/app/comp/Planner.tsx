@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { 
-  ClipboardList, Trash2, AlertTriangle, Plus, X, ChevronDown, ChevronUp, CheckCircle2, Circle
+  ClipboardList, Trash2, Plus, X, ChevronDown, ChevronUp, CheckCircle2, Circle, Zap, Loader2
 } from 'lucide-react';
 import { format, isBefore, startOfDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,6 +23,9 @@ export default function Planner() {
   const [endDate, setEndDate] = useState('');   
   const [time, setTime] = useState('');         
   const [isAdding, setIsAdding] = useState(false);
+  
+  // Nuovo stato per capire quale task sta venendo "affettato" dall'IA
+  const [splittingId, setSplittingId] = useState<string | null>(null);
 
   const today = startOfDay(new Date());
 
@@ -95,6 +98,48 @@ export default function Planner() {
       alert(`ERRORE: ${err.message}`);
     } finally {
       setIsAdding(false);
+    }
+  }
+
+  // --- LA MAGIA DI GROQ (TASK SLICER) ---
+  async function handleMagicSplit(task: any) {
+    setSplittingId(task.id);
+    try {
+      // Chiama la nostra API Route ultra-veloce
+      const res = await fetch('/api/slicer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskTitle: task.title })
+      });
+      
+      const data = await res.json();
+      
+      if (data.steps && data.steps.length > 0) {
+        // Prepariamo i nuovi micro-task da inserire nel database
+        const newTasks = data.steps.map((step: string) => ({
+          title: step.toUpperCase(),
+          description: `Generato scomponendo: ${task.title}`,
+          status: 'todo',
+          priority: task.priority,
+          deadline: task.deadline,
+          assigned_to: task.assigned_to
+        }));
+
+        // Inseriamo i micro-task
+        await supabase.from('tasks').insert(newTasks);
+        // Cancelliamo il task originale per pulire la vista
+        await supabase.from('tasks').delete().eq('id', task.id);
+        
+        await fetchTasks();
+        notifyCalendar();
+      } else {
+        alert("Ops, Groq non è riuscito a scomporre questo task.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Errore di connessione con l'IA.");
+    } finally {
+      setSplittingId(null);
     }
   }
 
@@ -191,7 +236,7 @@ export default function Planner() {
         )}
       </AnimatePresence>
 
-      {/* LISTA TASK MODERNA (NO TABELLA) */}
+      {/* LISTA TASK MODERNA */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {loading ? (
           <div className="flex justify-center py-10"><span className="text-[10px] font-mono text-emerald-500 animate-pulse tracking-widest">CARICAMENTO DATI...</span></div>
@@ -215,7 +260,6 @@ export default function Planner() {
                   className="group relative bg-black/40 border border-white/5 hover:border-emerald-500/30 p-4 rounded-2xl cursor-pointer transition-all hover:bg-zinc-900/60 flex items-center justify-between"
                 >
                   <div className="flex items-center gap-4 flex-1 overflow-hidden">
-                    {/* Tasto Complete */}
                     <button 
                       onClick={(e) => { e.stopPropagation(); updateStatus(task.id, task.status); }}
                       className="flex-shrink-0 text-zinc-600 hover:text-emerald-500 transition-colors"
@@ -238,9 +282,23 @@ export default function Planner() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 ml-4">
+                  <div className="flex items-center gap-2 ml-4">
+                    {/* Tasto MAGICO Slicer (visibile in hover o sempre da mobile) */}
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleMagicSplit(task); }} 
+                      disabled={splittingId === task.id}
+                      title="Scomponi con IA"
+                      className="opacity-0 group-hover:opacity-100 p-2 text-emerald-500/50 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-full transition-all"
+                    >
+                      {splittingId === task.id ? (
+                        <Loader2 size={16} className="animate-spin text-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                      ) : (
+                        <Zap size={16} />
+                      )}
+                    </button>
+
                     {/* Pallino Priorità */}
-                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityDot(task.priority)}`} />
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 mx-2 ${getPriorityDot(task.priority)}`} />
                     
                     {/* Tasto Elimina (visibile in hover) */}
                     <button 
