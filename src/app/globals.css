@@ -1,74 +1,100 @@
 @import "tailwindcss";
 
 :root {
-  /* Sapphire & Emerald Theme */
-  --background: #01030b; 
-  --foreground: rgba(255, 255, 255, 0.9); 
-  --brand-accent: #10b981; 
-  --brand-secondary: #3b82f6; 
+  --background: #01030b;
+  
+  /* Emerald Theme (Default) */
+  --theme-color-rgb: 16, 185, 129; /* Smeraldo */
+  --theme-secondary-rgb: 59, 130, 246; /* Zaffiro */
   
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 }
 
+/* --- TEMA RUBINO (Sbloccato al Lvl 2) --- */
+body[data-theme="ruby"] {
+  --background: #0a0101;
+  --theme-color-rgb: 239, 68, 68; /* Rosso Rubino */
+  --theme-secondary-rgb: 249, 115, 22; /* Arancio Magma */
+  
+  /* Sovrascriviamo i colori di Tailwind! */
+  --color-emerald-300: #fca5a5;
+  --color-emerald-400: #f87171;
+  --color-emerald-500: #ef4444;
+  --color-emerald-600: #dc2626;
+}
+
+/* --- TEMA AMETISTA (Sbloccato al Lvl 4) --- */
+body[data-theme="amethyst"] {
+  --background: #07010a;
+  --theme-color-rgb: 168, 85, 247; /* Viola Ametista */
+  --theme-secondary-rgb: 236, 72, 153; /* Rosa Galassia */
+  
+  --color-emerald-300: #d8b4fe;
+  --color-emerald-400: #c084fc;
+  --color-emerald-500: #a855f7;
+  --color-emerald-600: #9333ea;
+}
+
 body {
-  /* BACKGROUND "PROFONDITÀ ASSURDA": 4 strati di luce volumetrica */
   background-color: var(--background);
   background-image: 
-    radial-gradient(circle at 15% 50%, rgba(16, 185, 129, 0.08), transparent 45%),
-    radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.08), transparent 45%),
-    radial-gradient(circle at 50% 120%, rgba(16, 185, 129, 0.12), transparent 50%),
-    radial-gradient(circle at 50% -20%, rgba(59, 130, 246, 0.12), transparent 50%);
+    radial-gradient(circle at 15% 50%, rgba(var(--theme-color-rgb), 0.08), transparent 45%),
+    radial-gradient(circle at 85% 30%, rgba(var(--theme-secondary-rgb), 0.08), transparent 45%),
+    radial-gradient(circle at 50% 120%, rgba(var(--theme-color-rgb), 0.12), transparent 50%),
+    radial-gradient(circle at 50% -20%, rgba(var(--theme-secondary-rgb), 0.12), transparent 50%);
   background-attachment: fixed;
-  color: var(--foreground);
+  color: rgba(255, 255, 255, 0.9);
   font-family: var(--font-sans);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overscroll-behavior: none; 
+  transition: all 1s ease-in-out; /* Animazione morbida cambio tema */
 }
 
-::selection { background-color: var(--brand-accent); color: #000000; }
+::selection { background-color: rgb(var(--theme-color-rgb)); color: #000000; }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 10px; }
-::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.2); border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: var(--brand-accent); }
+::-webkit-scrollbar-thumb { background: rgba(var(--theme-color-rgb), 0.2); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--theme-color-rgb)); }
 
-/* --- EFFETTO VETRO --- */
+/* --- EFFETTO VETRO DINAMICO --- */
 .glass-panel {
-  background: linear-gradient(145deg, rgba(30, 58, 138, 0.15) 0%, rgba(6, 78, 59, 0.15) 100%);
+  background: linear-gradient(145deg, rgba(var(--theme-secondary-rgb), 0.05) 0%, rgba(var(--theme-color-rgb), 0.05) 100%);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(16, 185, 129, 0.15);
-  border-top-color: rgba(59, 130, 246, 0.25);
-  box-shadow: 0 30px 60px 0 rgba(0, 0, 0, 0.9), inset 0 1px 0 0 rgba(255, 255, 255, 0.05), inset 0 0 20px 0 rgba(16, 185, 129, 0.05);
+  border: 1px solid rgba(var(--theme-color-rgb), 0.15);
+  border-top-color: rgba(var(--theme-secondary-rgb), 0.25);
+  box-shadow: 0 30px 60px 0 rgba(0, 0, 0, 0.9), inset 0 1px 0 0 rgba(255, 255, 255, 0.05), inset 0 0 20px 0 rgba(var(--theme-color-rgb), 0.05);
+  transition: all 1s ease-in-out;
 }
 
-/* --- BOTTONE CARICAMENTO SMERALDO ANIMATO --- */
+/* --- BOTTONE CARICAMENTO ANIMATO DINAMICO --- */
 .btn-emerald-loading {
   position: relative;
-  background: rgba(16, 185, 129, 0.1);
+  background: rgba(var(--theme-color-rgb), 0.1);
   color: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  border: 1px solid rgba(var(--theme-color-rgb), 0.3);
   overflow: hidden;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(16, 185, 129, 0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(var(--theme-color-rgb), 0.1);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .btn-emerald-loading::before {
   content: '';
   position: absolute;
   top: 0; left: -100%; width: 50%; height: 100%;
-  background: linear-gradient(to right, transparent, rgba(16, 185, 129, 0.4), transparent);
+  background: linear-gradient(to right, transparent, rgba(var(--theme-color-rgb), 0.4), transparent);
   transform: skewX(-20deg);
   animation: emerald-sweep 3s infinite linear;
 }
 .btn-emerald-loading:hover {
-  background: rgba(16, 185, 129, 0.25);
-  border-color: rgba(16, 185, 129, 0.8);
-  box-shadow: 0 0 25px rgba(16, 185, 129, 0.4), inset 0 0 20px rgba(16, 185, 129, 0.2);
+  background: rgba(var(--theme-color-rgb), 0.25);
+  border-color: rgba(var(--theme-color-rgb), 0.8);
+  box-shadow: 0 0 25px rgba(var(--theme-color-rgb), 0.4), inset 0 0 20px rgba(var(--theme-color-rgb), 0.2);
   text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
   transform: translateY(-2px) scale(1.02);
 }

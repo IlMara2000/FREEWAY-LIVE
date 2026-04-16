@@ -4,7 +4,8 @@ import Tomato from './Tomato';
 import CalendarWidget from './Calendar';
 import Planner from './comp/Planner';
 import MobileNav from './comp/MobileNav';
-import BrainDump from './comp/BrainDump'; // IMPORTIAMO LA CAMERA DI COMPENSAZIONE
+import BrainDump from './comp/BrainDump'; 
+import ThemeStore from './comp/ThemeStore'; // IMPORTIAMO IL NEGOZIO DELLE GEMME
 import { motion } from 'framer-motion';
 
 export default function Home() {
@@ -95,10 +96,16 @@ export default function Home() {
 
         {/* REATTORE CORE (Barra Livello) */}
         <div className="flex-1 w-full max-w-md px-4">
-          <div className="flex justify-between text-[10px] font-mono text-zinc-400 mb-2 uppercase tracking-widest">
-            <span>Livello {level}</span>
+          
+          {/* QUI ABBIAMO INSERITO IL THEME STORE */}
+          <div className="flex justify-between items-center text-[10px] font-mono text-zinc-400 mb-2 uppercase tracking-widest">
+            <div className="flex items-center gap-3">
+              <span>Livello {level}</span>
+              <ThemeStore level={level} /> 
+            </div>
             <span className="text-emerald-400 font-bold">{xp} XP</span>
           </div>
+          
           <div className="h-2 bg-black/60 rounded-full overflow-hidden border border-white/10 shadow-inner">
             <motion.div 
               className="h-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.8)]"
