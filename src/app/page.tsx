@@ -4,6 +4,7 @@ import Tomato from './Tomato';
 import CalendarWidget from './Calendar';
 import Planner from './comp/Planner';
 import MobileNav from './comp/MobileNav';
+import BrainDump from './comp/BrainDump'; // IMPORTIAMO LA CAMERA DI COMPENSAZIONE
 import { motion } from 'framer-motion';
 
 export default function Home() {
@@ -129,6 +130,10 @@ export default function Home() {
       <div className={`transition-opacity duration-700 ${isHyperFocus ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <MobileNav />
       </div>
+
+      {/* LA CAMERA DI COMPENSAZIONE (Sempre visibile, anche in Hyper-Focus) */}
+      <BrainDump />
+
     </div>
   );
 }
