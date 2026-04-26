@@ -1,125 +1,174 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import useUserProfile from '@/hooks/useUserProfile';
 import { THEMES } from '@/lib/themes';
-import { Lock, Check, Palette } from 'lucide-react';
+import { Check, Lock, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import XPBar from '@/components/shared/XPBar';
 
+const themeList = Object.values(THEMES);
+
 export default function ThemeStore() {
   const { profile, loading, setActiveTheme } = useUserProfile();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-      </div>
-    );
-  }
+  const [pendingTheme, setPendingTheme] = useState(null);
 
   const unlockedThemes = profile?.unlocked_themes || ['emerald'];
   const activeTheme = profile?.active_theme || 'emerald';
+  const activeThemeData = THEMES[activeTheme] || THEMES.emerald;
+  const level = profile?.level || 1;
+  const totalXP = profile?.total_xp || 0;
+
+  const handleActivate = async (themeId) => {
+    if (!profile || themeId === activeTheme) return;
+    setPendingTheme(themeId);
+    try {
+      await setActiveTheme(themeId);
+    } finally {
+      setPendingTheme(null);
+    }
+  };
 
   return (
-    <div className="min-h-screen p-4 md:p-8 max-w-3xl mx-auto space-y-6">
-      {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-3xl font-grotesk font-bold text-foreground flex items-center gap-3">
-          <Palette className="w-8 h-8 text-primary" />
-          Theme Store
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Personalizza il tuo Hub. Sblocca temi salendo di livello.
+    <div className="min-h-screen p-4 md:p-8 max-w-3xl mx-auto space-y-5">
+      <motion.header
+        initial={{ opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-2"
+      >
+        <p className="font-mono text-[11px] text-primary/70 uppercase tracking-widest">
+          Personalizzazione
         </p>
-      </motion.div>
+        <h1 className="text-3xl md:text-4xl font-grotesk font-bold text-foreground flex items-center gap-3">
+          <Palette className="w-8 h-8 text-primary" />
+          Temi
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Scegli il look dell'app. I temi si sbloccano salendo di livello.
+        </p>
+      </motion.header>
 
-      {/* XP Bar */}
-      <motion.div
+      <motion.section
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="glass rounded-2xl p-5"
+        transition={{ delay: 0.06 }}
+        className="glass-panel p-5 space-y-5"
       >
-        <XPBar totalXP={profile?.total_xp} level={profile?.level} />
-      </motion.div>
+        <div className="flex items-center gap-4">
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0"
+            style={{
+              background: `linear-gradient(135deg, ${activeThemeData.accent}24, ${activeThemeData.accent}08)`,
+              border: `1px solid ${activeThemeData.accent}33`,
+            }}
+          >
+            {activeThemeData.icon}
+          </div>
 
-      {/* Themes Grid */}
-      <div className="grid gap-4">
-        {Object.values(THEMES).map((theme, index) => {
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="font-mono text-[10px] text-primary/60 uppercase tracking-widest">
+                  Tema attivo
+                </p>
+                <h2 className="font-grotesk font-semibold text-xl text-foreground">
+                  {activeThemeData.name}
+                </h2>
+              </div>
+              {loading && (
+                <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">
+                  Sync...
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground mt-1 truncate">
+              {activeThemeData.description}
+            </p>
+          </div>
+        </div>
+
+        <XPBar totalXP={totalXP} level={level} />
+      </motion.section>
+
+      <section className="space-y-3">
+        {themeList.map((theme, index) => {
           const isUnlocked = unlockedThemes.includes(theme.id);
           const isActive = activeTheme === theme.id;
+          const isPending = pendingTheme === theme.id;
 
           return (
-            <motion.div
+            <motion.article
               key={theme.id}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 + index * 0.05 }}
-              className={`relative rounded-2xl p-5 transition-all ${
-                isActive
-                  ? 'glass-strong glow-emerald-strong'
-                  : isUnlocked
-                  ? 'glass hover:bg-white/5'
-                  : 'glass opacity-60'
-              }`}
-              style={isActive ? { boxShadow: `0 0 30px ${theme.bgGlow}` } : {}}
+              transition={{ delay: 0.1 + index * 0.035, duration: 0.28 }}
+              className={`glass rounded-2xl p-4 transition-colors ${
+                isActive ? 'border-primary/35 bg-primary/5' : 'hover:bg-white/5'
+              } ${isUnlocked ? '' : 'opacity-65'}`}
             >
-              <div className="flex items-start gap-4">
-                {/* Theme preview circle */}
+              <div className="flex items-center gap-4">
                 <div
-                  className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0"
+                  className="w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0"
                   style={{
                     background: `linear-gradient(135deg, ${theme.accent}22, ${theme.accent}08)`,
-                    border: `1px solid ${theme.accent}33`,
+                    border: `1px solid ${theme.accent}30`,
+                    filter: isUnlocked ? 'none' : 'grayscale(1)',
                   }}
                 >
                   {theme.icon}
                 </div>
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-grotesk font-semibold text-foreground">{theme.name}</h3>
-                    {!isUnlocked && (
-                      <span className="text-xs font-mono text-muted-foreground flex items-center gap-1">
-                        <Lock className="w-3 h-3" /> Lv.{theme.minLevel}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-grotesk font-semibold text-foreground">
+                      {theme.name}
+                    </h3>
+                    {isActive && (
+                      <span className="text-[10px] font-mono text-primary uppercase tracking-widest flex items-center gap-1">
+                        <Check className="w-3 h-3" />
+                        Attivo
                       </span>
                     )}
-                    {isActive && (
-                      <span className="text-xs font-mono font-semibold flex items-center gap-1" style={{ color: theme.accent }}>
-                        <Check className="w-3 h-3" /> ATTIVO
+                    {!isUnlocked && (
+                      <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                        <Lock className="w-3 h-3" />
+                        Lv.{theme.minLevel}
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">{theme.description}</p>
-
-                  {/* Color preview bar */}
-                  <div
-                    className="w-full h-1 rounded-full mt-3"
-                    style={{
-                      background: isUnlocked
-                        ? `linear-gradient(90deg, ${theme.accent}, ${theme.accent}44)`
-                        : 'hsl(var(--secondary))',
-                    }}
-                  />
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                    {theme.description}
+                  </p>
                 </div>
 
-                {/* Action */}
-                {isUnlocked && !isActive && (
+                <div
+                  className="hidden sm:block w-10 h-3 rounded-full shrink-0"
+                  style={{
+                    background: isUnlocked
+                      ? `linear-gradient(90deg, ${theme.accent}, ${theme.accent}55)`
+                      : 'hsl(var(--secondary))',
+                  }}
+                />
+
+                {isActive ? (
+                  <div className="h-9 px-3 rounded-xl bg-primary/10 text-primary inline-flex items-center text-xs font-mono font-semibold shrink-0">
+                    In uso
+                  </div>
+                ) : (
                   <Button
                     variant="outline"
                     size="sm"
-                    className="shrink-0 border-primary/30 text-primary hover:bg-primary/10"
-                    onClick={() => setActiveTheme(theme.id)}
+                    disabled={!isUnlocked || loading || isPending}
+                    className="shrink-0 border-primary/30 text-primary hover:bg-primary/10 disabled:text-muted-foreground disabled:border-border"
+                    onClick={() => handleActivate(theme.id)}
                   >
-                    Attiva
+                    {isPending ? '...' : isUnlocked ? 'Attiva' : 'Lock'}
                   </Button>
                 )}
               </div>
-            </motion.div>
+            </motion.article>
           );
         })}
-      </div>
+      </section>
     </div>
   );
 }
