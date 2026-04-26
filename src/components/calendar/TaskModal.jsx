@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Timer, Sparkles, Brain } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 
-const apiKey = process.env.NEXT_PUBLIC_GROQ_API_KEY;
+const apiKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.NEXT_PUBLIC_GROQ_API_KEY;
 
 export default function TaskModal({ task, onClose, onStartTomato }) {
   const [slicedContent, setSlicedContent] = useState(null);
@@ -14,12 +13,17 @@ export default function TaskModal({ task, onClose, onStartTomato }) {
   const handleGroqSlicer = async () => {
     setLoading(true);
     setSlicedContent(null);
+    if (!apiKey) {
+      setSlicedContent('Configura VITE_GROQ_API_KEY per usare lo slicer AI.');
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${GROQ_API_KEY}`,
+          'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
           model: 'llama3-8b-8192',
@@ -37,6 +41,7 @@ export default function TaskModal({ task, onClose, onStartTomato }) {
           temperature: 0.5,
         }),
       });
+      if (!res.ok) throw new Error(`Groq request failed: ${res.status}`);
       const data = await res.json();
       setSlicedContent(data.choices?.[0]?.message?.content || 'Errore nella risposta.');
     } catch (e) {

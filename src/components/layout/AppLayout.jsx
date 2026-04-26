@@ -1,24 +1,49 @@
 import React from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Timer, ListTodo, LayoutDashboard, Palette, Brain } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Link, useLocation, useOutlet } from 'react-router-dom';
+import { Timer, ListTodo, LayoutDashboard, Palette, Brain, CalendarDays } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 
 const NAV_ITEMS = [
   { path: '/', icon: LayoutDashboard, label: 'Hub' },
+  { path: '/calendar', icon: CalendarDays, label: 'Cal' },
   { path: '/tomato', icon: Timer, label: 'Tomato' },
   { path: '/planner', icon: ListTodo, label: 'Planner' },
   { path: '/braindump', icon: Brain, label: 'Dump' },
   { path: '/themes', icon: Palette, label: 'Temi' },
 ];
 
+const contentVariants = {
+  initial: { opacity: 0, y: 18, scale: 0.985, filter: 'blur(10px)' },
+  animate: { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' },
+  exit: { opacity: 0, y: -12, scale: 0.992, filter: 'blur(8px)' },
+};
+
+const contentTransition = {
+  duration: 0.38,
+  ease: [0.22, 1, 0.36, 1],
+};
+
 export default function AppLayout() {
   const location = useLocation();
+  const outlet = useOutlet();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Main content */}
-      <main className="flex-1 pb-20 md:pb-6 md:pl-20">
-        <Outlet />
+      <main className="flex-1 pb-20 md:pb-6 md:pl-20 overflow-hidden">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={location.pathname}
+            variants={contentVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={contentTransition}
+            className="min-h-screen"
+          >
+            {outlet}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Mobile bottom nav */}
@@ -30,20 +55,26 @@ export default function AppLayout() {
               <Link
                 key={item.path}
                 to={item.path}
-                className="relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors"
+                className="relative flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-xl transition-colors"
               >
                 {isActive && (
                   <motion.div
                     layoutId="nav-indicator"
-                    className="absolute inset-0 bg-primary/10 rounded-xl"
-                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                    className="absolute inset-0 bg-primary/12 rounded-xl shadow-[0_0_24px_rgba(16,185,129,0.16)]"
+                    transition={{ type: 'spring', stiffness: 520, damping: 36, mass: 0.6 }}
                   />
                 )}
-                <item.icon
-                  className={`w-5 h-5 relative z-10 transition-colors ${
-                    isActive ? 'text-primary' : 'text-muted-foreground'
-                  }`}
-                />
+                <motion.div
+                  className="relative z-10"
+                  animate={{ y: isActive ? -1 : 0, scale: isActive ? 1.08 : 1 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 28 }}
+                >
+                  <item.icon
+                    className={`w-5 h-5 transition-colors ${
+                      isActive ? 'text-primary' : 'text-muted-foreground'
+                    }`}
+                  />
+                </motion.div>
                 <span
                   className={`text-[10px] font-medium relative z-10 transition-colors ${
                     isActive ? 'text-primary' : 'text-muted-foreground'
@@ -73,15 +104,21 @@ export default function AppLayout() {
               {isActive && (
                 <motion.div
                   layoutId="sidenav-indicator"
-                  className="absolute inset-0 bg-primary/10 rounded-xl"
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  className="absolute inset-0 bg-primary/12 rounded-xl shadow-[0_0_24px_rgba(16,185,129,0.16)]"
+                  transition={{ type: 'spring', stiffness: 520, damping: 36, mass: 0.6 }}
                 />
               )}
-              <item.icon
-                className={`w-5 h-5 relative z-10 transition-colors ${
-                  isActive ? 'text-primary' : 'text-muted-foreground'
-                }`}
-              />
+              <motion.div
+                className="relative z-10"
+                animate={{ y: isActive ? -1 : 0, scale: isActive ? 1.08 : 1 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 28 }}
+              >
+                <item.icon
+                  className={`w-5 h-5 transition-colors ${
+                    isActive ? 'text-primary' : 'text-muted-foreground'
+                  }`}
+                />
+              </motion.div>
               <span
                 className={`text-[10px] font-medium relative z-10 transition-colors ${
                   isActive ? 'text-primary' : 'text-muted-foreground'

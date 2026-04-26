@@ -6,7 +6,6 @@ import useUserProfile from '@/hooks/useUserProfile';
 import XPBar from '@/components/shared/XPBar';
 import StatCard from '@/components/shared/StatCard';
 import { Timer, ListTodo, Brain, Zap, Flame, Target, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 export default function Dashboard() {
   const { profile, loading } = useUserProfile();
