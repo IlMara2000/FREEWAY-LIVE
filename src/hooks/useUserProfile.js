@@ -1,21 +1,34 @@
 import { useState, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQueryClient } from '@tanstack/react-query';
+import { getThemeIdsForLevel } from '@/lib/themes';
 
 // XP thresholds per level
 const LEVEL_THRESHOLDS = [0, 100, 300, 600, 1000, 1500, 2200, 3000, 4000, 5500, 7500, 10000];
+const XP_PER_LEVEL_AFTER_TABLE = 2000;
 
 export function getLevelFromXP(xp) {
   for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
-    if (xp >= LEVEL_THRESHOLDS[i]) return i + 1;
+    if (xp >= LEVEL_THRESHOLDS[i]) {
+      if (i === LEVEL_THRESHOLDS.length - 1) {
+        const extraXP = xp - LEVEL_THRESHOLDS[i];
+        return i + 1 + Math.floor(extraXP / XP_PER_LEVEL_AFTER_TABLE);
+      }
+      return i + 1;
+    }
   }
   return 1;
 }
 
 export function getXPForCurrentLevel(xp) {
   const level = getLevelFromXP(xp);
-  const currentThreshold = LEVEL_THRESHOLDS[level - 1] || 0;
-  const nextThreshold = LEVEL_THRESHOLDS[level] || LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1] + 2000;
+  const maxTableLevel = LEVEL_THRESHOLDS.length;
+  const currentThreshold = level <= maxTableLevel
+    ? LEVEL_THRESHOLDS[level - 1]
+    : LEVEL_THRESHOLDS[maxTableLevel - 1] + (level - maxTableLevel) * XP_PER_LEVEL_AFTER_TABLE;
+  const nextThreshold = level < maxTableLevel
+    ? LEVEL_THRESHOLDS[level]
+    : currentThreshold + XP_PER_LEVEL_AFTER_TABLE;
+
   return {
     current: xp - currentThreshold,
     needed: nextThreshold - currentThreshold,
@@ -24,11 +37,7 @@ export function getXPForCurrentLevel(xp) {
 }
 
 export function getThemeForLevel(level) {
-  if (level >= 8) return ['emerald', 'ruby', 'amethyst', 'solar', 'arctic'];
-  if (level >= 6) return ['emerald', 'ruby', 'amethyst', 'solar'];
-  if (level >= 4) return ['emerald', 'ruby', 'amethyst'];
-  if (level >= 2) return ['emerald', 'ruby'];
-  return ['emerald'];
+  return getThemeIdsForLevel(level);
 }
 
 export default function useUserProfile() {

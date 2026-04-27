@@ -3,10 +3,10 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import { AnimatePresence, motion } from 'framer-motion';
 import React, { useState } from 'react';
 
+import Login from '@/pages/Login';
 import Splash from '@/pages/Splash';
 import Dashboard from '@/pages/Dashboard';
 import CalendarView from '@/pages/CalendarView';
@@ -22,7 +22,7 @@ const TUTORIAL_KEY = 'fw_tutorial_done';
 const APP_ENTERED_KEY = 'fw_app_entered';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isAuthenticated, isLoadingAuth, isLoadingPublicSettings } = useAuth();
   const [showTutorial, setShowTutorial] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -54,9 +54,8 @@ const AuthenticatedApp = () => {
     );
   }
 
-  if (authError) {
-    if (authError.type === 'user_not_registered') return <UserNotRegisteredError />;
-    if (authError.type === 'auth_required') { navigateToLogin(); return null; }
+  if (!isAuthenticated) {
+    return <Login />;
   }
 
   return (

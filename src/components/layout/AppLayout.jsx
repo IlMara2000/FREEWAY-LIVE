@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link, useLocation, useOutlet } from 'react-router-dom';
-import { Timer, ListTodo, LayoutDashboard, Palette, Brain, CalendarDays } from 'lucide-react';
+import { Timer, ListTodo, LayoutDashboard, Palette, Brain, CalendarDays, LogOut } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useAuth } from '@/lib/AuthContext';
 
 const NAV_ITEMS = [
   { path: '/', icon: LayoutDashboard, label: 'Hub' },
@@ -26,6 +27,7 @@ const contentTransition = {
 export default function AppLayout() {
   const location = useLocation();
   const outlet = useOutlet();
+  const { logout } = useAuth();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -129,6 +131,15 @@ export default function AppLayout() {
             </Link>
           );
         })}
+        <button
+          type="button"
+          onClick={logout}
+          className="relative flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl transition-colors w-16 mt-auto text-muted-foreground hover:text-primary"
+          aria-label="Logout"
+        >
+          <LogOut className="w-5 h-5" />
+          <span className="text-[10px] font-medium">Esci</span>
+        </button>
       </nav>
     </div>
   );
