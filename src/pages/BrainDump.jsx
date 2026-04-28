@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
+import { normalizeList } from '@/lib/normalize-list';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useUserProfile from '@/hooks/useUserProfile';
 import XPReward from '@/components/shared/XPReward';
@@ -15,10 +16,11 @@ export default function BrainDump() {
   const { profile, addXP } = useUserProfile();
   const queryClient = useQueryClient();
 
-  const { data: dumps = [] } = useQuery({
+  const { data: dumpResponse = [] } = useQuery({
     queryKey: ['braindumps'],
     queryFn: () => base44.entities.Task.filter({ is_brain_dump: true }, '-created_date', 30),
   });
+  const dumps = normalizeList(dumpResponse);
 
   const createMutation = useMutation({
     mutationFn: async (title) => {

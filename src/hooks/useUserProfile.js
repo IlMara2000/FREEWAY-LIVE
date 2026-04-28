@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
+import { normalizeList } from '@/lib/normalize-list';
 import { getThemeIdsForLevel } from '@/lib/themes';
 
 // XP thresholds per level
@@ -45,7 +46,7 @@ export default function useUserProfile() {
   const [loading, setLoading] = useState(true);
 
   const loadProfile = useCallback(async () => {
-    const profiles = await base44.entities.UserProfile.list();
+    const profiles = normalizeList(await base44.entities.UserProfile.list());
     if (profiles.length > 0) {
       setProfile(profiles[0]);
     } else {

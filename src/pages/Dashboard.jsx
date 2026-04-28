@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
+import { normalizeList } from '@/lib/normalize-list';
 import useUserProfile from '@/hooks/useUserProfile';
 import XPBar from '@/components/shared/XPBar';
 import StatCard from '@/components/shared/StatCard';
@@ -76,8 +77,8 @@ export default function Dashboard() {
         ]);
 
         if (!ignore) {
-          setTodayTasks(tasks || []);
-          setRecentSessions(sessions || []);
+          setTodayTasks(normalizeList(tasks));
+          setRecentSessions(normalizeList(sessions));
         }
       } catch (error) {
         console.warn('Dashboard data unavailable:', error);

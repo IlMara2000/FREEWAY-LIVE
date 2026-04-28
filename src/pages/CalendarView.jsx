@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { normalizeList } from '@/lib/normalize-list';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import TaskModal from '@/components/calendar/TaskModal';
 import CreateTaskModal from '@/components/calendar/CreateTaskModal';
@@ -15,15 +16,6 @@ const pageVariants = {
 const DAYS = ['D', 'L', 'M', 'M', 'G', 'V', 'S'];
 const MONTHS = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 
-const normalizeTaskList = (value) => {
-  if (Array.isArray(value)) return value;
-  if (Array.isArray(value?.data)) return value.data;
-  if (Array.isArray(value?.items)) return value.items;
-  if (Array.isArray(value?.results)) return value.results;
-  if (Array.isArray(value?.records)) return value.records;
-  return [];
-};
-
 export default function CalendarView({ onStartTomato }) {
   const today = new Date();
   const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -35,7 +27,7 @@ export default function CalendarView({ onStartTomato }) {
     queryKey: ['all-tasks'],
     queryFn: () => base44.entities.Task.list('-due_date', 200),
   });
-  const tasks = normalizeTaskList(taskResponse);
+  const tasks = normalizeList(taskResponse);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();

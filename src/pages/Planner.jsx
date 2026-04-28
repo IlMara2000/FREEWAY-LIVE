@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
+import { normalizeList } from '@/lib/normalize-list';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useUserProfile from '@/hooks/useUserProfile';
 import XPReward from '@/components/shared/XPReward';
@@ -38,10 +39,11 @@ export default function Planner() {
   const { profile, addXP, incrementTasksCompleted } = useUserProfile();
   const queryClient = useQueryClient();
 
-  const { data: tasks = [], isLoading } = useQuery({
+  const { data: taskResponse = [], isLoading } = useQuery({
     queryKey: ['tasks', activeTab],
     queryFn: () => base44.entities.Task.filter({ status: activeTab }, '-created_date', 50),
   });
+  const tasks = normalizeList(taskResponse);
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Task.create(data),
