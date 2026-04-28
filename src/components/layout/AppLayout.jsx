@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useOutlet } from 'react-router-dom';
-import { Timer, ListTodo, LayoutDashboard, Palette, Brain, CalendarDays, LogOut } from 'lucide-react';
+import { Timer, ListTodo, LayoutDashboard, Palette, Brain, CalendarDays, LogOut, UserRound } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { path: '/planner', icon: ListTodo, label: 'Planner' },
   { path: '/braindump', icon: Brain, label: 'Dump' },
   { path: '/themes', icon: Palette, label: 'Temi' },
+  { path: '/account', icon: UserRound, label: 'Me' },
 ];
 
 const contentVariants = {

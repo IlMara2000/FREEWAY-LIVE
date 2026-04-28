@@ -79,6 +79,21 @@ export const AuthProvider = ({ children }) => {
     });
   }, []);
 
+  const refreshSession = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      return { data: { session: null }, error: new Error('Supabase non configurato') };
+    }
+
+    const { data, error } = await supabase.auth.getSession();
+    if (!error) {
+      setSession(data.session);
+      setUser(data.session?.user || null);
+      setAuthError(null);
+    }
+
+    return { data, error };
+  }, []);
+
   const logout = useCallback(async () => {
     if (isSupabaseConfigured) {
       await supabase.auth.signOut();
@@ -86,6 +101,27 @@ export const AuthProvider = ({ children }) => {
     setSession(null);
     setUser(null);
   }, []);
+
+  const updateAccount = useCallback(async (metadata) => {
+    if (!isSupabaseConfigured) {
+      return { error: new Error('Supabase non configurato') };
+    }
+
+    const { data, error } = await supabase.auth.updateUser({
+      data: {
+        ...(user?.user_metadata || {}),
+        ...metadata,
+      },
+    });
+
+    if (!error && data.user) {
+      setUser(data.user);
+      const { data: sessionData } = await supabase.auth.getSession();
+      setSession(sessionData.session);
+    }
+
+    return { data, error };
+  }, [user?.user_metadata]);
 
   const value = useMemo(() => ({
     user,
@@ -96,10 +132,12 @@ export const AuthProvider = ({ children }) => {
     authChecked: !isLoadingAuth,
     authError,
     signInWithProvider,
+    refreshSession,
+    updateAccount,
     logout,
     checkUserAuth: async () => supabase?.auth.getUser(),
     checkAppState: async () => supabase?.auth.getSession(),
-  }), [authError, isLoadingAuth, logout, session, signInWithProvider, user]);
+  }), [authError, isLoadingAuth, logout, refreshSession, session, signInWithProvider, updateAccount, user]);
 
   return (
     <AuthContext.Provider value={value}>

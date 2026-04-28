@@ -4,7 +4,7 @@ import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { AnimatePresence, motion } from 'framer-motion';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import Login from '@/pages/Login';
 import Splash from '@/pages/Splash';
@@ -14,12 +14,52 @@ import TomatoTimer from '@/pages/TomatoTimer';
 import Planner from '@/pages/Planner';
 import BrainDump from '@/pages/BrainDump';
 import ThemeStore from '@/pages/ThemeStore';
+import Account from '@/pages/Account';
 import Tutorial from '@/components/tutorial/Tutorial';
 import AppLayout from '@/components/layout/AppLayout';
 import PageNotFound from '@/lib/PageNotFound';
 
 const TUTORIAL_KEY = 'fw_tutorial_done';
 const APP_ENTERED_KEY = 'fw_app_entered';
+
+const AuthCallback = () => {
+  const { isAuthenticated, refreshSession } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const finishLogin = async () => {
+      if (!isAuthenticated) {
+        await refreshSession?.();
+      }
+
+      if (!cancelled) {
+        sessionStorage.setItem(APP_ENTERED_KEY, '1');
+        navigate('/calendar', { replace: true });
+      }
+    };
+
+    finishLogin();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, navigate, refreshSession]);
+
+  return (
+    <div className="fixed inset-0 flex flex-col items-center justify-center gap-4" style={{ background: '#01030b' }}>
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
+        className="w-8 h-8 rounded-full border-2 border-white/10 border-t-emerald-400"
+      />
+      <p className="font-mono text-[11px] uppercase tracking-[0.24em] text-emerald-400/70">
+        accesso in corso
+      </p>
+    </div>
+  );
+};
 
 const AuthenticatedApp = () => {
   const { isAuthenticated, isLoadingAuth, isLoadingPublicSettings } = useAuth();
@@ -55,12 +95,12 @@ const AuthenticatedApp = () => {
     );
   }
 
-  if (!isAuthenticated) {
-    return <Login />;
+  if (isAuthCallback) {
+    return <AuthCallback />;
   }
 
-  if (isAuthCallback) {
-    return <Navigate to="/calendar" replace />;
+  if (!isAuthenticated) {
+    return <Login />;
   }
 
   return (
@@ -100,6 +140,7 @@ const AuthenticatedApp = () => {
               <Route path="/planner" element={<Planner />} />
               <Route path="/braindump" element={<BrainDump />} />
               <Route path="/themes" element={<ThemeStore />} />
+              <Route path="/account" element={<Account />} />
               <Route path="/splash" element={<Navigate to="/" replace />} />
               <Route path="*" element={<PageNotFound />} />
             </Route>
