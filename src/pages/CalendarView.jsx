@@ -15,6 +15,15 @@ const pageVariants = {
 const DAYS = ['D', 'L', 'M', 'M', 'G', 'V', 'S'];
 const MONTHS = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 
+const normalizeTaskList = (value) => {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.data)) return value.data;
+  if (Array.isArray(value?.items)) return value.items;
+  if (Array.isArray(value?.results)) return value.results;
+  if (Array.isArray(value?.records)) return value.records;
+  return [];
+};
+
 export default function CalendarView({ onStartTomato }) {
   const today = new Date();
   const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -22,10 +31,11 @@ export default function CalendarView({ onStartTomato }) {
   const [selectedTask, setSelectedTask] = useState(null);
   const [createDate, setCreateDate] = useState(null);
 
-  const { data: tasks = [], refetch } = useQuery({
+  const { data: taskResponse = [], refetch } = useQuery({
     queryKey: ['all-tasks'],
     queryFn: () => base44.entities.Task.list('-due_date', 200),
   });
+  const tasks = normalizeTaskList(taskResponse);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
