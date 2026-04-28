@@ -26,6 +26,7 @@ const AuthenticatedApp = () => {
   const [showTutorial, setShowTutorial] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const isAuthCallback = location.pathname === '/auth/callback';
   const shouldShowSplash = location.pathname === '/' && sessionStorage.getItem(APP_ENTERED_KEY) !== '1';
 
   const handleEnter = () => {
@@ -56,6 +57,10 @@ const AuthenticatedApp = () => {
 
   if (!isAuthenticated) {
     return <Login />;
+  }
+
+  if (isAuthCallback) {
+    return <Navigate to="/calendar" replace />;
   }
 
   return (
