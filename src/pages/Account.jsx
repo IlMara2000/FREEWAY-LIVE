@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Camera, Check, LogOut, Save, UserRound } from 'lucide-react';
+import { Camera, Check, ImagePlus, LogOut, Save, UserRound } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,32 @@ const pageVariants = {
   exit: { opacity: 0, y: -10, transition: { duration: 0.24, ease: [0.4, 0, 0.6, 1] } },
 };
 
+const readImageAsAvatar = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    const image = new Image();
+    image.onload = () => {
+      const size = 220;
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      const sourceSize = Math.min(image.width, image.height);
+      const sourceX = (image.width - sourceSize) / 2;
+      const sourceY = (image.height - sourceSize) / 2;
+
+      canvas.width = size;
+      canvas.height = size;
+      context.drawImage(image, sourceX, sourceY, sourceSize, sourceSize, 0, 0, size, size);
+      resolve(canvas.toDataURL('image/webp', 0.76));
+    };
+    image.onerror = () => reject(new Error('Immagine non leggibile.'));
+    image.src = reader.result;
+  };
+
+  reader.onerror = () => reject(new Error('Caricamento immagine non riuscito.'));
+  reader.readAsDataURL(file);
+});
+
 export default function Account() {
   const { user, updateAccount, logout } = useAuth();
   const metadata = user?.user_metadata || {};
@@ -21,6 +47,7 @@ export default function Account() {
   const [avatarUrl, setAvatarUrl] = useState(initialAvatar);
   const [status, setStatus] = useState('idle');
   const [message, setMessage] = useState('');
+  const fileInputRef = useRef(null);
 
   const initials = useMemo(() => {
     const label = username || user?.email || 'FL';
@@ -53,6 +80,29 @@ export default function Account() {
 
     setStatus('saved');
     setMessage('Profilo aggiornato.');
+  };
+
+  const handleAvatarChange = async (event) => {
+    const [file] = event.target.files || [];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setStatus('error');
+      setMessage('Scegli un file immagine valido.');
+      return;
+    }
+
+    try {
+      setStatus('idle');
+      setMessage('');
+      const nextAvatar = await readImageAsAvatar(file);
+      setAvatarUrl(nextAvatar);
+    } catch (error) {
+      setStatus('error');
+      setMessage(error.message);
+    } finally {
+      event.target.value = '';
+    }
   };
 
   return (
@@ -95,6 +145,24 @@ export default function Account() {
           </div>
         </div>
 
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleAvatarChange}
+          className="hidden"
+        />
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => fileInputRef.current?.click()}
+          className="h-12 w-full rounded-xl border-white/10 bg-white/5 text-white hover:bg-white/10"
+        >
+          <ImagePlus className="w-4 h-4" />
+          Carica foto profilo
+        </Button>
+
         <label className="block space-y-2">
           <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-emerald-400/60">
             username
@@ -107,20 +175,10 @@ export default function Account() {
           />
         </label>
 
-        <label className="block space-y-2">
-          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-emerald-400/60">
-            foto profilo
-          </span>
-          <div className="relative">
-            <Camera className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
-            <Input
-              value={avatarUrl}
-              onChange={(event) => setAvatarUrl(event.target.value)}
-              placeholder="https://..."
-              className="h-12 rounded-xl border-white/10 bg-white/5 pl-10 text-white"
-            />
-          </div>
-        </label>
+        <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs text-white/45">
+          <Camera className="h-4 w-4 shrink-0 text-emerald-400/50" />
+          <span>La nuova foto viene applicata quando premi Salva.</span>
+        </div>
 
         {message && (
           <div className={`flex items-center gap-2 rounded-xl border p-3 text-xs ${
