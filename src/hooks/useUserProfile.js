@@ -6,6 +6,16 @@ import { getThemeIdsForLevel } from '@/lib/themes';
 // XP thresholds per level
 const LEVEL_THRESHOLDS = [0, 100, 300, 600, 1000, 1500, 2200, 3000, 4000, 5500, 7500, 10000];
 const XP_PER_LEVEL_AFTER_TABLE = 2000;
+const DEFAULT_PROFILE = {
+  total_xp: 0,
+  level: 1,
+  active_theme: 'emerald',
+  unlocked_themes: ['emerald'],
+  total_focus_minutes: 0,
+  total_tasks_completed: 0,
+  streak_days: 0,
+  last_active_date: new Date().toISOString().split('T')[0],
+};
 
 export function getLevelFromXP(xp) {
   for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
@@ -46,23 +56,20 @@ export default function useUserProfile() {
   const [loading, setLoading] = useState(true);
 
   const loadProfile = useCallback(async () => {
-    const profiles = normalizeList(await base44.entities.UserProfile.list());
-    if (profiles.length > 0) {
-      setProfile(profiles[0]);
-    } else {
-      const newProfile = await base44.entities.UserProfile.create({
-        total_xp: 0,
-        level: 1,
-        active_theme: 'emerald',
-        unlocked_themes: ['emerald'],
-        total_focus_minutes: 0,
-        total_tasks_completed: 0,
-        streak_days: 0,
-        last_active_date: new Date().toISOString().split('T')[0],
-      });
-      setProfile(newProfile);
+    try {
+      const profiles = normalizeList(await base44.entities.UserProfile.list());
+      if (profiles.length > 0) {
+        setProfile(profiles[0]);
+      } else {
+        const newProfile = await base44.entities.UserProfile.create(DEFAULT_PROFILE);
+        setProfile(newProfile);
+      }
+    } catch (error) {
+      console.warn('User profile unavailable:', error);
+      setProfile((current) => current || DEFAULT_PROFILE);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -76,38 +83,75 @@ export default function useUserProfile() {
     const unlockedThemes = getThemeForLevel(newLevel);
     const leveledUp = newLevel > (profile.level || 1);
 
-    const updated = await base44.entities.UserProfile.update(profile.id, {
+    const nextProfile = {
+      ...profile,
       total_xp: newXP,
       level: newLevel,
       unlocked_themes: unlockedThemes,
       last_active_date: new Date().toISOString().split('T')[0],
-    });
-    setProfile(updated);
+    };
+
+    setProfile(nextProfile);
+    if (profile.id) {
+      try {
+        const updated = await base44.entities.UserProfile.update(profile.id, nextProfile);
+        setProfile(updated);
+      } catch (error) {
+        console.warn('XP sync unavailable:', error);
+      }
+    }
     return { leveledUp, newLevel };
   }, [profile]);
 
   const addFocusMinutes = useCallback(async (minutes) => {
     if (!profile) return;
-    const updated = await base44.entities.UserProfile.update(profile.id, {
+    const nextProfile = {
+      ...profile,
       total_focus_minutes: (profile.total_focus_minutes || 0) + minutes,
-    });
-    setProfile(updated);
+    };
+    setProfile(nextProfile);
+    if (profile.id) {
+      try {
+        const updated = await base44.entities.UserProfile.update(profile.id, nextProfile);
+        setProfile(updated);
+      } catch (error) {
+        console.warn('Focus sync unavailable:', error);
+      }
+    }
   }, [profile]);
 
   const incrementTasksCompleted = useCallback(async () => {
     if (!profile) return;
-    const updated = await base44.entities.UserProfile.update(profile.id, {
+    const nextProfile = {
+      ...profile,
       total_tasks_completed: (profile.total_tasks_completed || 0) + 1,
-    });
-    setProfile(updated);
+    };
+    setProfile(nextProfile);
+    if (profile.id) {
+      try {
+        const updated = await base44.entities.UserProfile.update(profile.id, nextProfile);
+        setProfile(updated);
+      } catch (error) {
+        console.warn('Task stats sync unavailable:', error);
+      }
+    }
   }, [profile]);
 
   const setActiveTheme = useCallback(async (theme) => {
     if (!profile) return;
-    const updated = await base44.entities.UserProfile.update(profile.id, {
+    const nextProfile = {
+      ...profile,
       active_theme: theme,
-    });
-    setProfile(updated);
+    };
+    setProfile(nextProfile);
+    if (profile.id) {
+      try {
+        const updated = await base44.entities.UserProfile.update(profile.id, nextProfile);
+        setProfile(updated);
+      } catch (error) {
+        console.warn('Theme sync unavailable:', error);
+      }
+    }
   }, [profile]);
 
   return {
