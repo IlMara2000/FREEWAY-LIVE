@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Apple, Chrome, LockKeyhole } from 'lucide-react';
+import { Chrome, LockKeyhole } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
+
+const appleLoginEnabled = import.meta.env.VITE_ENABLE_APPLE_LOGIN === 'true';
 
 export default function Login() {
   const { signInWithProvider, authError } = useAuth();
@@ -58,16 +60,17 @@ export default function Login() {
             {loadingProvider === 'google' ? 'Apro Google...' : 'Continua con Google'}
           </Button>
 
-          <Button
-            type="button"
-            onClick={() => handleLogin('apple')}
-            disabled={!isSupabaseConfigured || loadingProvider !== null}
-            variant="outline"
-            className="w-full h-12 rounded-xl gap-3 border-white/15 bg-white/5 text-white hover:bg-white/10"
-          >
-            <Apple className="w-5 h-5" />
-            {loadingProvider === 'apple' ? 'Apro Apple...' : 'Continua con Apple'}
-          </Button>
+          {appleLoginEnabled && (
+            <Button
+              type="button"
+              onClick={() => handleLogin('apple')}
+              disabled={!isSupabaseConfigured || loadingProvider !== null}
+              variant="outline"
+              className="w-full h-12 rounded-xl border-white/15 bg-white/5 text-white hover:bg-white/10"
+            >
+              {loadingProvider === 'apple' ? 'Apro Apple...' : 'Continua con Apple'}
+            </Button>
+          )}
         </div>
 
         {!isSupabaseConfigured && (
@@ -84,7 +87,7 @@ export default function Login() {
         )}
 
         <p className="text-center text-[11px] text-muted-foreground leading-relaxed">
-          Nessun accesso via email. Solo provider OAuth configurati su Supabase.
+          Nessun accesso via email. Solo Google tramite Supabase.
         </p>
       </motion.div>
     </div>
