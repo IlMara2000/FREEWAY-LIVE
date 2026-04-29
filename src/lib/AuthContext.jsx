@@ -1,15 +1,22 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient';
 
 const AuthContext = createContext();
 
 const getRedirectUrl = () => `${window.location.origin}/auth/callback`;
+const isInlineImage = (value) => typeof value === 'string' && value.startsWith('data:image/');
 
 export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [user, setUser] = useState(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [authError, setAuthError] = useState(null);
+  const cleanedInlineAvatarFor = useRef(null);
+
+  const setAuthSession = useCallback((nextSession) => {
+    setSession(nextSession);
+    setUser(nextSession?.user || null);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -30,8 +37,7 @@ export const AuthProvider = ({ children }) => {
       if (error) {
         setAuthError({ type: 'session_error', message: error.message });
       } else {
-        setSession(data.session);
-        setUser(data.session?.user || null);
+        setAuthSession(data.session);
         setAuthError(null);
       }
       setIsLoadingAuth(false);
@@ -46,8 +52,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setUser(nextSession?.user || null);
+      setAuthSession(nextSession);
       setAuthError(null);
       setIsLoadingAuth(false);
     });
@@ -56,7 +61,23 @@ export const AuthProvider = ({ children }) => {
       mounted = false;
       listener.subscription.unsubscribe();
     };
-  }, []);
+  }, [setAuthSession]);
+
+  useEffect(() => {
+    if (!user || !isSupabaseConfigured || cleanedInlineAvatarFor.current === user.id) return;
+
+    const metadata = user.user_metadata || {};
+    if (!isInlineImage(metadata.avatar_url) && !isInlineImage(metadata.picture)) return;
+
+    cleanedInlineAvatarFor.current = user.id;
+    supabase.auth.updateUser({
+      data: {
+        ...metadata,
+        avatar_url: null,
+        picture: null,
+      },
+    });
+  }, [user]);
 
   const signInWithProvider = useCallback(async (provider) => {
     if (!isSupabaseConfigured) {
@@ -86,13 +107,12 @@ export const AuthProvider = ({ children }) => {
 
     const { data, error } = await supabase.auth.getSession();
     if (!error) {
-      setSession(data.session);
-      setUser(data.session?.user || null);
+      setAuthSession(data.session);
       setAuthError(null);
     }
 
     return { data, error };
-  }, []);
+  }, [setAuthSession]);
 
   const logout = useCallback(async () => {
     if (isSupabaseConfigured) {
@@ -117,11 +137,11 @@ export const AuthProvider = ({ children }) => {
     if (!error && data.user) {
       setUser(data.user);
       const { data: sessionData } = await supabase.auth.getSession();
-      setSession(sessionData.session);
+      setAuthSession(sessionData.session);
     }
 
     return { data, error };
-  }, [user?.user_metadata]);
+  }, [setAuthSession, user?.user_metadata]);
 
   const value = useMemo(() => ({
     user,

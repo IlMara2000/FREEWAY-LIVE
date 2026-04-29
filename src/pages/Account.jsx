@@ -38,13 +38,35 @@ const readImageAsAvatar = (file) => new Promise((resolve, reject) => {
   reader.readAsDataURL(file);
 });
 
+const isLocalAvatarData = (value) => typeof value === 'string' && value.startsWith('data:image/');
+const getAvatarStorageKey = (userId) => `fw_account_avatar_${userId || 'guest'}`;
+const getStoredAvatar = (userId) => {
+  try {
+    return localStorage.getItem(getAvatarStorageKey(userId)) || '';
+  } catch {
+    return '';
+  }
+};
+const saveStoredAvatar = (userId, value) => {
+  try {
+    if (value) {
+      localStorage.setItem(getAvatarStorageKey(userId), value);
+    }
+  } catch {
+    // Avatar sync is optional; the account page must stay usable.
+  }
+};
+
 export default function Account() {
   const { user, updateAccount, logout } = useAuth();
   const metadata = user?.user_metadata || {};
   const initialUsername = metadata.username || metadata.name || metadata.full_name || '';
-  const initialAvatar = metadata.avatar_url || metadata.picture || '';
+  const remoteAvatar = metadata.avatar_url || metadata.picture || '';
+  const safeRemoteAvatar = isLocalAvatarData(remoteAvatar) ? '' : remoteAvatar;
+  const initialAvatar = getStoredAvatar(user?.id) || safeRemoteAvatar;
   const [username, setUsername] = useState(initialUsername);
   const [avatarUrl, setAvatarUrl] = useState(initialAvatar);
+  const [avatarDirty, setAvatarDirty] = useState(false);
   const [status, setStatus] = useState('idle');
   const [message, setMessage] = useState('');
   const fileInputRef = useRef(null);
@@ -64,12 +86,16 @@ export default function Account() {
     setStatus('saving');
     setMessage('');
 
+    if (avatarDirty && isLocalAvatarData(avatarUrl)) {
+      saveStoredAvatar(user?.id, avatarUrl);
+    }
+
     const { error } = await updateAccount({
       username: username.trim(),
       name: username.trim(),
       full_name: username.trim(),
-      avatar_url: avatarUrl.trim(),
-      picture: avatarUrl.trim(),
+      avatar_url: safeRemoteAvatar || null,
+      picture: safeRemoteAvatar || null,
     });
 
     if (error) {
@@ -79,6 +105,7 @@ export default function Account() {
     }
 
     setStatus('saved');
+    setAvatarDirty(false);
     setMessage('Profilo aggiornato.');
   };
 
@@ -97,6 +124,7 @@ export default function Account() {
       setMessage('');
       const nextAvatar = await readImageAsAvatar(file);
       setAvatarUrl(nextAvatar);
+      setAvatarDirty(true);
     } catch (error) {
       setStatus('error');
       setMessage(error.message);
