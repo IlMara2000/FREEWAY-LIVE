@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/lib/AuthContext';
 import useUserProfile from '@/hooks/useUserProfile';
 import { base44 } from '@/api/base44Client';
 import TimerRing from '@/components/tomato/TimerRing';
@@ -20,16 +21,83 @@ const PRESETS = [
   { label: '60', minutes: 60, xp: 120 },
 ];
 
+const getTomatoStorageKey = (accountId) => `fw_tomato_state_${accountId || 'guest'}`;
+
+const getDefaultTimerState = (taskContext = null) => ({
+  selectedPreset: 1,
+  timeLeft: PRESETS[1].minutes * 60,
+  isRunning: false,
+  isCompleted: false,
+  endsAt: null,
+  taskContext,
+});
+
+const readStoredTimerState = (accountId, taskContext = null) => {
+  if (typeof window === 'undefined') return getDefaultTimerState(taskContext);
+
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(getTomatoStorageKey(accountId)));
+    if (!stored) return getDefaultTimerState(taskContext);
+
+    const storedPreset = Number(stored.selectedPreset);
+    const selectedPreset = Number.isInteger(storedPreset) && PRESETS[storedPreset] ? storedPreset : 1;
+    const totalSeconds = PRESETS[selectedPreset].minutes * 60;
+    const endsAt = Number.isFinite(stored.endsAt) ? stored.endsAt : null;
+    const isRunning = Boolean(stored.isRunning);
+    const isCompleted = Boolean(stored.isCompleted);
+    const timeLeft = isRunning && endsAt
+      ? Math.max(0, Math.ceil((endsAt - Date.now()) / 1000))
+      : Math.min(Math.max(Number(stored.timeLeft) || totalSeconds, 0), totalSeconds);
+
+    return {
+      selectedPreset,
+      timeLeft: isCompleted ? 0 : timeLeft,
+      isRunning: isRunning && !isCompleted,
+      isCompleted,
+      endsAt,
+      taskContext: stored.taskContext || taskContext,
+    };
+  } catch {
+    return getDefaultTimerState(taskContext);
+  }
+};
+
+const writeStoredTimerState = (accountId, state) => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.localStorage.setItem(getTomatoStorageKey(accountId), JSON.stringify({
+      ...state,
+      savedAt: Date.now(),
+    }));
+  } catch (error) {
+    console.warn('Tomato timer storage unavailable:', error);
+  }
+};
+
 export default function TomatoTimer({ taskContext, onBack }) {
-  const { profile, addXP, addFocusMinutes } = useUserProfile();
-  const [selectedPreset, setSelectedPreset] = useState(1);
-  const [timeLeft, setTimeLeft] = useState(PRESETS[1].minutes * 60);
-  const [isRunning, setIsRunning] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
+  const { user } = useAuth();
+  const accountId = user?.id || user?.email || 'guest';
+  const initialStateRef = useRef(null);
+  if (!initialStateRef.current || initialStateRef.current.accountId !== accountId) {
+    initialStateRef.current = {
+      accountId,
+      state: readStoredTimerState(accountId, taskContext),
+    };
+  }
+  const initialState = initialStateRef.current.state;
+  const { addXP, addFocusMinutes } = useUserProfile();
+  const [selectedPreset, setSelectedPreset] = useState(initialState.selectedPreset);
+  const [timeLeft, setTimeLeft] = useState(initialState.timeLeft);
+  const [isRunning, setIsRunning] = useState(initialState.isRunning);
+  const [isCompleted, setIsCompleted] = useState(initialState.isCompleted);
+  const [endsAt, setEndsAt] = useState(initialState.endsAt);
+  const [timerTaskContext, setTimerTaskContext] = useState(initialState.taskContext);
   const [showReward, setShowReward] = useState(false);
   const [rewardData, setRewardData] = useState({ amount: 0, levelUp: false, newLevel: 1 });
   const [showBrainDump, setShowBrainDump] = useState(false);
   const intervalRef = useRef(null);
+  const completionRef = useRef(false);
 
   const totalSeconds = PRESETS[selectedPreset].minutes * 60;
   const progress = ((totalSeconds - timeLeft) / totalSeconds) * 100;
@@ -38,41 +106,117 @@ export default function TomatoTimer({ taskContext, onBack }) {
     `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
 
   const completeSession = useCallback(async () => {
+    if (completionRef.current) return;
+    completionRef.current = true;
     setIsRunning(false);
     setIsCompleted(true);
+    setTimeLeft(0);
+    setEndsAt(null);
     const preset = PRESETS[selectedPreset];
-    await base44.entities.FocusSession.create({
-      duration_minutes: preset.minutes,
-      completed: true,
-      xp_earned: preset.xp,
-      task_title: taskContext?.title || `Sessione ${preset.label} min`,
-    });
-    const result = await addXP(preset.xp);
-    await addFocusMinutes(preset.minutes);
+    let result;
+
+    try {
+      await base44.entities.FocusSession.create({
+        duration_minutes: preset.minutes,
+        completed: true,
+        xp_earned: preset.xp,
+        task_id: timerTaskContext?.id,
+        task_title: timerTaskContext?.title || `Sessione ${preset.label} min`,
+      });
+      result = await addXP(preset.xp);
+      await addFocusMinutes(preset.minutes);
+    } catch (error) {
+      console.warn('Focus session sync unavailable:', error);
+    }
+
     setRewardData({ amount: preset.xp, levelUp: result?.leveledUp || false, newLevel: result?.newLevel || 1 });
     setShowReward(true);
-  }, [selectedPreset, addXP, addFocusMinutes, taskContext]);
+  }, [selectedPreset, addXP, addFocusMinutes, timerTaskContext]);
 
   useEffect(() => {
-    if (isRunning && timeLeft > 0) {
-      intervalRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) { clearInterval(intervalRef.current); completeSession(); return 0; }
-          return prev - 1;
-        });
-      }, 1000);
+    const storedState = readStoredTimerState(accountId, taskContext);
+    completionRef.current = false;
+    setSelectedPreset(storedState.selectedPreset);
+    setTimeLeft(storedState.timeLeft);
+    setIsRunning(storedState.isRunning);
+    setIsCompleted(storedState.isCompleted);
+    setEndsAt(storedState.endsAt);
+    setTimerTaskContext(storedState.taskContext);
+  }, [accountId]);
+
+  useEffect(() => {
+    if (taskContext && !isRunning && !isCompleted) {
+      setTimerTaskContext(taskContext);
     }
+  }, [taskContext, isRunning, isCompleted]);
+
+  useEffect(() => {
+    writeStoredTimerState(accountId, {
+      selectedPreset,
+      timeLeft,
+      isRunning,
+      isCompleted,
+      endsAt,
+      taskContext: timerTaskContext,
+    });
+  }, [accountId, selectedPreset, timeLeft, isRunning, isCompleted, endsAt, timerTaskContext]);
+
+  useEffect(() => {
+    if (!isRunning) return undefined;
+
+    if (!endsAt) {
+      setEndsAt(Date.now() + timeLeft * 1000);
+      return undefined;
+    }
+
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+      setTimeLeft(remaining);
+
+      if (remaining <= 0) {
+        clearInterval(intervalRef.current);
+        completeSession();
+      }
+    };
+
+    tick();
+    intervalRef.current = setInterval(tick, 1000);
     return () => clearInterval(intervalRef.current);
-  }, [isRunning, completeSession]);
+  }, [isRunning, endsAt, completeSession]);
 
   const selectPreset = (i) => {
     if (isRunning) return;
+    completionRef.current = false;
     setSelectedPreset(i);
     setTimeLeft(PRESETS[i].minutes * 60);
     setIsCompleted(false);
+    setEndsAt(null);
   };
 
-  const reset = () => { setIsRunning(false); setIsCompleted(false); setTimeLeft(PRESETS[selectedPreset].minutes * 60); };
+  const reset = () => {
+    completionRef.current = false;
+    setIsRunning(false);
+    setIsCompleted(false);
+    setEndsAt(null);
+    setTimeLeft(PRESETS[selectedPreset].minutes * 60);
+  };
+
+  const toggleRunning = () => {
+    if (isRunning) {
+      const remaining = endsAt ? Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)) : timeLeft;
+      setTimeLeft(remaining);
+      setIsRunning(false);
+      setEndsAt(null);
+      return;
+    }
+
+    const secondsToRun = timeLeft > 0 ? timeLeft : totalSeconds;
+    completionRef.current = false;
+    setTimeLeft(secondsToRun);
+    setIsCompleted(false);
+    setEndsAt(Date.now() + secondsToRun * 1000);
+    setIsRunning(true);
+  };
 
   return (
     <motion.div
@@ -102,8 +246,8 @@ export default function TomatoTimer({ taskContext, onBack }) {
         <button onClick={onBack} className="font-mono text-xs text-white/40 hover:text-white transition-colors uppercase tracking-widest">
           ← Calendario
         </button>
-        {taskContext && (
-          <span className="font-grotesk text-xs text-white/50 truncate max-w-[180px]">{taskContext.title}</span>
+        {timerTaskContext && (
+          <span className="font-grotesk text-xs text-white/50 truncate max-w-[180px]">{timerTaskContext?.title}</span>
         )}
         {/* Brain Dump button */}
         <motion.button
@@ -160,7 +304,7 @@ export default function TomatoTimer({ taskContext, onBack }) {
 
           <motion.button
             whileTap={{ scale: 0.94 }}
-            onClick={() => isRunning ? setIsRunning(false) : setIsRunning(true)}
+            onClick={toggleRunning}
             disabled={isCompleted}
             className="w-20 h-20 rounded-full flex items-center justify-center disabled:opacity-40 transition-all btn-cyber"
             style={{ borderRadius: '9999px', fontSize: 0 }}

@@ -18,6 +18,8 @@ export default function BrainDumpSheet({ open, onClose }) {
       xp_value: 10,
     });
     queryClient.invalidateQueries({ queryKey: ['all-tasks'] });
+    queryClient.invalidateQueries({ queryKey: ['braindumps'] });
+    queryClient.invalidateQueries({ queryKey: ['tasks'] });
     setText('');
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);

@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { queryClientInstance } from '@/lib/query-client';
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient';
 
 const AuthContext = createContext();
@@ -12,8 +13,14 @@ export const AuthProvider = ({ children }) => {
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [authError, setAuthError] = useState(null);
   const cleanedInlineAvatarFor = useRef(null);
+  const activeAccountId = useRef(undefined);
 
   const setAuthSession = useCallback((nextSession) => {
+    const nextAccountId = nextSession?.user?.id || null;
+    if (activeAccountId.current !== undefined && activeAccountId.current !== nextAccountId) {
+      queryClientInstance.clear();
+    }
+    activeAccountId.current = nextAccountId;
     setSession(nextSession);
     setUser(nextSession?.user || null);
   }, []);
@@ -118,6 +125,8 @@ export const AuthProvider = ({ children }) => {
     if (isSupabaseConfigured) {
       await supabase.auth.signOut();
     }
+    queryClientInstance.clear();
+    activeAccountId.current = null;
     setSession(null);
     setUser(null);
   }, []);
