@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { accountData } from '@/api/accountDataClient';
 import { normalizeList } from '@/lib/normalize-list';
 import useUserProfile from '@/hooks/useUserProfile';
 import XPBar from '@/components/shared/XPBar';
@@ -72,8 +72,8 @@ export default function Dashboard() {
       setDataLoading(true);
       try {
         const [tasks, sessions] = await Promise.all([
-          base44.entities.Task.filter({ status: 'today' }, '-created_date', 5),
-          base44.entities.FocusSession.list('-created_date', 5),
+          accountData.entities.Task.filter({ status: 'today' }, '-created_date', 5),
+          accountData.entities.FocusSession.list('-created_date', 5),
         ]);
 
         if (!ignore) {

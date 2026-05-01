@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { accountData } from '@/api/accountDataClient';
 import { normalizeList } from '@/lib/normalize-list';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import TaskModal from '@/components/calendar/TaskModal';
@@ -25,7 +25,7 @@ export default function CalendarView({ onStartTomato }) {
 
   const { data: taskResponse = [], refetch } = useQuery({
     queryKey: ['all-tasks'],
-    queryFn: () => base44.entities.Task.list('-due_date', 200),
+    queryFn: () => accountData.entities.Task.list('-due_date', 200),
   });
   const tasks = normalizeList(taskResponse);
 

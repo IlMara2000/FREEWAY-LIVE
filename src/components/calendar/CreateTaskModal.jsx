@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { accountData } from '@/api/accountDataClient';
 
 export default function CreateTaskModal({ date, onClose, onRefetch }) {
   const [title, setTitle] = useState('');
@@ -14,7 +14,7 @@ export default function CreateTaskModal({ date, onClose, onRefetch }) {
   const handleSave = async () => {
     if (!title.trim()) return;
     setSaving(true);
-    await base44.entities.Task.create({
+    await accountData.entities.Task.create({
       title: title.trim(),
       description: description.trim(),
       priority,

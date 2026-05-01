@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/lib/AuthContext';
 import useUserProfile from '@/hooks/useUserProfile';
-import { base44 } from '@/api/base44Client';
+import { accountData } from '@/api/accountDataClient';
 import TimerRing from '@/components/tomato/TimerRing';
 import XPReward from '@/components/shared/XPReward';
 import BrainDumpSheet from '@/components/tomato/BrainDumpSheet';
@@ -116,7 +116,7 @@ export default function TomatoTimer({ taskContext, onBack }) {
     let result;
 
     try {
-      await base44.entities.FocusSession.create({
+      await accountData.entities.FocusSession.create({
         duration_minutes: preset.minutes,
         completed: true,
         xp_earned: preset.xp,

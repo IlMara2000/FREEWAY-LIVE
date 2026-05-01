@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Brain } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { accountData } from '@/api/accountDataClient';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function BrainDumpSheet({ open, onClose }) {
@@ -11,7 +11,7 @@ export default function BrainDumpSheet({ open, onClose }) {
 
   const handleSend = async () => {
     if (!text.trim()) return;
-    await base44.entities.Task.create({
+    await accountData.entities.Task.create({
       title: text.trim(),
       is_brain_dump: true,
       status: 'inbox',

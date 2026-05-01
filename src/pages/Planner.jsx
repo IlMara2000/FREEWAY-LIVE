@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { accountData } from '@/api/accountDataClient';
 import { normalizeList } from '@/lib/normalize-list';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useUserProfile from '@/hooks/useUserProfile';
@@ -41,12 +41,12 @@ export default function Planner() {
 
   const { data: taskResponse = [], isLoading } = useQuery({
     queryKey: ['tasks', activeTab],
-    queryFn: () => base44.entities.Task.filter({ status: activeTab }, '-created_date', 50),
+    queryFn: () => accountData.entities.Task.filter({ status: activeTab }, '-created_date', 50),
   });
   const tasks = normalizeList(taskResponse);
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Task.create(data),
+    mutationFn: (data) => accountData.entities.Task.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       setNewTitle('');
@@ -55,7 +55,7 @@ export default function Planner() {
 
   const completeMutation = useMutation({
     mutationFn: async (task) => {
-      await base44.entities.Task.update(task.id, { status: 'done' });
+      await accountData.entities.Task.update(task.id, { status: 'done' });
       const xp = task.xp_value || 25;
       const result = await addXP(xp);
       await incrementTasksCompleted();
@@ -70,7 +70,7 @@ export default function Planner() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Task.delete(id),
+    mutationFn: (id) => accountData.entities.Task.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
   });
 

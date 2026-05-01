@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { accountData } from '@/api/accountDataClient';
 import { normalizeList } from '@/lib/normalize-list';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useUserProfile from '@/hooks/useUserProfile';
@@ -18,13 +18,13 @@ export default function BrainDump() {
 
   const { data: dumpResponse = [] } = useQuery({
     queryKey: ['braindumps'],
-    queryFn: () => base44.entities.Task.filter({ is_brain_dump: true }, '-created_date', 30),
+    queryFn: () => accountData.entities.Task.filter({ is_brain_dump: true }, '-created_date', 30),
   });
   const dumps = normalizeList(dumpResponse);
 
   const createMutation = useMutation({
     mutationFn: async (title) => {
-      await base44.entities.Task.create({
+      await accountData.entities.Task.create({
         title,
         is_brain_dump: true,
         status: 'inbox',
@@ -46,12 +46,12 @@ export default function BrainDump() {
   });
 
   const promoteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Task.update(id, { status: 'today', is_brain_dump: false }),
+    mutationFn: (id) => accountData.entities.Task.update(id, { status: 'today', is_brain_dump: false }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['braindumps'] }),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Task.delete(id),
+    mutationFn: (id) => accountData.entities.Task.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['braindumps'] }),
   });
 
