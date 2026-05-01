@@ -1,51 +1,34 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Timer, Sparkles, Brain } from 'lucide-react';
-
-const apiKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.NEXT_PUBLIC_GROQ_API_KEY;
+import { requestTaskBreakdown } from '@/api/groqTaskAssistant';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export default function TaskModal({ task, onClose, onStartTomato }) {
   const [slicedContent, setSlicedContent] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [confirmGroqOpen, setConfirmGroqOpen] = useState(false);
 
   if (!task) return null;
 
   const handleGroqSlicer = async () => {
     setLoading(true);
     setSlicedContent(null);
-    if (!apiKey) {
-      setSlicedContent('Configura VITE_GROQ_API_KEY per usare lo slicer AI.');
-      setLoading(false);
-      return;
-    }
+
     try {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'llama3-8b-8192',
-          messages: [
-            {
-              role: 'system',
-              content: 'Sei un assistente per persone con ADHD. Ricevi una task e la spacchetti in micro-passi chiari, numerati, brevi (max 10 parole ciascuno). Niente fronzoli. Solo i passi. In italiano.',
-            },
-            {
-              role: 'user',
-              content: `Task: "${task.title}"\nDescrizione: "${task.description || 'nessuna'}"\n\nSpacchetta in micro-passi.`,
-            },
-          ],
-          max_tokens: 400,
-          temperature: 0.5,
-        }),
-      });
-      if (!res.ok) throw new Error(`Groq request failed: ${res.status}`);
-      const data = await res.json();
-      setSlicedContent(data.choices?.[0]?.message?.content || 'Errore nella risposta.');
+      const data = await requestTaskBreakdown(task);
+      setSlicedContent(data.breakdown || 'Errore nella risposta.');
     } catch (e) {
-      setSlicedContent('Errore di connessione. Riprova.');
+      setSlicedContent(e?.message || 'Errore di connessione. Riprova.');
     }
     setLoading(false);
   };
@@ -100,7 +83,7 @@ export default function TaskModal({ task, onClose, onStartTomato }) {
           {/* Groq Slicer */}
           <div className="space-y-3">
             <button
-              onClick={handleGroqSlicer}
+              onClick={() => setConfirmGroqOpen(true)}
               disabled={loading}
               className="btn-cyber w-full py-3 rounded-2xl font-mono text-xs tracking-widest flex items-center justify-center gap-2"
             >
@@ -137,6 +120,24 @@ export default function TaskModal({ task, onClose, onStartTomato }) {
               )}
             </AnimatePresence>
           </div>
+
+          <AlertDialog open={confirmGroqOpen} onOpenChange={setConfirmGroqOpen}>
+            <AlertDialogContent className="border-emerald-500/25 bg-background">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Inviare questa task a Groq?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Verranno inviati a Groq titolo e descrizione della task per generare micro-passi.
+                  Il risultato resta solo come suggerimento finche non decidi di usarlo.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annulla</AlertDialogCancel>
+                <AlertDialogAction onClick={handleGroqSlicer}>
+                  Invia a Groq
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {/* Start Tomato */}
           <button

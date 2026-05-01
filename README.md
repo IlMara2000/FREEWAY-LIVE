@@ -15,8 +15,11 @@ npm install
 ```sh
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-NEXT_PUBLIC_GROQ_API_KEY=your_optional_groq_key
+GROQ_API_KEY=your_groq_server_key
 ```
+
+`GROQ_API_KEY` is used only by the local dev middleware and Vercel serverless API route. Do not expose it with a `VITE_` prefix.
+If an older environment already has `NEXT_PUBLIC_GROQ_API_KEY`, rename it to `GROQ_API_KEY`.
 
 3. Run the app:
 

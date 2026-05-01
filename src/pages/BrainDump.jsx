@@ -5,6 +5,7 @@ import { normalizeList } from '@/lib/normalize-list';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useUserProfile from '@/hooks/useUserProfile';
 import XPReward from '@/components/shared/XPReward';
+import TaskDescriptionAssistant from '@/components/tasks/TaskDescriptionAssistant';
 import { Brain, Send, Trash2, ArrowRight, Zap } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -58,6 +59,15 @@ export default function BrainDump() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => accountData.tasks.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['braindumps'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['all-tasks'] });
+    },
+  });
+
+  const updateDescriptionMutation = useMutation({
+    mutationFn: ({ id, description }) => accountData.tasks.update(id, { description }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['braindumps'] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -129,7 +139,16 @@ export default function BrainDump() {
             >
               <div className="flex items-start gap-3">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />
-                <p className="text-sm text-foreground flex-1">{dump.title}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-foreground">{dump.title}</p>
+                  <TaskDescriptionAssistant
+                    task={dump}
+                    sourceLabel="brain dump"
+                    isSaving={updateDescriptionMutation.isPending && updateDescriptionMutation.variables?.id === dump.id}
+                    onSaveDescription={(currentTask, description) =>
+                      updateDescriptionMutation.mutateAsync({ id: currentTask.id, description })}
+                  />
+                </div>
                 <div className="flex items-center gap-1 opacity-100 shrink-0">
                   <Button
                     variant="ghost"

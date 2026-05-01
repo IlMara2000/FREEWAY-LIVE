@@ -5,6 +5,7 @@ import { normalizeList } from '@/lib/normalize-list';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useUserProfile from '@/hooks/useUserProfile';
 import XPReward from '@/components/shared/XPReward';
+import TaskDescriptionAssistant from '@/components/tasks/TaskDescriptionAssistant';
 import { Plus, Check, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -78,6 +79,15 @@ export default function Planner() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['all-tasks'] });
+    },
+  });
+
+  const updateDescriptionMutation = useMutation({
+    mutationFn: ({ id, description }) => accountData.tasks.update(id, { description }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['all-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['braindumps'] });
     },
   });
 
@@ -174,54 +184,60 @@ export default function Planner() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, x: -100 }}
-                className="glass rounded-xl p-4 flex items-center gap-3 group"
+                className="glass rounded-xl p-4 group"
               >
-                {/* Priority dot */}
-                <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${PRIORITY_COLORS[task.priority]}`} />
+                <div className="flex items-start gap-3">
+                  {/* Priority dot */}
+                  <div className={`mt-2 w-2.5 h-2.5 rounded-full shrink-0 ${PRIORITY_COLORS[task.priority]}`} />
 
-                {/* Task content */}
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium truncate ${
-                    task.status === 'done' ? 'line-through text-muted-foreground' : 'text-foreground'
-                  }`}>
-                    {task.title}
-                  </p>
-                  {task.description && (
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">{task.description}</p>
-                  )}
-                </div>
+                  {/* Task content */}
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium ${
+                      task.status === 'done' ? 'line-through text-muted-foreground' : 'text-foreground'
+                    }`}>
+                      {task.title}
+                    </p>
+                    <TaskDescriptionAssistant
+                      task={task}
+                      sourceLabel="planner"
+                      isSaving={updateDescriptionMutation.isPending && updateDescriptionMutation.variables?.id === task.id}
+                      onSaveDescription={(currentTask, description) =>
+                        updateDescriptionMutation.mutateAsync({ id: currentTask.id, description })}
+                    />
+                  </div>
 
-                {/* XP badge */}
-                <span className="text-xs font-mono text-primary/60 shrink-0">
-                  +{task.xp_value || 25}
-                </span>
+                  {/* XP badge */}
+                  <span className="pt-1 text-xs font-mono text-primary/60 shrink-0">
+                    +{task.xp_value || 25}
+                  </span>
 
-                {/* Actions */}
-                <div className="flex items-center gap-1 opacity-100">
-                  {task.status !== 'done' && (
+                  {/* Actions */}
+                  <div className="flex items-center gap-1 opacity-100">
+                    {task.status !== 'done' && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                        disabled={completeMutation.isPending}
+                        onClick={() => completeMutation.mutate(task)}
+                        title="Completa task"
+                        aria-label={`Completa ${task.title}`}
+                      >
+                        <Check className="w-4 h-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
-                      disabled={completeMutation.isPending}
-                      onClick={() => completeMutation.mutate(task)}
-                      title="Completa task"
-                      aria-label={`Completa ${task.title}`}
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      disabled={deleteMutation.isPending}
+                      onClick={() => deleteMutation.mutate(task.id)}
+                      title="Elimina task"
+                      aria-label={`Elimina ${task.title}`}
                     >
-                      <Check className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" />
                     </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                    disabled={deleteMutation.isPending}
-                    onClick={() => deleteMutation.mutate(task.id)}
-                    title="Elimina task"
-                    aria-label={`Elimina ${task.title}`}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  </div>
                 </div>
               </motion.div>
             ))}
