@@ -72,8 +72,8 @@ export default function Dashboard() {
       setDataLoading(true);
       try {
         const [tasks, sessions] = await Promise.all([
-          accountData.entities.Task.filter({ status: 'today' }, '-created_date', 5),
-          accountData.entities.FocusSession.list('-created_date', 5),
+          accountData.tasks.filter({ status: 'today' }, '-created_date', 5),
+          accountData.focusSessions.list('-created_date', 5),
         ]);
 
         if (!ignore) {

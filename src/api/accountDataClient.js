@@ -9,6 +9,29 @@ const ENTITY_CONFIG = {
   UserProfile: { collection: 'userProfiles', defaultSort: '-updated_date' },
 };
 
+const ENTITY_DEFAULTS = {
+  Task: () => ({
+    status: 'inbox',
+    priority: 'medium',
+    xp_value: 25,
+    is_brain_dump: false,
+  }),
+  FocusSession: () => ({
+    completed: false,
+    xp_earned: 0,
+  }),
+  UserProfile: () => ({
+    total_xp: 0,
+    level: 1,
+    active_theme: 'emerald',
+    unlocked_themes: ['emerald'],
+    total_focus_minutes: 0,
+    total_tasks_completed: 0,
+    streak_days: 0,
+    last_active_date: new Date().toISOString().split('T')[0],
+  }),
+};
+
 const canUseStorage = () => typeof window !== 'undefined' && Boolean(window.localStorage);
 
 const getCurrentAccountId = async () => {
@@ -142,7 +165,9 @@ const saveLocalRecords = (accountId, entityName, records, { emit = true } = {}) 
 
 const buildRecord = (entityName, data, accountId, id = createLocalId(entityName)) => {
   const now = new Date().toISOString();
+  const defaults = ENTITY_DEFAULTS[entityName]?.() || {};
   return {
+    ...defaults,
     ...data,
     id,
     owner_id: data?.owner_id || accountId,
@@ -227,9 +252,7 @@ const createEntityClient = (entityName) => {
 };
 
 export const accountData = {
-  entities: {
-    Task: createEntityClient('Task'),
-    FocusSession: createEntityClient('FocusSession'),
-    UserProfile: createEntityClient('UserProfile'),
-  },
+  tasks: createEntityClient('Task'),
+  focusSessions: createEntityClient('FocusSession'),
+  userProfiles: createEntityClient('UserProfile'),
 };

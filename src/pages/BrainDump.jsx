@@ -18,13 +18,13 @@ export default function BrainDump() {
 
   const { data: dumpResponse = [] } = useQuery({
     queryKey: ['braindumps'],
-    queryFn: () => accountData.entities.Task.filter({ is_brain_dump: true }, '-created_date', 30),
+    queryFn: () => accountData.tasks.filter({ is_brain_dump: true }, '-created_date', 30),
   });
   const dumps = normalizeList(dumpResponse);
 
   const createMutation = useMutation({
     mutationFn: async (title) => {
-      await accountData.entities.Task.create({
+      await accountData.tasks.create({
         title,
         is_brain_dump: true,
         status: 'inbox',
@@ -46,12 +46,12 @@ export default function BrainDump() {
   });
 
   const promoteMutation = useMutation({
-    mutationFn: (id) => accountData.entities.Task.update(id, { status: 'today', is_brain_dump: false }),
+    mutationFn: (id) => accountData.tasks.update(id, { status: 'today', is_brain_dump: false }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['braindumps'] }),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => accountData.entities.Task.delete(id),
+    mutationFn: (id) => accountData.tasks.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['braindumps'] }),
   });
 

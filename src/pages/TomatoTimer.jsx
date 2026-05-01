@@ -116,7 +116,7 @@ export default function TomatoTimer({ taskContext, onBack }) {
     let result;
 
     try {
-      await accountData.entities.FocusSession.create({
+      await accountData.focusSessions.create({
         duration_minutes: preset.minutes,
         completed: true,
         xp_earned: preset.xp,

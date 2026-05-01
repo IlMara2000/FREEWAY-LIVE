@@ -25,7 +25,7 @@ export default function CalendarView({ onStartTomato }) {
 
   const { data: taskResponse = [], refetch } = useQuery({
     queryKey: ['all-tasks'],
-    queryFn: () => accountData.entities.Task.list('-due_date', 200),
+    queryFn: () => accountData.tasks.list('-due_date', 200),
   });
   const tasks = normalizeList(taskResponse);
 

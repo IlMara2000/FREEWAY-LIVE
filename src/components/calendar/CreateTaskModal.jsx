@@ -14,7 +14,7 @@ export default function CreateTaskModal({ date, onClose, onRefetch }) {
   const handleSave = async () => {
     if (!title.trim()) return;
     setSaving(true);
-    await accountData.entities.Task.create({
+    await accountData.tasks.create({
       title: title.trim(),
       description: description.trim(),
       priority,

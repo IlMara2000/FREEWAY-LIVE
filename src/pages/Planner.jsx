@@ -41,12 +41,12 @@ export default function Planner() {
 
   const { data: taskResponse = [], isLoading } = useQuery({
     queryKey: ['tasks', activeTab],
-    queryFn: () => accountData.entities.Task.filter({ status: activeTab }, '-created_date', 50),
+    queryFn: () => accountData.tasks.filter({ status: activeTab }, '-created_date', 50),
   });
   const tasks = normalizeList(taskResponse);
 
   const createMutation = useMutation({
-    mutationFn: (data) => accountData.entities.Task.create(data),
+    mutationFn: (data) => accountData.tasks.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       setNewTitle('');
@@ -55,7 +55,7 @@ export default function Planner() {
 
   const completeMutation = useMutation({
     mutationFn: async (task) => {
-      await accountData.entities.Task.update(task.id, { status: 'done' });
+      await accountData.tasks.update(task.id, { status: 'done' });
       const xp = task.xp_value || 25;
       const result = await addXP(xp);
       await incrementTasksCompleted();
@@ -70,7 +70,7 @@ export default function Planner() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => accountData.entities.Task.delete(id),
+    mutationFn: (id) => accountData.tasks.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
   });
 

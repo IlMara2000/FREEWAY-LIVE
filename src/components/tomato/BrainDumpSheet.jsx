@@ -11,7 +11,7 @@ export default function BrainDumpSheet({ open, onClose }) {
 
   const handleSend = async () => {
     if (!text.trim()) return;
-    await accountData.entities.Task.create({
+    await accountData.tasks.create({
       title: text.trim(),
       is_brain_dump: true,
       status: 'inbox',

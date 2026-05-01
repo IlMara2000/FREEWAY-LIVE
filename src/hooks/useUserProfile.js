@@ -78,14 +78,14 @@ export default function useUserProfile() {
     }
 
     try {
-      const profiles = normalizeList(await accountData.entities.UserProfile.list());
+      const profiles = normalizeList(await accountData.userProfiles.list());
       if (profiles.length > 0) {
         const nextProfile = normalizeProfile(profiles[0]);
         setProfile(nextProfile);
         return nextProfile;
       }
 
-      const newProfile = normalizeProfile(await accountData.entities.UserProfile.create(createDefaultProfile()));
+      const newProfile = normalizeProfile(await accountData.userProfiles.create(createDefaultProfile()));
       setProfile(newProfile);
       return newProfile;
     } catch (error) {
@@ -117,9 +117,9 @@ export default function useUserProfile() {
   }, [accountId, loadProfile]);
 
   const getLatestProfile = useCallback(async () => {
-    const profiles = normalizeList(await accountData.entities.UserProfile.list());
+    const profiles = normalizeList(await accountData.userProfiles.list());
     if (profiles.length > 0) return normalizeProfile(profiles[0]);
-    return normalizeProfile(await accountData.entities.UserProfile.create(createDefaultProfile()));
+    return normalizeProfile(await accountData.userProfiles.create(createDefaultProfile()));
   }, [normalizeProfile]);
 
   const saveProfile = useCallback(async (nextProfile) => {
@@ -128,8 +128,8 @@ export default function useUserProfile() {
 
     try {
       const saved = normalized.id
-        ? await accountData.entities.UserProfile.update(normalized.id, normalized)
-        : await accountData.entities.UserProfile.create(normalized);
+        ? await accountData.userProfiles.update(normalized.id, normalized)
+        : await accountData.userProfiles.create(normalized);
       const savedProfile = normalizeProfile(saved);
       setProfile(savedProfile);
       return savedProfile;
