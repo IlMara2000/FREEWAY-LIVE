@@ -249,14 +249,6 @@ export default function TomatoTimer({ taskContext, onBack }) {
         {timerTaskContext && (
           <span className="font-grotesk text-xs text-white/50 truncate max-w-[180px]">{timerTaskContext?.title}</span>
         )}
-        {/* Brain Dump button */}
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setShowBrainDump(true)}
-          className="glass w-10 h-10 rounded-xl flex items-center justify-center text-emerald-400 hover:bg-emerald-500/15 transition-colors"
-        >
-          <Brain className="w-5 h-5" />
-        </motion.button>
       </motion.div>
 
       {/* Timer center */}
@@ -320,7 +312,14 @@ export default function TomatoTimer({ taskContext, onBack }) {
               : <Play className="w-8 h-8 text-white ml-1" />}
           </motion.button>
 
-          <div className="w-12 h-12" />
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setShowBrainDump(true)}
+            aria-label="Apri Brain Dump"
+            className="glass w-12 h-12 rounded-xl flex items-center justify-center text-emerald-400 hover:bg-emerald-500/15 transition-colors"
+          >
+            <Brain className="w-5 h-5" />
+          </motion.button>
         </div>
       </div>
 
