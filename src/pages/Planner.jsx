@@ -49,6 +49,7 @@ export default function Planner() {
     mutationFn: (data) => accountData.tasks.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['all-tasks'] });
       setNewTitle('');
     },
   });
@@ -66,12 +67,18 @@ export default function Planner() {
       });
       setShowReward(true);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['all-tasks'] });
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => accountData.tasks.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['all-tasks'] });
+    },
   });
 
   const handleAdd = (e) => {
@@ -136,7 +143,13 @@ export default function Planner() {
               <SelectItem value="critical">Critica</SelectItem>
             </SelectContent>
           </Select>
-          <Button type="submit" size="icon" className="h-11 w-11 shrink-0">
+          <Button
+            type="submit"
+            size="icon"
+            disabled={!newTitle.trim() || createMutation.isPending}
+            className="h-11 w-11 shrink-0"
+            aria-label="Crea task"
+          >
             <Plus className="w-5 h-5" />
           </Button>
         </motion.form>
@@ -184,13 +197,16 @@ export default function Planner() {
                 </span>
 
                 {/* Actions */}
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1 opacity-100">
                   {task.status !== 'done' && (
                     <Button
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                      disabled={completeMutation.isPending}
                       onClick={() => completeMutation.mutate(task)}
+                      title="Completa task"
+                      aria-label={`Completa ${task.title}`}
                     >
                       <Check className="w-4 h-4" />
                     </Button>
@@ -199,7 +215,10 @@ export default function Planner() {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    disabled={deleteMutation.isPending}
                     onClick={() => deleteMutation.mutate(task.id)}
+                    title="Elimina task"
+                    aria-label={`Elimina ${task.title}`}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>

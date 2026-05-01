@@ -41,18 +41,28 @@ export default function BrainDump() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['braindumps'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['all-tasks'] });
       setText('');
     },
   });
 
   const promoteMutation = useMutation({
     mutationFn: (id) => accountData.tasks.update(id, { status: 'today', is_brain_dump: false }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['braindumps'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['braindumps'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['all-tasks'] });
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => accountData.tasks.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['braindumps'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['braindumps'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['all-tasks'] });
+    },
   });
 
   const handleSubmit = (e) => {
@@ -98,7 +108,7 @@ export default function BrainDump() {
             <Zap className="w-3 h-3 text-primary" />
             +10 XP per ogni dump
           </span>
-          <Button type="submit" disabled={!text.trim()} className="gap-2">
+          <Button type="submit" disabled={!text.trim() || createMutation.isPending} className="gap-2">
             <Send className="w-4 h-4" />
             Dump
           </Button>
@@ -120,13 +130,15 @@ export default function BrainDump() {
               <div className="flex items-start gap-3">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />
                 <p className="text-sm text-foreground flex-1">{dump.title}</p>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                <div className="flex items-center gap-1 opacity-100 shrink-0">
                   <Button
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7 text-primary hover:bg-primary/10"
+                    disabled={promoteMutation.isPending}
                     onClick={() => promoteMutation.mutate(dump.id)}
                     title="Promuovi a task"
+                    aria-label={`Promuovi a task ${dump.title}`}
                   >
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Button>
@@ -134,7 +146,10 @@ export default function BrainDump() {
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    disabled={deleteMutation.isPending}
                     onClick={() => deleteMutation.mutate(dump.id)}
+                    title="Elimina dump"
+                    aria-label={`Elimina dump ${dump.title}`}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
