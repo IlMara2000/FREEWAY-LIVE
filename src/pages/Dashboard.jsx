@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { accountData } from '@/api/accountDataClient';
@@ -6,6 +6,7 @@ import { normalizeList } from '@/lib/normalize-list';
 import useUserProfile from '@/hooks/useUserProfile';
 import XPBar from '@/components/shared/XPBar';
 import StatCard from '@/components/shared/StatCard';
+import { useQuery } from '@tanstack/react-query';
 import {
   Brain,
   CalendarDays,
@@ -61,41 +62,25 @@ const formatToday = () =>
 
 export default function Dashboard() {
   const { profile, loading } = useUserProfile();
-  const [todayTasks, setTodayTasks] = useState([]);
-  const [recentSessions, setRecentSessions] = useState([]);
-  const [dataLoading, setDataLoading] = useState(true);
+  const {
+    data: dashboardData = { todayTasks: [], recentSessions: [] },
+    isLoading: dataLoading,
+    error: dashboardError,
+  } = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: async () => {
+      const [tasks, sessions] = await Promise.all([
+        accountData.tasks.filter({ status: 'today' }, '-created_date', 5),
+        accountData.focusSessions.list('-created_date', 5),
+      ]);
 
-  useEffect(() => {
-    let ignore = false;
-
-    async function loadData() {
-      setDataLoading(true);
-      try {
-        const [tasks, sessions] = await Promise.all([
-          accountData.tasks.filter({ status: 'today' }, '-created_date', 5),
-          accountData.focusSessions.list('-created_date', 5),
-        ]);
-
-        if (!ignore) {
-          setTodayTasks(normalizeList(tasks));
-          setRecentSessions(normalizeList(sessions));
-        }
-      } catch (error) {
-        console.warn('Dashboard data unavailable:', error);
-        if (!ignore) {
-          setTodayTasks([]);
-          setRecentSessions([]);
-        }
-      } finally {
-        if (!ignore) setDataLoading(false);
-      }
-    }
-
-    loadData();
-    return () => {
-      ignore = true;
-    };
-  }, []);
+      return {
+        todayTasks: normalizeList(tasks),
+        recentSessions: normalizeList(sessions),
+      };
+    },
+  });
+  const { todayTasks, recentSessions } = dashboardData;
 
   const stats = useMemo(() => ([
     { icon: Timer, label: 'Focus totale', value: profile?.total_focus_minutes || 0, unit: 'min' },
@@ -220,6 +205,12 @@ export default function Dashboard() {
           </motion.div>
         ))}
       </section>
+
+      {dashboardError && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+          {dashboardError.message || 'Non riesco ad aggiornare la dashboard.'}
+        </div>
+      )}
 
       <section className="grid gap-4 lg:grid-cols-2">
         <motion.div

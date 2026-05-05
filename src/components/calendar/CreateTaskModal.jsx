@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus } from 'lucide-react';
 import { accountData } from '@/api/accountDataClient';
+import { buildCalendarTaskPayload, invalidateTaskViews } from '@/lib/task-workflows';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function CreateTaskModal({ date, onClose, onRefetch }) {
   const [title, setTitle] = useState('');
@@ -9,6 +11,7 @@ export default function CreateTaskModal({ date, onClose, onRefetch }) {
   const [priority, setPriority] = useState('medium');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!date) return;
@@ -27,14 +30,13 @@ export default function CreateTaskModal({ date, onClose, onRefetch }) {
     setError('');
 
     try {
-      await accountData.tasks.create({
+      await accountData.tasks.create(buildCalendarTaskPayload({
         title: title.trim(),
         description: description.trim(),
         priority,
-        due_date: date,
-        status: 'today',
-        xp_value: priority === 'critical' ? 75 : priority === 'high' ? 50 : priority === 'medium' ? 25 : 15,
-      });
+        date,
+      }));
+      invalidateTaskViews(queryClient);
       await onRefetch?.();
       onClose();
     } catch (err) {

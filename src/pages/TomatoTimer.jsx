@@ -3,10 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/lib/AuthContext';
 import useUserProfile from '@/hooks/useUserProfile';
 import { accountData } from '@/api/accountDataClient';
+import { invalidateFocusViews } from '@/lib/task-workflows';
 import TimerRing from '@/components/tomato/TimerRing';
 import XPReward from '@/components/shared/XPReward';
 import BrainDumpSheet from '@/components/tomato/BrainDumpSheet';
 import { Play, Pause, RotateCcw, Brain } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 
 const pageVariants = {
   initial: { opacity: 0, y: 16, scale: 0.99 },
@@ -87,6 +89,7 @@ export default function TomatoTimer({ taskContext, onBack }) {
   }
   const initialState = initialStateRef.current.state;
   const { addXP, addFocusMinutes } = useUserProfile();
+  const queryClient = useQueryClient();
   const [selectedPreset, setSelectedPreset] = useState(initialState.selectedPreset);
   const [timeLeft, setTimeLeft] = useState(initialState.timeLeft);
   const [isRunning, setIsRunning] = useState(initialState.isRunning);
@@ -123,6 +126,7 @@ export default function TomatoTimer({ taskContext, onBack }) {
         task_id: timerTaskContext?.id,
         task_title: timerTaskContext?.title || `Sessione ${preset.label} min`,
       });
+      invalidateFocusViews(queryClient);
       result = await addXP(preset.xp);
       await addFocusMinutes(preset.minutes);
     } catch (error) {
@@ -131,7 +135,7 @@ export default function TomatoTimer({ taskContext, onBack }) {
 
     setRewardData({ amount: preset.xp, levelUp: result?.leveledUp || false, newLevel: result?.newLevel || 1 });
     setShowReward(true);
-  }, [selectedPreset, addXP, addFocusMinutes, timerTaskContext]);
+  }, [selectedPreset, addXP, addFocusMinutes, timerTaskContext, queryClient]);
 
   useEffect(() => {
     const storedState = readStoredTimerState(accountId, taskContext);

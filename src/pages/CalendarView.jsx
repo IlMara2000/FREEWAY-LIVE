@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { accountData } from '@/api/accountDataClient';
 import { normalizeList } from '@/lib/normalize-list';
+import { getCalendarDateString, isTaskForCalendarDate } from '@/lib/task-workflows';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import TaskModal from '@/components/calendar/TaskModal';
 import CreateTaskModal from '@/components/calendar/CreateTaskModal';
@@ -37,19 +38,18 @@ export default function CalendarView({ onStartTomato }) {
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
 
-  const getDateForDay = (day) =>
-    `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  const getDateForDay = (day) => getCalendarDateString({ year, month, day });
 
   const getTasksForDay = (day) => {
     const dateStr = getDateForDay(day);
     return tasks.filter(
-      (t) =>
-        t.due_date === dateStr ||
-        (t.status === 'today' &&
-          !t.due_date &&
-          day === today.getDate() &&
-          month === today.getMonth() &&
-          year === today.getFullYear())
+      (task) => isTaskForCalendarDate(task, {
+        dateString: dateStr,
+        day,
+        month,
+        year,
+        today,
+      })
     );
   };
 

@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { accountData } from '@/api/accountDataClient';
 import { normalizeList } from '@/lib/normalize-list';
+import {
+  buildBrainDumpPayload,
+  buildBrainDumpPromotionPayload,
+  BRAIN_DUMP_XP,
+  invalidateTaskViews,
+} from '@/lib/task-workflows';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useUserProfile from '@/hooks/useUserProfile';
 import XPReward from '@/components/shared/XPReward';
@@ -25,53 +31,40 @@ export default function BrainDump() {
 
   const createMutation = useMutation({
     mutationFn: async (title) => {
-      await accountData.tasks.create({
-        title,
-        is_brain_dump: true,
-        status: 'inbox',
-        xp_value: 10,
-      });
+      await accountData.tasks.create(buildBrainDumpPayload(title));
       // Small XP reward for brain dumping
-      const result = await addXP(10);
+      const result = await addXP(BRAIN_DUMP_XP);
       setRewardData({
-        amount: 10,
+        amount: BRAIN_DUMP_XP,
         levelUp: result?.leveledUp || false,
         newLevel: result?.newLevel || (profile?.level || 1),
       });
       setShowReward(true);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['braindumps'] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['all-tasks'] });
+      invalidateTaskViews(queryClient);
       setText('');
     },
   });
 
   const promoteMutation = useMutation({
-    mutationFn: (id) => accountData.tasks.update(id, { status: 'today', is_brain_dump: false }),
+    mutationFn: (task) => accountData.tasks.update(task.id, buildBrainDumpPromotionPayload(task)),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['braindumps'] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['all-tasks'] });
+      invalidateTaskViews(queryClient);
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => accountData.tasks.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['braindumps'] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['all-tasks'] });
+      invalidateTaskViews(queryClient);
     },
   });
 
   const updateDescriptionMutation = useMutation({
     mutationFn: ({ id, description }) => accountData.tasks.update(id, { description }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['braindumps'] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['all-tasks'] });
+      invalidateTaskViews(queryClient);
     },
   });
 
@@ -80,6 +73,13 @@ export default function BrainDump() {
     if (!text.trim()) return;
     createMutation.mutate(text.trim());
   };
+
+  const mutationError = [
+    createMutation.error,
+    promoteMutation.error,
+    deleteMutation.error,
+    updateDescriptionMutation.error,
+  ].find(Boolean);
 
   return (
     <div className="min-h-screen p-4 md:p-8 max-w-3xl mx-auto space-y-6">
@@ -125,6 +125,12 @@ export default function BrainDump() {
         </div>
       </motion.form>
 
+      {mutationError && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+          {mutationError.message || 'Operazione non riuscita. Riprova.'}
+        </div>
+      )}
+
       {/* Dump list */}
       <div className="space-y-2">
         <AnimatePresence mode="popLayout">
@@ -155,7 +161,7 @@ export default function BrainDump() {
                     size="icon"
                     className="h-7 w-7 text-primary hover:bg-primary/10"
                     disabled={promoteMutation.isPending}
-                    onClick={() => promoteMutation.mutate(dump.id)}
+                    onClick={() => promoteMutation.mutate(dump)}
                     title="Promuovi a task"
                     aria-label={`Promuovi a task ${dump.title}`}
                   >

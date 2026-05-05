@@ -2,6 +2,11 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { accountData } from '@/api/accountDataClient';
 import { normalizeList } from '@/lib/normalize-list';
+import {
+  buildPlannerTaskPayload,
+  invalidateTaskViews,
+  TASK_STATUS,
+} from '@/lib/task-workflows';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useUserProfile from '@/hooks/useUserProfile';
 import XPReward from '@/components/shared/XPReward';
@@ -49,15 +54,14 @@ export default function Planner() {
   const createMutation = useMutation({
     mutationFn: (data) => accountData.tasks.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['all-tasks'] });
+      invalidateTaskViews(queryClient);
       setNewTitle('');
     },
   });
 
   const completeMutation = useMutation({
     mutationFn: async (task) => {
-      await accountData.tasks.update(task.id, { status: 'done' });
+      await accountData.tasks.update(task.id, { status: TASK_STATUS.done });
       const xp = task.xp_value || 25;
       const result = await addXP(xp);
       await incrementTasksCompleted();
@@ -69,37 +73,40 @@ export default function Planner() {
       setShowReward(true);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['all-tasks'] });
+      invalidateTaskViews(queryClient);
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => accountData.tasks.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['all-tasks'] });
+      invalidateTaskViews(queryClient);
     },
   });
 
   const updateDescriptionMutation = useMutation({
     mutationFn: ({ id, description }) => accountData.tasks.update(id, { description }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['all-tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['braindumps'] });
+      invalidateTaskViews(queryClient);
     },
   });
 
   const handleAdd = (e) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
-    createMutation.mutate({
+    createMutation.mutate(buildPlannerTaskPayload({
       title: newTitle.trim(),
       priority: newPriority,
-      status: activeTab === 'done' ? 'today' : activeTab,
-    });
+      status: activeTab,
+    }));
   };
+
+  const mutationError = [
+    createMutation.error,
+    completeMutation.error,
+    deleteMutation.error,
+    updateDescriptionMutation.error,
+  ].find(Boolean);
 
   return (
     <div className="min-h-screen p-4 md:p-8 max-w-3xl mx-auto space-y-6">
@@ -163,6 +170,12 @@ export default function Planner() {
             <Plus className="w-5 h-5" />
           </Button>
         </motion.form>
+      )}
+
+      {mutationError && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+          {mutationError.message || 'Operazione non riuscita. Riprova.'}
+        </div>
       )}
 
       {/* Task List */}
