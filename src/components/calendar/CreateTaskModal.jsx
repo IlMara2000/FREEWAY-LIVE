@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus } from 'lucide-react';
 import { accountData } from '@/api/accountDataClient';
@@ -8,23 +8,40 @@ export default function CreateTaskModal({ date, onClose, onRefetch }) {
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('medium');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!date) return;
+    setTitle('');
+    setDescription('');
+    setPriority('medium');
+    setSaving(false);
+    setError('');
+  }, [date]);
 
   if (!date) return null;
 
   const handleSave = async () => {
-    if (!title.trim()) return;
+    if (!title.trim() || saving) return;
     setSaving(true);
-    await accountData.tasks.create({
-      title: title.trim(),
-      description: description.trim(),
-      priority,
-      due_date: date,
-      status: 'today',
-      xp_value: priority === 'critical' ? 75 : priority === 'high' ? 50 : priority === 'medium' ? 25 : 15,
-    });
-    await onRefetch();
-    setSaving(false);
-    onClose();
+    setError('');
+
+    try {
+      await accountData.tasks.create({
+        title: title.trim(),
+        description: description.trim(),
+        priority,
+        due_date: date,
+        status: 'today',
+        xp_value: priority === 'critical' ? 75 : priority === 'high' ? 50 : priority === 'medium' ? 25 : 15,
+      });
+      await onRefetch?.();
+      onClose();
+    } catch (err) {
+      setError(err?.message || 'Non riesco a creare la task. Riprova.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -86,6 +103,12 @@ export default function CreateTaskModal({ date, onClose, onRefetch }) {
               </button>
             ))}
           </div>
+
+          {error && (
+            <p className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 font-mono text-[11px] text-red-200">
+              {error}
+            </p>
+          )}
 
           <button
             onClick={handleSave}

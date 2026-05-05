@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { accountData } from '@/api/accountDataClient';
 import { normalizeList } from '@/lib/normalize-list';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import TaskModal from '@/components/calendar/TaskModal';
 import CreateTaskModal from '@/components/calendar/CreateTaskModal';
 
@@ -37,17 +37,32 @@ export default function CalendarView({ onStartTomato }) {
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
 
+  const getDateForDay = (day) =>
+    `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
   const getTasksForDay = (day) => {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return tasks.filter(t => t.due_date === dateStr || t.status === 'today' && !t.due_date && day === today.getDate() && month === today.getMonth() && year === today.getFullYear());
+    const dateStr = getDateForDay(day);
+    return tasks.filter(
+      (t) =>
+        t.due_date === dateStr ||
+        (t.status === 'today' &&
+          !t.due_date &&
+          day === today.getDate() &&
+          month === today.getMonth() &&
+          year === today.getFullYear())
+    );
+  };
+
+  const openCreateForDay = (day) => {
+    if (!day) return;
+    setCreateDate(getDateForDay(day));
   };
 
   const handleDayClick = (day) => {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const dayTasks = getTasksForDay(day);
     setSelectedDay(day);
     if (dayTasks.length === 0) {
-      setCreateDate(dateStr);
+      openCreateForDay(day);
     }
   };
 
@@ -57,6 +72,7 @@ export default function CalendarView({ onStartTomato }) {
   const cells = [];
   for (let i = 0; i < firstDow; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  const selectedDayTasks = selectedDay ? getTasksForDay(selectedDay) : [];
 
   return (
     <motion.div
@@ -134,39 +150,55 @@ export default function CalendarView({ onStartTomato }) {
 
       {/* Tasks for selected day */}
       <AnimatePresence>
-        {selectedDay && getTasksForDay(selectedDay).length > 0 && (
+        {selectedDay && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             className="space-y-2"
           >
-            <p className="font-mono text-[11px] text-emerald-400/60 uppercase tracking-widest px-1">
-              Task — {selectedDay} {MONTHS[month]}
-            </p>
-            {getTasksForDay(selectedDay).map((task) => (
-              <motion.button
-                key={task.id}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => setSelectedTask(task)}
-                className="glass-panel w-full p-4 text-left hover:border-emerald-500/30 transition-all group"
+            <div className="flex items-center justify-between gap-3 px-1">
+              <p className="font-mono text-[11px] text-emerald-400/60 uppercase tracking-widest">
+                Task — {selectedDay} {MONTHS[month]}
+              </p>
+              <button
+                type="button"
+                onClick={() => openCreateForDay(selectedDay)}
+                className="glass h-8 px-3 rounded-xl flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-emerald-300 hover:text-white hover:border-emerald-500/40 transition-all"
               >
-                <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full shrink-0 ${
-                    task.priority === 'critical' ? 'bg-red-400' :
-                    task.priority === 'high' ? 'bg-orange-400' :
-                    task.priority === 'medium' ? 'bg-emerald-400' : 'bg-white/30'
-                  }`} />
-                  <span className="font-grotesk text-sm font-semibold text-white group-hover:text-emerald-300 transition-colors flex-1 truncate">
-                    {task.title}
-                  </span>
-                  <span className="font-mono text-[10px] text-emerald-400/60">+{task.xp_value || 25} XP</span>
-                </div>
-                {task.description && (
-                  <p className="text-xs text-white/40 mt-2 ml-5 truncate">{task.description}</p>
-                )}
-              </motion.button>
-            ))}
+                <Plus className="w-3.5 h-3.5" />
+                Nuova
+              </button>
+            </div>
+            {selectedDayTasks.length === 0 ? (
+              <div className="glass-panel w-full p-4 text-sm text-white/45">
+                Nessuna task per questa data.
+              </div>
+            ) : (
+              selectedDayTasks.map((task) => (
+                <motion.button
+                  key={task.id}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setSelectedTask(task)}
+                  className="glass-panel w-full p-4 text-left hover:border-emerald-500/30 transition-all group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${
+                      task.priority === 'critical' ? 'bg-red-400' :
+                      task.priority === 'high' ? 'bg-orange-400' :
+                      task.priority === 'medium' ? 'bg-emerald-400' : 'bg-white/30'
+                    }`} />
+                    <span className="font-grotesk text-sm font-semibold text-white group-hover:text-emerald-300 transition-colors flex-1 truncate">
+                      {task.title}
+                    </span>
+                    <span className="font-mono text-[10px] text-emerald-400/60">+{task.xp_value || 25} XP</span>
+                  </div>
+                  {task.description && (
+                    <p className="text-xs text-white/40 mt-2 ml-5 truncate">{task.description}</p>
+                  )}
+                </motion.button>
+              ))
+            )}
           </motion.div>
         )}
       </AnimatePresence>
