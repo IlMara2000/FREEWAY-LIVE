@@ -6,6 +6,30 @@ const AuthContext = createContext();
 
 const getRedirectUrl = () => `${window.location.origin}/auth/callback`;
 const isInlineImage = (value) => typeof value === 'string' && value.startsWith('data:image/');
+const isLocalTestAuthEnabled = import.meta.env.DEV && import.meta.env.VITE_ENABLE_LOCAL_TEST_AUTH === 'true';
+
+const createLocalTestUser = (metadata = {}) => ({
+  id: 'local-test-user',
+  email: 'local-test@freeway.local',
+  app_metadata: { provider: 'local-test' },
+  user_metadata: {
+    full_name: 'Local Test User',
+    name: 'Local Test User',
+    ...metadata,
+  },
+});
+
+const createLocalTestSession = (metadata = {}) => {
+  const user = createLocalTestUser(metadata);
+  return {
+    access_token: 'local-test-access-token',
+    refresh_token: 'local-test-refresh-token',
+    token_type: 'bearer',
+    expires_in: 3600,
+    expires_at: Math.floor(Date.now() / 1000) + 3600,
+    user,
+  };
+};
 
 export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
@@ -23,12 +47,19 @@ export const AuthProvider = ({ children }) => {
     activeAccountId.current = nextAccountId;
     setSession(nextSession);
     setUser(nextSession?.user || null);
-  }, []);
+  }, [setAuthSession]);
 
   useEffect(() => {
     let mounted = true;
 
     async function loadSession() {
+      if (isLocalTestAuthEnabled) {
+        setAuthSession(createLocalTestSession());
+        setAuthError(null);
+        setIsLoadingAuth(false);
+        return;
+      }
+
       if (!isSupabaseConfigured) {
         setAuthError({
           type: 'supabase_not_configured',
@@ -52,7 +83,7 @@ export const AuthProvider = ({ children }) => {
 
     loadSession();
 
-    if (!isSupabaseConfigured) {
+    if (isLocalTestAuthEnabled || !isSupabaseConfigured) {
       return () => {
         mounted = false;
       };
@@ -71,7 +102,7 @@ export const AuthProvider = ({ children }) => {
   }, [setAuthSession]);
 
   useEffect(() => {
-    if (!user || !isSupabaseConfigured || cleanedInlineAvatarFor.current === user.id) return;
+    if (!user || isLocalTestAuthEnabled || !isSupabaseConfigured || cleanedInlineAvatarFor.current === user.id) return;
 
     const metadata = user.user_metadata || {};
     if (!isInlineImage(metadata.avatar_url) && !isInlineImage(metadata.picture)) return;
@@ -87,6 +118,13 @@ export const AuthProvider = ({ children }) => {
   }, [user]);
 
   const signInWithProvider = useCallback(async (provider) => {
+    if (isLocalTestAuthEnabled) {
+      const nextSession = createLocalTestSession();
+      setAuthSession(nextSession);
+      setAuthError(null);
+      return { data: { session: nextSession }, error: null };
+    }
+
     if (!isSupabaseConfigured) {
       setAuthError({
         type: 'supabase_not_configured',
@@ -108,6 +146,13 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const refreshSession = useCallback(async () => {
+    if (isLocalTestAuthEnabled) {
+      const nextSession = createLocalTestSession(user?.user_metadata);
+      setAuthSession(nextSession);
+      setAuthError(null);
+      return { data: { session: nextSession }, error: null };
+    }
+
     if (!isSupabaseConfigured) {
       return { data: { session: null }, error: new Error('Supabase non configurato') };
     }
@@ -119,10 +164,10 @@ export const AuthProvider = ({ children }) => {
     }
 
     return { data, error };
-  }, [setAuthSession]);
+  }, [setAuthSession, user?.user_metadata]);
 
   const logout = useCallback(async () => {
-    if (isSupabaseConfigured) {
+    if (!isLocalTestAuthEnabled && isSupabaseConfigured) {
       await supabase.auth.signOut();
     }
     queryClientInstance.clear();
@@ -132,6 +177,15 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const updateAccount = useCallback(async (metadata) => {
+    if (isLocalTestAuthEnabled) {
+      const nextSession = createLocalTestSession({
+        ...(user?.user_metadata || {}),
+        ...metadata,
+      });
+      setAuthSession(nextSession);
+      return { data: { user: nextSession.user }, error: null };
+    }
+
     if (!isSupabaseConfigured) {
       return { error: new Error('Supabase non configurato') };
     }
@@ -164,8 +218,16 @@ export const AuthProvider = ({ children }) => {
     refreshSession,
     updateAccount,
     logout,
-    checkUserAuth: async () => supabase?.auth.getUser(),
-    checkAppState: async () => supabase?.auth.getSession(),
+    checkUserAuth: async () => (
+      isLocalTestAuthEnabled
+        ? { data: { user: createLocalTestUser(user?.user_metadata) }, error: null }
+        : supabase?.auth.getUser()
+    ),
+    checkAppState: async () => (
+      isLocalTestAuthEnabled
+        ? { data: { session: createLocalTestSession(user?.user_metadata) }, error: null }
+        : supabase?.auth.getSession()
+    ),
   }), [authError, isLoadingAuth, logout, refreshSession, session, signInWithProvider, updateAccount, user]);
 
   return (

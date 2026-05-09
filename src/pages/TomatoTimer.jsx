@@ -16,18 +16,29 @@ const pageVariants = {
   exit:    { opacity: 0, y: -10, scale: 0.992, transition: { duration: 0.24, ease: [0.4, 0, 0.6, 1] } },
 };
 
-const PRESETS = [
-  { label: '15', minutes: 15, xp: 30 },
-  { label: '25', minutes: 25, xp: 50 },
-  { label: '45', minutes: 45, xp: 90 },
-  { label: '60', minutes: 60, xp: 120 },
-];
+const isFastTomatoTestEnabled = import.meta.env.DEV && import.meta.env.VITE_ENABLE_FAST_TOMATO_TEST === 'true';
+
+const PRESETS = isFastTomatoTestEnabled
+  ? [
+      { label: '1s', minutes: 1, seconds: 1, xp: 30 },
+      { label: '2s', minutes: 1, seconds: 2, xp: 50 },
+      { label: '3s', minutes: 1, seconds: 3, xp: 90 },
+      { label: '4s', minutes: 1, seconds: 4, xp: 120 },
+    ]
+  : [
+      { label: '15', minutes: 15, xp: 30 },
+      { label: '25', minutes: 25, xp: 50 },
+      { label: '45', minutes: 45, xp: 90 },
+      { label: '60', minutes: 60, xp: 120 },
+    ];
+
+const getPresetSeconds = (preset) => preset.seconds || preset.minutes * 60;
 
 const getTomatoStorageKey = (accountId) => `fw_tomato_state_${accountId || 'guest'}`;
 
 const getDefaultTimerState = (taskContext = null) => ({
   selectedPreset: 1,
-  timeLeft: PRESETS[1].minutes * 60,
+  timeLeft: getPresetSeconds(PRESETS[1]),
   isRunning: false,
   isCompleted: false,
   endsAt: null,
@@ -43,7 +54,7 @@ const readStoredTimerState = (accountId, taskContext = null) => {
 
     const storedPreset = Number(stored.selectedPreset);
     const selectedPreset = Number.isInteger(storedPreset) && PRESETS[storedPreset] ? storedPreset : 1;
-    const totalSeconds = PRESETS[selectedPreset].minutes * 60;
+    const totalSeconds = getPresetSeconds(PRESETS[selectedPreset]);
     const endsAt = Number.isFinite(stored.endsAt) ? stored.endsAt : null;
     const isRunning = Boolean(stored.isRunning);
     const isCompleted = Boolean(stored.isCompleted);
@@ -102,7 +113,7 @@ export default function TomatoTimer({ taskContext, onBack }) {
   const intervalRef = useRef(null);
   const completionRef = useRef(false);
 
-  const totalSeconds = PRESETS[selectedPreset].minutes * 60;
+  const totalSeconds = getPresetSeconds(PRESETS[selectedPreset]);
   const progress = ((totalSeconds - timeLeft) / totalSeconds) * 100;
 
   const formatTime = (s) =>
@@ -192,7 +203,7 @@ export default function TomatoTimer({ taskContext, onBack }) {
     if (isRunning) return;
     completionRef.current = false;
     setSelectedPreset(i);
-    setTimeLeft(PRESETS[i].minutes * 60);
+    setTimeLeft(getPresetSeconds(PRESETS[i]));
     setIsCompleted(false);
     setEndsAt(null);
   };
@@ -202,7 +213,7 @@ export default function TomatoTimer({ taskContext, onBack }) {
     setIsRunning(false);
     setIsCompleted(false);
     setEndsAt(null);
-    setTimeLeft(PRESETS[selectedPreset].minutes * 60);
+    setTimeLeft(getPresetSeconds(PRESETS[selectedPreset]));
   };
 
   const toggleRunning = () => {
@@ -280,6 +291,7 @@ export default function TomatoTimer({ taskContext, onBack }) {
               key={i}
               onClick={() => selectPreset(i)}
               disabled={isRunning}
+              aria-label={`Preset ${p.label}`}
               className={`px-4 py-2 rounded-xl font-mono text-xs transition-all disabled:opacity-20 ${
                 i === selectedPreset
                   ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400'
@@ -294,6 +306,7 @@ export default function TomatoTimer({ taskContext, onBack }) {
         {/* Controls */}
         <div className="flex items-center gap-6">
           <motion.button whileTap={{ scale: 0.9 }} onClick={reset}
+            aria-label="Reset tomato"
             className="glass w-12 h-12 rounded-xl flex items-center justify-center text-white/50 hover:text-white transition-colors">
             <RotateCcw className="w-5 h-5" />
           </motion.button>
@@ -302,6 +315,7 @@ export default function TomatoTimer({ taskContext, onBack }) {
             whileTap={{ scale: 0.94 }}
             onClick={toggleRunning}
             disabled={isCompleted}
+            aria-label={isRunning ? 'Pausa tomato' : 'Avvia tomato'}
             className="w-20 h-20 rounded-full flex items-center justify-center disabled:opacity-40 transition-all btn-cyber"
             style={{ borderRadius: '9999px', fontSize: 0 }}
             animate={{
