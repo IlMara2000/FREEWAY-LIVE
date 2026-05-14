@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }) => {
     activeAccountId.current = nextAccountId;
     setSession(nextSession);
     setUser(nextSession?.user || null);
-  }, [setAuthSession]);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
