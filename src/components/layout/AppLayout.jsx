@@ -3,6 +3,7 @@ import { Link, useLocation, useOutlet } from 'react-router-dom';
 import { Timer, ListTodo, LayoutDashboard, Palette, Brain, CalendarDays, LogOut, UserRound, BriefcaseBusiness, Menu, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/lib/AuthContext';
+import FreewayLogo from '@/components/brand/FreewayLogo';
 
 const NAV_ITEMS = [
   { path: '/', icon: LayoutDashboard, label: 'Hub' },
@@ -75,9 +76,9 @@ export default function AppLayout() {
                 <Link
                   to="/"
                   onClick={closeMenu}
-                  className="flex h-12 items-center gap-3 rounded-2xl bg-primary/10 px-4 font-grotesk text-base font-black tracking-[0.08em] text-primary glow-emerald"
+                  className="group flex h-14 items-center gap-3 rounded-2xl border border-primary/25 bg-primary/10 px-2.5 pr-4 glow-emerald transition-colors hover:border-cyan-200/35 hover:bg-primary/15"
                 >
-                  FWL
+                  <FreewayLogo showWordmark />
                 </Link>
                 <button
                   type="button"
