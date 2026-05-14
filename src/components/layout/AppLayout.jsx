@@ -1,18 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useOutlet } from 'react-router-dom';
-import { Timer, ListTodo, LayoutDashboard, Palette, Brain, CalendarDays, LogOut, UserRound, BriefcaseBusiness } from 'lucide-react';
+import { Timer, ListTodo, LayoutDashboard, Palette, Brain, CalendarDays, LogOut, UserRound, BriefcaseBusiness, Menu, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/lib/AuthContext';
 
 const NAV_ITEMS = [
   { path: '/', icon: LayoutDashboard, label: 'Hub' },
-  { path: '/calendar', icon: CalendarDays, label: 'Cal' },
+  { path: '/calendar', icon: CalendarDays, label: 'Calendario' },
   { path: '/work', icon: BriefcaseBusiness, label: 'Lavoro' },
   { path: '/tomato', icon: Timer, label: 'Tomato' },
   { path: '/planner', icon: ListTodo, label: 'Planner' },
   { path: '/braindump', icon: Brain, label: 'Dump' },
   { path: '/themes', icon: Palette, label: 'Temi' },
-  { path: '/account', icon: UserRound, label: 'Me' },
+  { path: '/account', icon: UserRound, label: 'Profilo' },
 ];
 
 const contentVariants = {
@@ -26,61 +26,124 @@ const contentTransition = {
   ease: [0.22, 1, 0.36, 1],
 };
 
+const drawerVariants = {
+  closed: { x: '-104%', opacity: 0.6, filter: 'blur(8px)' },
+  open: { x: 0, opacity: 1, filter: 'blur(0px)' },
+};
+
 export default function AppLayout() {
   const location = useLocation();
   const outlet = useOutlet();
   const { logout } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const closeMenu = () => setMenuOpen(false);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <nav className="fixed left-3 right-3 top-3 z-40 md:left-6 md:right-6">
-        <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 rounded-2xl border border-white/10 bg-black/55 px-3 shadow-[0_18px_55px_rgba(0,0,0,0.45)] backdrop-blur-2xl">
-          <Link
-            to="/"
-            className="flex h-11 min-w-11 items-center justify-center rounded-xl bg-primary/12 px-3 font-grotesk text-sm font-black tracking-[0.08em] text-primary glow-emerald"
-            aria-label="Freeway Life"
-          >
-            FWL
-          </Link>
+      <button
+        type="button"
+        onClick={() => setMenuOpen(true)}
+        className="fixed left-4 top-4 z-40 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-black/65 text-primary shadow-[0_18px_45px_rgba(0,0,0,0.5)] backdrop-blur-2xl transition-colors hover:border-primary/35 hover:bg-primary/10 md:left-6 md:top-6"
+        aria-label="Apri menu"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
 
-          <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1">
-            {NAV_ITEMS.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
+      <AnimatePresence>
+        {menuOpen && (
+          <>
+            <motion.button
+              type="button"
+              aria-label="Chiudi menu"
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeMenu}
+            />
+
+            <motion.aside
+              className="fixed left-0 top-0 z-50 flex h-dvh w-[min(86vw,360px)] flex-col border-r border-primary/20 bg-[#030806]/95 p-4 shadow-[35px_0_80px_rgba(0,0,0,0.55)] backdrop-blur-2xl"
+              variants={drawerVariants}
+              initial="closed"
+              animate="open"
+              exit="closed"
+              transition={{ type: 'spring', stiffness: 360, damping: 34, mass: 0.75 }}
+            >
+              <div className="flex items-center justify-between gap-3 pb-6">
                 <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`relative flex h-10 shrink-0 items-center gap-2 rounded-xl px-3 text-xs font-semibold transition-colors ${
-                    isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                  to="/"
+                  onClick={closeMenu}
+                  className="flex h-12 items-center gap-3 rounded-2xl bg-primary/10 px-4 font-grotesk text-base font-black tracking-[0.08em] text-primary glow-emerald"
                 >
-                  {isActive && (
-                    <motion.div
-                      layoutId="topnav-indicator"
-                      className="absolute inset-0 rounded-xl border border-primary/25 bg-primary/12 shadow-[0_0_28px_rgba(16,185,129,0.14)]"
-                      transition={{ type: 'spring', stiffness: 520, damping: 36, mass: 0.6 }}
-                    />
-                  )}
-                  <item.icon className="relative z-10 h-[18px] w-[18px]" />
-                  <span className="relative z-10 hidden sm:inline">{item.label}</span>
+                  FWL
                 </Link>
-              );
-            })}
-          </div>
+                <button
+                  type="button"
+                  onClick={closeMenu}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 text-white/55 transition-colors hover:border-primary/35 hover:text-primary"
+                  aria-label="Chiudi menu"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
 
-          <button
-            type="button"
-            onClick={logout}
-            className="flex h-10 shrink-0 items-center gap-2 rounded-xl border border-white/10 px-3 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
-            aria-label="Logout"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Esci</span>
-          </button>
-        </div>
-      </nav>
+              <nav className="space-y-2">
+                {NAV_ITEMS.map((item, index) => {
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <motion.div
+                      key={item.path}
+                      initial={{ opacity: 0, x: -16 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.05 + index * 0.035, duration: 0.22 }}
+                    >
+                      <Link
+                        to={item.path}
+                        onClick={closeMenu}
+                        className={`relative flex min-h-13 items-center gap-3 rounded-2xl border px-4 py-3 transition-colors ${
+                          isActive
+                            ? 'border-primary/35 bg-primary/12 text-primary shadow-[0_0_30px_rgba(16,185,129,0.12)]'
+                            : 'border-white/8 bg-white/[0.035] text-white/62 hover:border-primary/25 hover:text-white'
+                        }`}
+                      >
+                        <item.icon className="h-5 w-5 shrink-0" />
+                        <span className="font-grotesk text-base font-semibold">{item.label}</span>
+                        {isActive && (
+                          <motion.span
+                            layoutId="drawer-active-dot"
+                            className="ml-auto h-2 w-2 rounded-full bg-primary shadow-[0_0_14px_rgba(16,185,129,0.7)]"
+                          />
+                        )}
+                      </Link>
+                    </motion.div>
+                  );
+                })}
+              </nav>
 
-      <main className="flex-1 overflow-hidden pb-6 pt-24">
+              <div className="mt-auto space-y-3 border-t border-white/10 pt-4">
+                <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-primary/45">
+                  Freeway Life
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMenu();
+                    logout();
+                  }}
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.035] text-sm font-semibold text-white/60 transition-colors hover:border-primary/30 hover:text-primary"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Esci
+                </button>
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      <main className="flex-1 overflow-hidden pb-6 pt-20">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={location.pathname}
