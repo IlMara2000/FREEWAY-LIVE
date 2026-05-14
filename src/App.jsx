@@ -73,10 +73,12 @@ const AuthenticatedApp = () => {
   const handleEnter = () => {
     sessionStorage.setItem(APP_ENTERED_KEY, '1');
     const tutorialDone = localStorage.getItem(TUTORIAL_KEY);
-    if (!tutorialDone) {
+    if (isAuthenticated && !tutorialDone) {
       setShowTutorial(true);
     }
-    navigate('/calendar');
+    if (isAuthenticated) {
+      navigate('/calendar');
+    }
   };
 
   const handleTutorialComplete = () => {
@@ -100,10 +102,6 @@ const AuthenticatedApp = () => {
     return <AuthCallback />;
   }
 
-  if (!isAuthenticated) {
-    return <Login />;
-  }
-
   return (
     <>
       <AnimatePresence mode="wait" initial={false}>
@@ -117,6 +115,8 @@ const AuthenticatedApp = () => {
           >
             <Splash onEnter={handleEnter} />
           </motion.div>
+        ) : !isAuthenticated ? (
+          <Login />
         ) : (
           <Routes location={location}>
             <Route element={<AppLayout />}>
