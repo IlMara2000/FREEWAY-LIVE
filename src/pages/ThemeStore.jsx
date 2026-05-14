@@ -76,7 +76,7 @@ export default function ThemeStore() {
           Temi
         </h1>
         <p className="text-sm text-muted-foreground">
-          Scegli il look dell'app. I temi ora scalano su molti più livelli.
+          Scegli il look dell'app e sblocca nuove estetiche salendo di livello.
         </p>
       </motion.header>
 
@@ -109,7 +109,7 @@ export default function ThemeStore() {
               </div>
               {loading && (
                 <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">
-                  Sync...
+                  Salvataggio
                 </span>
               )}
             </div>
@@ -140,7 +140,7 @@ export default function ThemeStore() {
               Custom Lab
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Modifiche live, salvate su questo dispositivo.
+              Preset locale attivo.
             </p>
           </div>
           <Button

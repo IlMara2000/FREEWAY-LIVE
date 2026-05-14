@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Camera, Check, ImagePlus, LogOut, Save, UserRound } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -69,16 +69,15 @@ export default function Account() {
   const [avatarDirty, setAvatarDirty] = useState(false);
   const [status, setStatus] = useState('idle');
   const [message, setMessage] = useState('');
-  const fileInputRef = useRef(null);
 
   const initials = useMemo(() => {
-    const label = username || user?.email || 'FL';
+    const label = username || user?.email || 'FWL';
     return label
       .split(/[\s@._-]+/)
       .filter(Boolean)
       .slice(0, 2)
       .map((part) => part[0]?.toUpperCase())
-      .join('') || 'FL';
+      .join('') || 'FWL';
   }, [username, user?.email]);
 
   const handleSave = async (event) => {
@@ -125,6 +124,7 @@ export default function Account() {
       const nextAvatar = await readImageAsAvatar(file);
       setAvatarUrl(nextAvatar);
       setAvatarDirty(true);
+      setMessage('Foto pronta. Premi Salva per confermare.');
     } catch (error) {
       setStatus('error');
       setMessage(error.message);
@@ -174,22 +174,20 @@ export default function Account() {
         </div>
 
         <input
-          ref={fileInputRef}
+          id="profile-photo-input"
           type="file"
           accept="image/*"
           onChange={handleAvatarChange}
           className="hidden"
         />
 
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => fileInputRef.current?.click()}
-          className="h-12 w-full rounded-xl border-white/10 bg-white/5 text-white hover:bg-white/10"
+        <label
+          htmlFor="profile-photo-input"
+          className="inline-flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 text-sm font-medium text-white transition-colors hover:bg-white/10"
         >
           <ImagePlus className="w-4 h-4" />
           Carica foto profilo
-        </Button>
+        </label>
 
         <label className="block space-y-2">
           <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-emerald-400/60">

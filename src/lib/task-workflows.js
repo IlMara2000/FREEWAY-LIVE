@@ -24,6 +24,7 @@ export const BRAIN_DUMP_XP = 10;
 export const TASK_VIEW_QUERY_KEYS = [
   ['tasks'],
   ['all-tasks'],
+  ['work-tasks'],
   ['braindumps'],
   ['dashboard'],
 ];
@@ -48,6 +49,9 @@ export const buildTaskPayload = ({
   priority = TASK_PRIORITY.medium,
   status = TASK_STATUS.inbox,
   due_date,
+  start_time,
+  end_time,
+  task_type,
   is_brain_dump = false,
   xp_value,
 } = {}) => {
@@ -62,24 +66,49 @@ export const buildTaskPayload = ({
     is_brain_dump: Boolean(is_brain_dump),
     xp_value: Number.isFinite(Number(xp_value)) ? Number(xp_value) : getTaskXP(sanitizedPriority),
     ...(due_date ? { due_date } : {}),
+    ...(start_time ? { start_time } : {}),
+    ...(end_time ? { end_time } : {}),
+    ...(task_type ? { task_type } : {}),
   };
 };
 
-export const buildPlannerTaskPayload = ({ title, description, priority, status }) =>
+export const buildPlannerTaskPayload = ({
+  title,
+  description,
+  priority,
+  status,
+  start_time,
+  end_time,
+  task_type,
+}) =>
   buildTaskPayload({
     title,
     description,
     priority,
     status: status === TASK_STATUS.done ? TASK_STATUS.today : status,
+    start_time,
+    end_time,
+    task_type,
   });
 
-export const buildCalendarTaskPayload = ({ title, description, priority, date }) =>
+export const buildCalendarTaskPayload = ({
+  title,
+  description,
+  priority,
+  date,
+  start_time,
+  end_time,
+  task_type,
+}) =>
   buildTaskPayload({
     title,
     description,
     priority,
     status: TASK_STATUS.today,
     due_date: date,
+    start_time,
+    end_time,
+    task_type,
   });
 
 export const buildBrainDumpPayload = (text, description = '') =>

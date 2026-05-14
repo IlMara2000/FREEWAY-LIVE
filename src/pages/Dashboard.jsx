@@ -104,10 +104,10 @@ export default function Dashboard() {
           </p>
           <div>
             <h1 className="text-3xl md:text-5xl font-grotesk font-bold text-foreground">
-              Focus <span className="text-primary text-glow">Hub</span>
+              Space <span className="text-primary text-glow">Hub</span>
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Tutto quello che ti serve oggi, senza casino.
+              Missioni, focus e ritmo nello stesso spazio.
             </p>
           </div>
         </div>
@@ -139,7 +139,7 @@ export default function Dashboard() {
             </div>
             {loading && (
               <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
-                Sync...
+                Salvataggio
               </span>
             )}
           </div>

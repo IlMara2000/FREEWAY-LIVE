@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus } from 'lucide-react';
+import { BriefcaseBusiness, Clock, Plus, X } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { accountData } from '@/api/accountDataClient';
 import { buildCalendarTaskPayload, invalidateTaskViews } from '@/lib/task-workflows';
-import { useQueryClient } from '@tanstack/react-query';
 
 export default function CreateTaskModal({ date, onClose, onRefetch }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('medium');
+  const [startTime, setStartTime] = useState('09:00');
+  const [endTime, setEndTime] = useState('17:00');
+  const [taskType, setTaskType] = useState('task');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const queryClient = useQueryClient();
@@ -18,6 +21,9 @@ export default function CreateTaskModal({ date, onClose, onRefetch }) {
     setTitle('');
     setDescription('');
     setPriority('medium');
+    setStartTime('09:00');
+    setEndTime('17:00');
+    setTaskType('task');
     setSaving(false);
     setError('');
   }, [date]);
@@ -32,9 +38,12 @@ export default function CreateTaskModal({ date, onClose, onRefetch }) {
     try {
       await accountData.tasks.create(buildCalendarTaskPayload({
         title: title.trim(),
-        description: description.trim(),
+        description: description.trim() || (taskType === 'work' ? 'Turno di lavoro' : 'Nessuna descrizione'),
         priority,
         date,
+        start_time: startTime,
+        end_time: endTime,
+        task_type: taskType,
       }));
       invalidateTaskViews(queryClient);
       await onRefetch?.();
@@ -67,7 +76,7 @@ export default function CreateTaskModal({ date, onClose, onRefetch }) {
             <X className="w-5 h-5" />
           </button>
 
-          <div>
+          <div className="pr-8">
             <p className="font-mono text-[10px] text-emerald-400/60 uppercase tracking-widest mb-1">Nuova Task</p>
             <p className="font-mono text-xs text-white/40">{date}</p>
           </div>
@@ -81,19 +90,65 @@ export default function CreateTaskModal({ date, onClose, onRefetch }) {
             onKeyDown={(e) => e.key === 'Enter' && handleSave()}
           />
 
+          <div className="grid grid-cols-2 gap-3">
+            <label className="space-y-1.5">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-white/35 flex items-center gap-1.5">
+                <Clock className="w-3 h-3" /> Inizio
+              </span>
+              <input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 focus:border-emerald-500/50 rounded-xl px-3 py-3 font-mono text-sm text-white outline-none transition-all"
+              />
+            </label>
+            <label className="space-y-1.5">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-white/35 flex items-center gap-1.5">
+                <Clock className="w-3 h-3" /> Fine
+              </span>
+              <input
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 focus:border-emerald-500/50 rounded-xl px-3 py-3 font-mono text-sm text-white outline-none transition-all"
+              />
+            </label>
+          </div>
+
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Descrizione (opzionale)..."
+            placeholder="Descrizione (se vuota la compilo io)..."
             rows={3}
             className="w-full bg-white/5 border border-white/10 focus:border-emerald-500/50 rounded-xl p-4 font-grotesk text-sm text-white outline-none transition-all placeholder:text-white/25 resize-none"
           />
 
-          {/* Priority */}
+          <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-white/[0.03] border border-white/10">
+            {[
+              { value: 'task', label: 'Task' },
+              { value: 'work', label: 'Lavoro' },
+            ].map((type) => (
+              <button
+                key={type.value}
+                type="button"
+                onClick={() => setTaskType(type.value)}
+                className={`h-10 rounded-xl font-mono text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+                  taskType === type.value
+                    ? 'bg-emerald-500/20 border border-emerald-500/45 text-emerald-300'
+                    : 'text-white/40 hover:text-white/75'
+                }`}
+              >
+                {type.value === 'work' && <BriefcaseBusiness className="w-3.5 h-3.5" />}
+                {type.label}
+              </button>
+            ))}
+          </div>
+
           <div className="flex gap-2">
             {['low', 'medium', 'high', 'critical'].map((p) => (
               <button
                 key={p}
+                type="button"
                 onClick={() => setPriority(p)}
                 className={`flex-1 py-2 rounded-xl font-mono text-[10px] uppercase tracking-wider transition-all ${
                   priority === p
@@ -101,7 +156,7 @@ export default function CreateTaskModal({ date, onClose, onRefetch }) {
                     : 'border border-white/10 text-white/40 hover:text-white/70'
                 }`}
               >
-                {p === 'low' ? 'Bassa' : p === 'medium' ? 'Media' : p === 'high' ? 'Alta' : '🔥'}
+                {p === 'low' ? 'Bassa' : p === 'medium' ? 'Media' : p === 'high' ? 'Alta' : 'Critica'}
               </button>
             ))}
           </div>

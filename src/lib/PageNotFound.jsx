@@ -14,7 +14,7 @@ export default function PageNotFound() {
           to="/"
           className="inline-flex items-center px-5 py-2.5 text-sm font-medium bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors"
         >
-          Torna al Focus Hub
+          Torna allo Space Hub
         </Link>
       </div>
     </div>
