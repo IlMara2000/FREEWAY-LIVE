@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Timer, Sparkles, Brain } from 'lucide-react';
+import { X, Timer, Sparkles, Brain, BriefcaseBusiness, Clock } from 'lucide-react';
+import { formatDuration, getTaskDurationHours } from '@/lib/work-utils';
 
 const apiKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.NEXT_PUBLIC_GROQ_API_KEY;
 
@@ -74,12 +75,10 @@ export default function TaskModal({ task, onClose, onStartTomato }) {
           exit={{ scale: 0.5, opacity: 0, rotate: 10 }}
           transition={{ type: 'spring', stiffness: 280, damping: 22 }}
         >
-          {/* Close */}
           <button onClick={onClose} className="absolute top-4 right-4 text-white/30 hover:text-white transition-colors">
             <X className="w-5 h-5" />
           </button>
 
-          {/* Title */}
           <div>
             <p className={`font-mono text-[10px] uppercase tracking-widest mb-2 ${priorityColor}`}>
               {task.priority} priority
@@ -90,14 +89,35 @@ export default function TaskModal({ task, onClose, onStartTomato }) {
             )}
           </div>
 
-          {/* Description */}
+          <div className="grid grid-cols-2 gap-2">
+            {(task.start_time || task.end_time) && (
+              <div className="glass rounded-xl p-3">
+                <p className="font-mono text-[10px] text-white/35 uppercase tracking-widest flex items-center gap-1.5">
+                  <Clock className="w-3 h-3" /> Orario
+                </p>
+                <p className="font-mono text-sm text-white mt-1">
+                  {task.start_time || '--:--'} - {task.end_time || '--:--'}
+                </p>
+              </div>
+            )}
+            {task.task_type === 'work' && (
+              <div className="glass rounded-xl p-3 border-emerald-500/25">
+                <p className="font-mono text-[10px] text-emerald-400/65 uppercase tracking-widest flex items-center gap-1.5">
+                  <BriefcaseBusiness className="w-3 h-3" /> Lavoro
+                </p>
+                <p className="font-mono text-sm text-white mt-1">
+                  {formatDuration(getTaskDurationHours(task))}
+                </p>
+              </div>
+            )}
+          </div>
+
           {task.description && (
             <div className="glass rounded-xl p-4">
               <p className="text-sm text-white/70 leading-relaxed">{task.description}</p>
             </div>
           )}
 
-          {/* Groq Slicer */}
           <div className="space-y-3">
             <button
               onClick={handleGroqSlicer}
@@ -138,7 +158,6 @@ export default function TaskModal({ task, onClose, onStartTomato }) {
             </AnimatePresence>
           </div>
 
-          {/* Start Tomato */}
           <button
             onClick={() => { onStartTomato && onStartTomato(task); onClose(); }}
             className="w-full py-3 rounded-2xl glass border border-emerald-500/40 font-grotesk font-semibold text-emerald-400 text-sm flex items-center justify-center gap-2 hover:bg-emerald-500/10 transition-colors"

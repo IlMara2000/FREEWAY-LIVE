@@ -5,7 +5,7 @@ import { normalizeList } from '@/lib/normalize-list';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useUserProfile from '@/hooks/useUserProfile';
 import XPReward from '@/components/shared/XPReward';
-import { Plus, Check, Trash2 } from 'lucide-react';
+import { Plus, Check, Trash2, BriefcaseBusiness, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,7 +33,11 @@ const STATUS_TABS = [
 export default function Planner() {
   const [activeTab, setActiveTab] = useState('today');
   const [newTitle, setNewTitle] = useState('');
+  const [newDescription, setNewDescription] = useState('');
   const [newPriority, setNewPriority] = useState('medium');
+  const [newStartTime, setNewStartTime] = useState('09:00');
+  const [newEndTime, setNewEndTime] = useState('17:00');
+  const [newTaskType, setNewTaskType] = useState('task');
   const [showReward, setShowReward] = useState(false);
   const [rewardData, setRewardData] = useState({ amount: 0, levelUp: false, newLevel: 1 });
   const { profile, addXP, incrementTasksCompleted } = useUserProfile();
@@ -50,6 +54,7 @@ export default function Planner() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       setNewTitle('');
+      setNewDescription('');
     },
   });
 
@@ -77,10 +82,16 @@ export default function Planner() {
   const handleAdd = (e) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
+    const xpValue = newPriority === 'critical' ? 75 : newPriority === 'high' ? 50 : newPriority === 'medium' ? 25 : 15;
     createMutation.mutate({
       title: newTitle.trim(),
+      description: newDescription.trim() || (newTaskType === 'work' ? 'Turno di lavoro' : 'Nessuna descrizione'),
       priority: newPriority,
       status: activeTab === 'done' ? 'today' : activeTab,
+      start_time: newStartTime,
+      end_time: newEndTime,
+      task_type: newTaskType,
+      xp_value: xpValue,
     });
   };
 
@@ -115,30 +126,82 @@ export default function Planner() {
       {activeTab !== 'done' && (
         <motion.form
           onSubmit={handleAdd}
-          className="flex gap-2"
+          className="glass-panel p-4 space-y-3"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
+          <div className="flex gap-2">
+            <Input
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              placeholder="Nuovo task..."
+              className="flex-1 bg-secondary border-none h-11"
+            />
+            <Button
+              type="submit"
+              size="icon"
+              disabled={!newTitle.trim() || createMutation.isPending}
+              className="h-11 w-11 shrink-0"
+              aria-label="Aggiungi task"
+            >
+              <Plus className="w-5 h-5" />
+            </Button>
+          </div>
+
           <Input
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            placeholder="Nuovo task..."
-            className="flex-1 bg-secondary border-none h-11"
+            value={newDescription}
+            onChange={(e) => setNewDescription(e.target.value)}
+            placeholder="Descrizione (se vuota la compilo io)..."
+            className="bg-secondary border-none h-11"
           />
-          <Select value={newPriority} onValueChange={setNewPriority}>
-            <SelectTrigger className="w-28 bg-secondary border-none h-11">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="low">Bassa</SelectItem>
-              <SelectItem value="medium">Media</SelectItem>
-              <SelectItem value="high">Alta</SelectItem>
-              <SelectItem value="critical">Critica</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button type="submit" size="icon" className="h-11 w-11 shrink-0">
-            <Plus className="w-5 h-5" />
-          </Button>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <label className="bg-secondary rounded-md px-3 py-2 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              <input
+                type="time"
+                value={newStartTime}
+                onChange={(event) => setNewStartTime(event.target.value)}
+                className="min-w-0 w-full bg-transparent font-mono text-sm text-foreground outline-none"
+                aria-label="Ora inizio"
+              />
+            </label>
+            <label className="bg-secondary rounded-md px-3 py-2 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              <input
+                type="time"
+                value={newEndTime}
+                onChange={(event) => setNewEndTime(event.target.value)}
+                className="min-w-0 w-full bg-transparent font-mono text-sm text-foreground outline-none"
+                aria-label="Ora fine"
+              />
+            </label>
+            <Select value={newPriority} onValueChange={setNewPriority}>
+              <SelectTrigger className="bg-secondary border-none h-11">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Bassa</SelectItem>
+                <SelectItem value="medium">Media</SelectItem>
+                <SelectItem value="high">Alta</SelectItem>
+                <SelectItem value="critical">Critica</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={newTaskType} onValueChange={setNewTaskType}>
+              <SelectTrigger className="bg-secondary border-none h-11">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="task">Task</SelectItem>
+                <SelectItem value="work">
+                  <span className="inline-flex items-center gap-2">
+                    <BriefcaseBusiness className="w-3.5 h-3.5" />
+                    Lavoro
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </motion.form>
       )}
 
@@ -175,6 +238,12 @@ export default function Planner() {
                   </p>
                   {task.description && (
                     <p className="text-xs text-muted-foreground truncate mt-0.5">{task.description}</p>
+                  )}
+                  {(task.start_time || task.end_time || task.task_type === 'work') && (
+                    <p className="text-[10px] font-mono text-muted-foreground truncate mt-1">
+                      {task.start_time || '--:--'} - {task.end_time || '--:--'}
+                      {task.task_type === 'work' ? ' - Lavoro' : ''}
+                    </p>
                   )}
                 </div>
 

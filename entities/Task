@@ -40,6 +40,27 @@
       "type": "string",
       "format": "date"
     },
+    "start_time": {
+      "type": "string",
+      "description": "Task start time in HH:mm format"
+    },
+    "end_time": {
+      "type": "string",
+      "description": "Task end time in HH:mm format"
+    },
+    "task_type": {
+      "type": "string",
+      "enum": [
+        "task",
+        "work"
+      ],
+      "default": "task",
+      "description": "Whether this task is regular work tracked in the Lavoro page"
+    },
+    "hourly_rate": {
+      "type": "number",
+      "description": "Optional hourly rate snapshot for work tasks"
+    },
     "is_brain_dump": {
       "type": "boolean",
       "default": false,

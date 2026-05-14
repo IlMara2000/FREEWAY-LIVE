@@ -30,7 +30,6 @@ export default function BrainDump() {
         status: 'inbox',
         xp_value: 10,
       });
-      // Small XP reward for brain dumping
       const result = await addXP(10);
       setRewardData({
         amount: 10,
@@ -96,7 +95,7 @@ export default function BrainDump() {
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground font-mono flex items-center gap-1">
             <Zap className="w-3 h-3 text-primary" />
-            +10 XP per ogni dump
+            +10 XP collegati al profilo
           </span>
           <Button type="submit" disabled={!text.trim()} className="gap-2">
             <Send className="w-4 h-4" />
@@ -150,7 +149,7 @@ export default function BrainDump() {
         {dumps.length === 0 && (
           <div className="text-center py-16 text-muted-foreground">
             <Brain className="w-12 h-12 mx-auto mb-3 opacity-20" />
-            <p className="text-sm">Il tuo cervello è vuoto? Impossibile. Dump something!</p>
+            <p className="text-sm">Spazio pulito. Scrivi il primo pensiero quando arriva.</p>
           </div>
         )}
       </div>

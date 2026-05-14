@@ -2,7 +2,7 @@ export const THEMES = {
   emerald: {
     id: 'emerald',
     name: 'Smeraldo',
-    description: 'Verde neon su nero profondo. Il default operativo.',
+    description: 'Verde neon su nero profondo. Base operativa.',
     minLevel: 1,
     accent: '#00FF88',
     accentHSL: '155 100% 50%',

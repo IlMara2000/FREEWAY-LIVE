@@ -40,7 +40,7 @@ export default function Splash({ onEnter }) {
           animate={{ boxShadow: ['0 0 20px rgba(16,185,129,0.25)', '0 0 45px rgba(16,185,129,0.5)', '0 0 20px rgba(16,185,129,0.25)'] }}
           transition={{ duration: 2.5, repeat: Infinity }}
         >
-          <span className="font-grotesk font-black text-3xl text-emerald-400 text-glow">FL</span>
+          <span className="font-grotesk font-black text-3xl text-emerald-400 text-glow">FWL</span>
         </motion.div>
 
         {/* Title */}
