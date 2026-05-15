@@ -10,6 +10,7 @@ import {
 import { Check, Lock, Palette, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import XPBar from '@/components/shared/XPBar';
+import PageShell from '@/components/shared/PageShell';
 
 const CUSTOM_THEME_KEY = 'fw_theme_customizer';
 const themeList = getThemeList();
@@ -62,7 +63,7 @@ export default function ThemeStore() {
   };
 
   return (
-    <div className="min-h-screen p-4 md:p-8 max-w-3xl mx-auto space-y-5">
+    <PageShell maxWidth="max-w-3xl" contentClassName="space-y-5">
       <motion.header
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -131,7 +132,7 @@ export default function ThemeStore() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.09 }}
-        className="glass rounded-2xl p-4 space-y-4"
+        className="glass-panel p-4 space-y-4"
       >
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -267,6 +268,6 @@ export default function ThemeStore() {
           );
         })}
       </section>
-    </div>
+    </PageShell>
   );
 }

@@ -11,6 +11,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useUserProfile from '@/hooks/useUserProfile';
 import XPReward from '@/components/shared/XPReward';
 import TaskDescriptionAssistant from '@/components/tasks/TaskDescriptionAssistant';
+import PageShell from '@/components/shared/PageShell';
 import { Plus, Check, Trash2, BriefcaseBusiness, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -119,7 +120,7 @@ export default function Planner() {
   ].find(Boolean);
 
   return (
-    <div className="min-h-screen p-4 md:p-8 max-w-3xl mx-auto space-y-6">
+    <PageShell maxWidth="max-w-4xl" contentClassName="space-y-6">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-3xl font-grotesk font-bold text-foreground">
           Planner
@@ -127,14 +128,14 @@ export default function Planner() {
         <p className="text-sm text-muted-foreground mt-1">Organizza le tue missioni</p>
       </motion.div>
 
-      <div className="flex gap-1 p-1 bg-secondary rounded-xl">
+      <div className="glass grid grid-cols-4 gap-1 rounded-2xl p-1.5">
         {STATUS_TABS.map((tab) => (
           <button
             key={tab.value}
             onClick={() => setActiveTab(tab.value)}
-            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`min-h-11 rounded-xl px-2 text-xs font-semibold transition-all sm:text-sm ${
               activeTab === tab.value
-                ? 'bg-primary/15 text-primary'
+                ? 'bg-emerald-300 text-black shadow-[0_0_24px_rgba(52,211,153,0.28)]'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -146,7 +147,7 @@ export default function Planner() {
       {activeTab !== 'done' && (
         <motion.form
           onSubmit={handleAdd}
-          className="glass-panel p-4 space-y-3"
+          className="glass-panel p-4 md:p-5 space-y-3"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
@@ -155,7 +156,7 @@ export default function Planner() {
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
               placeholder="Nuovo task..."
-              className="flex-1 bg-secondary border-none h-11"
+              className="h-11 flex-1 rounded-xl border-white/10 bg-black/25"
             />
             <Button
               type="submit"
@@ -172,11 +173,11 @@ export default function Planner() {
             value={newDescription}
             onChange={(e) => setNewDescription(e.target.value)}
             placeholder="Descrizione (se vuota la compilo io)..."
-            className="bg-secondary border-none h-11"
+            className="h-11 rounded-xl border-white/10 bg-black/25"
           />
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <label className="bg-secondary rounded-md px-3 py-2 flex items-center gap-2">
+            <label className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/25 px-3 py-2">
               <Clock className="w-4 h-4 text-muted-foreground" />
               <input
                 type="time"
@@ -186,7 +187,7 @@ export default function Planner() {
                 aria-label="Ora inizio"
               />
             </label>
-            <label className="bg-secondary rounded-md px-3 py-2 flex items-center gap-2">
+            <label className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/25 px-3 py-2">
               <Clock className="w-4 h-4 text-muted-foreground" />
               <input
                 type="time"
@@ -197,7 +198,7 @@ export default function Planner() {
               />
             </label>
             <Select value={newPriority} onValueChange={setNewPriority}>
-              <SelectTrigger className="bg-secondary border-none h-11">
+              <SelectTrigger className="h-11 rounded-xl border-white/10 bg-black/25">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -208,7 +209,7 @@ export default function Planner() {
               </SelectContent>
             </Select>
             <Select value={newTaskType} onValueChange={setNewTaskType}>
-              <SelectTrigger className="bg-secondary border-none h-11">
+              <SelectTrigger className="h-11 rounded-xl border-white/10 bg-black/25">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -249,7 +250,7 @@ export default function Planner() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, x: -100 }}
-                className="glass rounded-xl p-4 group"
+                className="glass rounded-2xl p-4 group"
               >
                 <div className="flex items-start gap-3">
                   <div className={`mt-2 w-2.5 h-2.5 rounded-full shrink-0 ${PRIORITY_COLORS[task.priority]}`} />
@@ -319,6 +320,6 @@ export default function Planner() {
         levelUp={rewardData.levelUp}
         newLevel={rewardData.newLevel}
       />
-    </div>
+    </PageShell>
   );
 }

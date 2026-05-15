@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { BriefcaseBusiness, Calculator, Clock, Euro, TrendingUp } from 'lucide-react';
 import { accountData } from '@/api/accountDataClient';
 import { normalizeList } from '@/lib/normalize-list';
+import PageShell from '@/components/shared/PageShell';
 import {
   formatCurrency,
   formatDuration,
@@ -50,11 +51,7 @@ export default function Work() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="min-h-screen p-4 md:p-8 max-w-6xl mx-auto space-y-5"
-    >
+    <PageShell maxWidth="max-w-6xl" contentClassName="space-y-5">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="font-mono text-[10px] text-emerald-400/60 uppercase tracking-widest mb-1">Report lavoro</p>
@@ -173,6 +170,6 @@ export default function Work() {
           )}
         </div>
       </section>
-    </motion.div>
+    </PageShell>
   );
 }

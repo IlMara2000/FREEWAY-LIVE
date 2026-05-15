@@ -8,12 +8,7 @@ import { BriefcaseBusiness, CalendarPlus, ChevronLeft, ChevronRight, Clock, Laye
 import TaskModal from '@/components/calendar/TaskModal';
 import CreateTaskModal from '@/components/calendar/CreateTaskModal';
 import { formatDuration, getTaskDurationHours, getWorkColor } from '@/lib/work-utils';
-
-const pageVariants = {
-  initial: { opacity: 0, y: 14 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.34, ease: [0.22, 1, 0.36, 1] } },
-  exit: { opacity: 0, y: -10, transition: { duration: 0.24, ease: [0.4, 0, 0.6, 1] } },
-};
+import PageShell from '@/components/shared/PageShell';
 
 const DAYS = ['D', 'L', 'M', 'M', 'G', 'V', 'S'];
 const MONTHS = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
@@ -83,17 +78,11 @@ export default function CalendarView({ onStartTomato }) {
   const selectedTasks = selectedDay ? getTasksForDay(selectedDay) : [];
 
   return (
-    <motion.div
-      variants={pageVariants}
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      className="min-h-screen p-4 md:p-8 max-w-6xl mx-auto flex flex-col gap-5"
-    >
+    <PageShell maxWidth="max-w-6xl" contentClassName="flex flex-col gap-5">
       <div className="flex items-end justify-between gap-4 pt-2">
-        <div>
+        <div className="min-w-0">
           <p className="font-mono text-[10px] text-emerald-400/60 tracking-widest uppercase mb-1">Calendario</p>
-          <h1 className="font-grotesk font-black text-3xl md:text-5xl text-white text-glow leading-none">
+          <h1 className="font-grotesk font-black text-[clamp(2.35rem,10vw,4.4rem)] text-white text-glow leading-none">
             {MONTHS[month]} <span className="text-white/35">{year}</span>
           </h1>
         </div>
@@ -107,8 +96,8 @@ export default function CalendarView({ onStartTomato }) {
         </div>
       </div>
 
-      <section className="grid gap-4 lg:grid-cols-[1fr_320px] items-start">
-        <div className="glass-panel p-3 md:p-4">
+      <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
+        <div className="glass-panel p-2.5 sm:p-3 md:p-4">
           <div className="grid grid-cols-7 mb-2">
             {DAYS.map((d, i) => (
               <div key={i} className="text-center font-mono text-[10px] text-emerald-400/50 uppercase tracking-wider py-2">
@@ -119,7 +108,7 @@ export default function CalendarView({ onStartTomato }) {
 
           <div className="grid grid-cols-7 gap-1.5 md:gap-2">
             {cells.map((day, i) => {
-              if (!day) return <div key={i} className="min-h-[86px] md:min-h-[118px]" />;
+              if (!day) return <div key={i} className="min-h-[78px] sm:min-h-[92px] md:min-h-[118px]" />;
               const dayTasks = getTasksForDay(day);
               const active = isToday(day);
               const selected = selectedDay === day;
@@ -137,7 +126,7 @@ export default function CalendarView({ onStartTomato }) {
                       handleDayClick(day);
                     }
                   }}
-                  className={`group relative min-h-[86px] md:min-h-[118px] rounded-2xl p-2.5 flex flex-col items-stretch transition-all text-left overflow-hidden cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 ${
+                  className={`group relative min-h-[78px] rounded-[1.15rem] p-2 sm:min-h-[92px] sm:rounded-2xl sm:p-2.5 md:min-h-[118px] flex flex-col items-stretch transition-all text-left overflow-hidden cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 ${
                     active
                       ? 'bg-emerald-500/12 border border-emerald-500/50 shadow-[0_0_28px_rgba(16,185,129,0.13)]'
                       : selected
@@ -145,7 +134,7 @@ export default function CalendarView({ onStartTomato }) {
                       : 'bg-white/[0.025] border border-white/[0.055] hover:bg-white/[0.055]'
                   }`}
                 >
-                  <span className={`font-mono text-[11px] font-semibold ${active ? 'text-emerald-300' : 'text-white/70'}`}>
+                  <span className={`font-mono text-[10px] font-semibold sm:text-[11px] ${active ? 'text-emerald-300' : 'text-white/70'}`}>
                     {String(day).padStart(2, '0')}
                   </span>
 
@@ -166,7 +155,7 @@ export default function CalendarView({ onStartTomato }) {
                         </div>
                       );
                     }) : (
-                      <span className="mt-auto text-[10px] text-white/20 opacity-0 group-hover:opacity-100 transition-opacity">+ task</span>
+                      <span className="mt-auto text-[10px] text-white/20 opacity-0 group-hover:opacity-100 transition-opacity sm:opacity-100">+ task</span>
                     )}
                     {dayTasks.length > 3 && (
                       <span className="block text-[10px] font-mono text-white/35 px-1">+{dayTasks.length - 3}</span>
@@ -297,6 +286,6 @@ export default function CalendarView({ onStartTomato }) {
         onClose={() => setCreateDate(null)}
         onRefetch={refetch}
       />
-    </motion.div>
+    </PageShell>
   );
 }

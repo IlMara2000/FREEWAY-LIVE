@@ -107,17 +107,16 @@ body {
 
 /* Glass panel - stile repo */
 .glass-panel {
-  background: linear-gradient(165deg,
-    rgba(255,255,255,0.05) 0%,
-    rgba(16,185,129,0.02) 100%
-  );
+  background:
+    radial-gradient(circle at 18% 0%, rgba(94,234,212,0.075), transparent 34%),
+    linear-gradient(165deg, rgba(8,18,28,0.72) 0%, rgba(2,8,13,0.5) 100%);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-top: 1px solid rgba(16,185,129,0.35);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-top: 1px solid rgba(94, 234, 212, 0.32);
   box-shadow:
-    0 25px 50px -12px rgba(0,0,0,0.7),
-    inset 0 1px 1px rgba(255,255,255,0.05);
+    0 30px 70px -18px rgba(0,0,0,0.86),
+    inset 0 1px 1px rgba(255,255,255,0.045);
   border-radius: 24px;
 }
 
@@ -135,18 +134,22 @@ body {
 }
 
 .glass {
-  background: linear-gradient(165deg, rgba(255,255,255,0.04) 0%, rgba(16,185,129,0.015) 100%);
+  background:
+    radial-gradient(circle at 15% 0%, rgba(94,234,212,0.06), transparent 42%),
+    linear-gradient(165deg, rgba(10,18,26,0.62) 0%, rgba(2,7,12,0.44) 100%);
   backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-top: 1px solid rgba(16,185,129,0.2);
+  border: 1px solid rgba(148,163,184,0.11);
+  border-top: 1px solid rgba(94,234,212,0.22);
 }
 
 .glass-strong {
-  background: linear-gradient(165deg, rgba(255,255,255,0.07) 0%, rgba(16,185,129,0.03) 100%);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(94,234,212,0.1), transparent 38%),
+    linear-gradient(165deg, rgba(13,24,34,0.78) 0%, rgba(2,7,12,0.56) 100%);
   backdrop-filter: blur(30px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-top: 1px solid rgba(16,185,129,0.35);
-  box-shadow: 0 20px 40px -8px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.04);
+  border: 1px solid rgba(148,163,184,0.14);
+  border-top: 1px solid rgba(94,234,212,0.36);
+  box-shadow: 0 24px 56px -12px rgba(0,0,0,0.76), inset 0 1px 1px rgba(255,255,255,0.04);
 }
 
 /* Btn shimmer - stile repo */

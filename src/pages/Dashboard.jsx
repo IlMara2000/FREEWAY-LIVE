@@ -6,6 +6,7 @@ import { normalizeList } from '@/lib/normalize-list';
 import useUserProfile from '@/hooks/useUserProfile';
 import XPBar from '@/components/shared/XPBar';
 import StatCard from '@/components/shared/StatCard';
+import PageShell from '@/components/shared/PageShell';
 import { useQuery } from '@tanstack/react-query';
 import {
   Brain,
@@ -92,7 +93,7 @@ export default function Dashboard() {
   const nextTask = todayTasks[0];
 
   return (
-    <div className="min-h-screen p-4 md:p-8 max-w-5xl mx-auto space-y-5">
+    <PageShell maxWidth="max-w-5xl" contentClassName="space-y-5">
       <motion.header
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -114,7 +115,7 @@ export default function Dashboard() {
 
         <Link
           to="/themes"
-          className="glass h-11 px-4 rounded-xl inline-flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors"
+          className="glass h-11 rounded-xl px-4 inline-flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors"
         >
           <Palette className="w-4 h-4" />
           Temi
@@ -298,6 +299,6 @@ export default function Dashboard() {
           )}
         </motion.div>
       </section>
-    </div>
+    </PageShell>
   );
 }

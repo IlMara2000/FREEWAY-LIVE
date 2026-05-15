@@ -12,6 +12,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useUserProfile from '@/hooks/useUserProfile';
 import XPReward from '@/components/shared/XPReward';
 import TaskDescriptionAssistant from '@/components/tasks/TaskDescriptionAssistant';
+import PageShell from '@/components/shared/PageShell';
 import { Brain, Send, Trash2, ArrowRight, Zap } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -81,7 +82,7 @@ export default function BrainDump() {
   ].find(Boolean);
 
   return (
-    <div className="min-h-screen p-4 md:p-8 max-w-3xl mx-auto space-y-6">
+    <PageShell maxWidth="max-w-3xl" contentClassName="space-y-6">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-3xl font-grotesk font-bold text-foreground flex items-center gap-3">
@@ -99,13 +100,13 @@ export default function BrainDump() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="glass rounded-2xl p-4 space-y-3"
+        className="glass-panel p-4 md:p-5 space-y-3"
       >
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Cosa ti frulla in testa? Scrivi tutto qui..."
-          className="bg-transparent border-none resize-none text-foreground placeholder:text-muted-foreground/50 min-h-[100px] focus-visible:ring-0"
+          className="min-h-[130px] resize-none rounded-2xl border-white/10 bg-black/20 text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/30"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
               handleSubmit(e);
@@ -140,7 +141,7 @@ export default function BrainDump() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, x: -100 }}
-              className="glass rounded-xl p-4 group"
+              className="glass rounded-2xl p-4 group"
             >
               <div className="flex items-start gap-3">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />
@@ -201,6 +202,6 @@ export default function BrainDump() {
         levelUp={rewardData.levelUp}
         newLevel={rewardData.newLevel}
       />
-    </div>
+    </PageShell>
   );
 }

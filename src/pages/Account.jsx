@@ -1,16 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
 import { Camera, Check, ImagePlus, LogOut, Save, UserRound } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/AuthContext';
-
-const pageVariants = {
-  initial: { opacity: 0, y: 14 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.34, ease: [0.22, 1, 0.36, 1] } },
-  exit: { opacity: 0, y: -10, transition: { duration: 0.24, ease: [0.4, 0, 0.6, 1] } },
-};
+import PageShell from '@/components/shared/PageShell';
 
 const readImageAsAvatar = (file) => new Promise((resolve, reject) => {
   const reader = new FileReader();
@@ -134,13 +128,7 @@ export default function Account() {
   };
 
   return (
-    <motion.div
-      variants={pageVariants}
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      className="min-h-screen p-4 md:p-8 max-w-lg mx-auto flex flex-col gap-6"
-    >
+    <PageShell maxWidth="max-w-lg" contentClassName="flex flex-col gap-6">
       <div className="flex items-center justify-between pt-2">
         <div>
           <h1 className="font-grotesk font-black text-2xl text-white text-glow">
@@ -237,6 +225,6 @@ export default function Account() {
           </Button>
         </div>
       </form>
-    </motion.div>
+    </PageShell>
   );
 }
