@@ -19,6 +19,8 @@ import Work from '@/pages/Work';
 import Tutorial from '@/components/tutorial/Tutorial';
 import AppLayout from '@/components/layout/AppLayout';
 import PageNotFound from '@/lib/PageNotFound';
+import useUserProfile from '@/hooks/useUserProfile';
+import PersonalOnboarding, { isInitialOnboardingComplete } from '@/components/onboarding/PersonalOnboarding';
 
 const TUTORIAL_KEY = 'fw_tutorial_done';
 const APP_ENTERED_KEY = 'fw_app_entered';
@@ -64,18 +66,25 @@ const AuthCallback = () => {
 
 const AuthenticatedApp = () => {
   const { isAuthenticated, isLoadingAuth, isLoadingPublicSettings } = useAuth();
+  const { profile, loading: profileLoading, saveProfile } = useUserProfile();
   const [showTutorial, setShowTutorial] = useState(false);
+  const [savingOnboarding, setSavingOnboarding] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const isAuthCallback = location.pathname === '/auth/callback';
   const shouldShowSplash = location.pathname === '/' && sessionStorage.getItem(APP_ENTERED_KEY) !== '1';
+  const onboardingComplete = isInitialOnboardingComplete(profile);
+  const canShowAccountOverlays = Boolean(
+    isAuthenticated &&
+    !isAuthCallback &&
+    !shouldShowSplash &&
+    !profileLoading &&
+    profile
+  );
+  const showPersonalOnboarding = canShowAccountOverlays && !onboardingComplete;
 
   const handleEnter = () => {
     sessionStorage.setItem(APP_ENTERED_KEY, '1');
-    const tutorialDone = localStorage.getItem(TUTORIAL_KEY);
-    if (isAuthenticated && !tutorialDone) {
-      setShowTutorial(true);
-    }
     if (isAuthenticated) {
       navigate('/calendar');
     }
@@ -85,6 +94,43 @@ const AuthenticatedApp = () => {
     localStorage.setItem(TUTORIAL_KEY, '1');
     setShowTutorial(false);
   };
+
+  const handleOnboardingComplete = async (profilePatch) => {
+    if (!profile || savingOnboarding) return;
+
+    setSavingOnboarding(true);
+
+    try {
+      await saveProfile({
+        ...profile,
+        ...profilePatch,
+        day_by_day: {
+          ...(profile.day_by_day || {}),
+          ...(profilePatch.day_by_day || {}),
+          history: profile.day_by_day?.history || {},
+        },
+      });
+
+      if (!localStorage.getItem(TUTORIAL_KEY)) {
+        setShowTutorial(true);
+      }
+    } finally {
+      setSavingOnboarding(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!canShowAccountOverlays) return;
+
+    if (!onboardingComplete) {
+      setShowTutorial(false);
+      return;
+    }
+
+    if (!localStorage.getItem(TUTORIAL_KEY)) {
+      setShowTutorial(true);
+    }
+  }, [canShowAccountOverlays, onboardingComplete]);
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
@@ -152,7 +198,16 @@ const AuthenticatedApp = () => {
 
       {/* Tutorial overlay */}
       <AnimatePresence>
-        {showTutorial && (
+        {showPersonalOnboarding && (
+          <PersonalOnboarding
+            saving={savingOnboarding}
+            onComplete={handleOnboardingComplete}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showTutorial && !showPersonalOnboarding && (
           <Tutorial onComplete={handleTutorialComplete} />
         )}
       </AnimatePresence>

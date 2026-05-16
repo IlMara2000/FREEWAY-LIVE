@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { Camera, Check, ImagePlus, LogOut, Save, UserRound } from 'lucide-react';
+import { Camera, Check, ImagePlus, LogOut, RotateCcw, Save, ShieldCheck, UserRound } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/AuthContext';
+import useUserProfile from '@/hooks/useUserProfile';
 import PageShell from '@/components/shared/PageShell';
 
 const readImageAsAvatar = (file) => new Promise((resolve, reject) => {
@@ -53,6 +54,7 @@ const saveStoredAvatar = (userId, value) => {
 
 export default function Account() {
   const { user, updateAccount, logout } = useAuth();
+  const { profile, saveProfile } = useUserProfile();
   const metadata = user?.user_metadata || {};
   const initialUsername = metadata.username || metadata.name || metadata.full_name || '';
   const remoteAvatar = metadata.avatar_url || metadata.picture || '';
@@ -124,6 +126,29 @@ export default function Account() {
       setMessage(error.message);
     } finally {
       event.target.value = '';
+    }
+  };
+
+  const handleResetOnboarding = async () => {
+    if (!profile) return;
+
+    setStatus('saving');
+    setMessage('');
+
+    try {
+      await saveProfile({
+        ...profile,
+        initial_onboarding: null,
+        day_by_day: {
+          ...(profile.day_by_day || {}),
+          configured: false,
+        },
+      });
+      setStatus('saved');
+      setMessage('Onboarding resettato. Ricompare adesso per rifare privacy e calibrazione.');
+    } catch (error) {
+      setStatus('error');
+      setMessage(error?.message || 'Reset onboarding non riuscito.');
     }
   };
 
@@ -225,6 +250,34 @@ export default function Account() {
           </Button>
         </div>
       </form>
+
+      <section className="glass-panel p-5 space-y-4">
+        <div className="flex items-start gap-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-emerald-400/10">
+            <ShieldCheck className="h-5 w-5 text-emerald-300" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="font-grotesk text-lg font-bold text-white">
+              Privacy e calibrazione
+            </h2>
+            <p className="mt-1 text-sm leading-relaxed text-white/45">
+              Le risposte iniziali servono solo a personalizzare routine, task e tono dell app.
+              Puoi rifarle quando vuoi: al reset ti verra' chiesto di firmare di nuovo.
+            </p>
+          </div>
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleResetOnboarding}
+          disabled={!profile || status === 'saving'}
+          className="h-11 w-full rounded-xl border-white/10 bg-white/5 text-white hover:bg-white/10"
+        >
+          <RotateCcw className="h-4 w-4" />
+          Rifai onboarding e privacy
+        </Button>
+      </section>
     </PageShell>
   );
 }
