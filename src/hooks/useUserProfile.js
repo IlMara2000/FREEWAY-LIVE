@@ -198,6 +198,7 @@ export default function useUserProfile() {
   return {
     profile,
     loading,
+    saveProfile,
     addXP,
     addFocusMinutes,
     incrementTasksCompleted,

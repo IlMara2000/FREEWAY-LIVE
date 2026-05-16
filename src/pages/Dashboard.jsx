@@ -7,6 +7,7 @@ import useUserProfile from '@/hooks/useUserProfile';
 import XPBar from '@/components/shared/XPBar';
 import StatCard from '@/components/shared/StatCard';
 import PageShell from '@/components/shared/PageShell';
+import DayByDayPanel from '@/components/daybyday/DayByDayPanel';
 import { useQuery } from '@tanstack/react-query';
 import {
   Brain,
@@ -173,6 +174,8 @@ export default function Dashboard() {
           </Link>
         </motion.div>
       </section>
+
+      <DayByDayPanel />
 
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {stats.map((stat, index) => (

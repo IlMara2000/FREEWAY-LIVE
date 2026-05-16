@@ -4,8 +4,9 @@ import { BriefcaseBusiness, Clock, Plus, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { accountData } from '@/api/accountDataClient';
 import { buildCalendarTaskPayload, invalidateTaskViews } from '@/lib/task-workflows';
+import { getAntiChaosMessage } from '@/lib/day-by-day';
 
-export default function CreateTaskModal({ date, onClose, onRefetch }) {
+export default function CreateTaskModal({ date, existingTasksForDate = [], onClose, onRefetch }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('medium');
@@ -34,6 +35,20 @@ export default function CreateTaskModal({ date, onClose, onRefetch }) {
     if (!title.trim() || saving) return;
     setSaving(true);
     setError('');
+
+    const warning = getAntiChaosMessage(existingTasksForDate, {
+      title,
+      description,
+      priority,
+      status: 'today',
+      task_type: taskType,
+    });
+
+    if (warning) {
+      setError(warning);
+      setSaving(false);
+      return;
+    }
 
     try {
       await accountData.tasks.create(buildCalendarTaskPayload({

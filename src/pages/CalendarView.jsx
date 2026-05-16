@@ -283,6 +283,18 @@ export default function CalendarView({ onStartTomato }) {
       />
       <CreateTaskModal
         date={createDate}
+        existingTasksForDate={createDate ? tasks.filter((task) => (
+          task.due_date === createDate ||
+          (
+            task.status === 'today' &&
+            !task.due_date &&
+            createDate === getCalendarDateString({
+              year: today.getFullYear(),
+              month: today.getMonth(),
+              day: today.getDate(),
+            })
+          )
+        )) : []}
         onClose={() => setCreateDate(null)}
         onRefetch={refetch}
       />

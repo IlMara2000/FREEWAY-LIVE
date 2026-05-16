@@ -43,6 +43,26 @@ export const sanitizeTaskStatus = (status) =>
 
 export const getTaskXP = (priority) => TASK_XP_BY_PRIORITY[sanitizeTaskPriority(priority)];
 
+/**
+ * @param {{
+ *   title?: string;
+ *   description?: string;
+ *   priority?: string;
+ *   status?: string;
+ *   due_date?: string;
+ *   start_time?: string;
+ *   end_time?: string;
+ *   task_type?: string;
+ *   is_brain_dump?: boolean;
+ *   xp_value?: number | string;
+ *   day_by_day?: boolean;
+ *   day_by_day_date?: string;
+ *   day_by_day_section?: string;
+ *   day_by_day_area?: string;
+ *   day_by_day_weight?: string;
+ *   source?: string;
+ * }} [input]
+ */
 export const buildTaskPayload = ({
   title,
   description = '',
@@ -54,6 +74,12 @@ export const buildTaskPayload = ({
   task_type,
   is_brain_dump = false,
   xp_value,
+  day_by_day = false,
+  day_by_day_date,
+  day_by_day_section,
+  day_by_day_area,
+  day_by_day_weight,
+  source,
 } = {}) => {
   const sanitizedPriority = sanitizeTaskPriority(priority);
   const sanitizedStatus = sanitizeTaskStatus(status);
@@ -64,11 +90,17 @@ export const buildTaskPayload = ({
     priority: sanitizedPriority,
     status: sanitizedStatus,
     is_brain_dump: Boolean(is_brain_dump),
+    day_by_day: Boolean(day_by_day),
     xp_value: Number.isFinite(Number(xp_value)) ? Number(xp_value) : getTaskXP(sanitizedPriority),
     ...(due_date ? { due_date } : {}),
     ...(start_time ? { start_time } : {}),
     ...(end_time ? { end_time } : {}),
     ...(task_type ? { task_type } : {}),
+    ...(day_by_day_date ? { day_by_day_date } : {}),
+    ...(day_by_day_section ? { day_by_day_section } : {}),
+    ...(day_by_day_area ? { day_by_day_area } : {}),
+    ...(day_by_day_weight ? { day_by_day_weight } : {}),
+    ...(source ? { source } : {}),
   };
 };
 

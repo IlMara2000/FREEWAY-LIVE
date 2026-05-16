@@ -7,6 +7,7 @@ import {
   invalidateTaskViews,
   TASK_STATUS,
 } from '@/lib/task-workflows';
+import { getAntiChaosMessage } from '@/lib/day-by-day';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useUserProfile from '@/hooks/useUserProfile';
 import XPReward from '@/components/shared/XPReward';
@@ -45,6 +46,7 @@ export default function Planner() {
   const [newStartTime, setNewStartTime] = useState('09:00');
   const [newEndTime, setNewEndTime] = useState('17:00');
   const [newTaskType, setNewTaskType] = useState('task');
+  const [antiChaosMessage, setAntiChaosMessage] = useState('');
   const [showReward, setShowReward] = useState(false);
   const [rewardData, setRewardData] = useState({ amount: 0, levelUp: false, newLevel: 1 });
   const { profile, addXP, incrementTasksCompleted } = useUserProfile();
@@ -101,6 +103,22 @@ export default function Planner() {
     e.preventDefault();
     if (!newTitle.trim()) return;
 
+    const warning = activeTab === TASK_STATUS.today
+      ? getAntiChaosMessage(tasks, {
+        title: newTitle,
+        description: newDescription,
+        priority: newPriority,
+        status: activeTab,
+        task_type: newTaskType,
+      })
+      : '';
+
+    if (warning) {
+      setAntiChaosMessage(warning);
+      return;
+    }
+
+    setAntiChaosMessage('');
     createMutation.mutate(buildPlannerTaskPayload({
       title: newTitle.trim(),
       description: newDescription.trim() || (newTaskType === 'work' ? 'Turno di lavoro' : 'Nessuna descrizione'),
@@ -154,7 +172,10 @@ export default function Planner() {
           <div className="flex gap-2">
             <Input
               value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
+              onChange={(e) => {
+                setNewTitle(e.target.value);
+                setAntiChaosMessage('');
+              }}
               placeholder="Nuovo task..."
               className="h-11 flex-1 rounded-xl border-white/10 bg-black/25"
             />
@@ -224,6 +245,12 @@ export default function Planner() {
             </Select>
           </div>
         </motion.form>
+      )}
+
+      {antiChaosMessage && (
+        <div className="rounded-xl border border-orange-300/30 bg-orange-400/10 p-3 text-sm text-orange-50/80">
+          {antiChaosMessage}
+        </div>
       )}
 
       {mutationError && (
