@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useOutlet } from 'react-router-dom';
-import { Timer, ListTodo, LayoutDashboard, Palette, Brain, CalendarDays, LogOut, UserRound, BriefcaseBusiness, Menu, Settings, X } from 'lucide-react';
+import { Timer, ListTodo, LayoutDashboard, Palette, Brain, CalendarDays, LogOut, UserRound, BriefcaseBusiness, Menu, Bot, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/lib/AuthContext';
 import FreewayLogo from '@/components/brand/FreewayLogo';
+import useUserProfile from '@/hooks/useUserProfile';
+import AppAssistantChat from '@/components/assistant/AppAssistantChat';
 
 const NAV_ITEMS = [
   { path: '/', icon: LayoutDashboard, label: 'Hub' },
@@ -36,7 +38,9 @@ export default function AppLayout() {
   const location = useLocation();
   const outlet = useOutlet();
   const { logout } = useAuth();
+  const { profile } = useUserProfile();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -106,15 +110,18 @@ export default function AppLayout() {
                 >
                   <FreewayLogo showWordmark />
                 </Link>
-                <Link
-                  to="/account"
-                  onClick={closeMenu}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.035] text-white/55 transition-colors hover:border-primary/35 hover:bg-primary/10 hover:text-primary"
-                  aria-label="Apri profilo"
-                  title="Profilo"
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMenu();
+                    setAssistantOpen(true);
+                  }}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-300/20 bg-emerald-400/[0.08] text-emerald-200 transition-colors hover:border-primary/45 hover:bg-primary/15 hover:text-primary"
+                  aria-label="Apri assistente Groq"
+                  title="Assistente"
                 >
-                  <Settings className="h-5 w-5" />
-                </Link>
+                  <Bot className="h-5 w-5" />
+                </button>
               </div>
 
               <nav className="space-y-2">
@@ -170,6 +177,13 @@ export default function AppLayout() {
           </>
         )}
       </AnimatePresence>
+
+      <AppAssistantChat
+        open={assistantOpen}
+        onClose={() => setAssistantOpen(false)}
+        profile={profile}
+        location={location}
+      />
 
       <main className="flex-1 overflow-hidden pb-6">
         <AnimatePresence mode="wait" initial={false}>

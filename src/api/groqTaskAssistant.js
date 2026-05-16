@@ -42,3 +42,25 @@ export async function requestTaskBreakdown(task) {
 
   return payload;
 }
+
+export async function requestAppAssistantReply({ message, history = [], context = {} }) {
+  const response = await fetch('/api/groq/app-assistant', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      message,
+      history,
+      context,
+    }),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(payload?.error || 'Assistente Groq non disponibile in questo momento.');
+  }
+
+  return payload;
+}

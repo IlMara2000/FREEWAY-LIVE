@@ -1,6 +1,7 @@
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
 import { defineConfig, loadEnv } from 'vite'
+import { createAppAssistantReply } from './api/_groqAppAssistant.js'
 import { createTaskBreakdown } from './api/_groqTaskBreakdown.js'
 import { createTaskDescriptionSuggestion } from './api/_groqTaskDescription.js'
 
@@ -59,6 +60,25 @@ const groqDevApiPlugin = (groqApiKey) => ({
       try {
         const input = await readRequestBody(req)
         const result = await createTaskBreakdown({
+          input,
+          apiKey: groqApiKey,
+        })
+        sendJson(res, 200, result)
+      } catch (error) {
+        sendJson(res, error.statusCode || 500, {
+          error: error.message || 'Errore durante la richiesta a Groq.',
+        })
+      }
+    })
+    server.middlewares.use('/api/groq/app-assistant', async (req, res) => {
+      if (req.method !== 'POST') {
+        sendJson(res, 405, { error: 'Metodo non supportato.' })
+        return
+      }
+
+      try {
+        const input = await readRequestBody(req)
+        const result = await createAppAssistantReply({
           input,
           apiKey: groqApiKey,
         })
