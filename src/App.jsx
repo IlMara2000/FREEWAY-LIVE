@@ -25,6 +25,22 @@ import PersonalOnboarding, { isInitialOnboardingComplete } from '@/components/on
 const TUTORIAL_KEY = 'fw_tutorial_done';
 const APP_ENTERED_KEY = 'fw_app_entered';
 
+const hasStoredAppEntry = () => {
+  try {
+    return sessionStorage.getItem(APP_ENTERED_KEY) === '1';
+  } catch {
+    return false;
+  }
+};
+
+const storeAppEntry = () => {
+  try {
+    sessionStorage.setItem(APP_ENTERED_KEY, '1');
+  } catch {
+    // Some embedded/mobile browser contexts can block storage; the in-memory state still lets the user continue.
+  }
+};
+
 const AuthCallback = () => {
   const { isAuthenticated, refreshSession } = useAuth();
   const navigate = useNavigate();
@@ -38,7 +54,7 @@ const AuthCallback = () => {
       }
 
       if (!cancelled) {
-        sessionStorage.setItem(APP_ENTERED_KEY, '1');
+        storeAppEntry();
         navigate('/calendar', { replace: true });
       }
     };
@@ -69,10 +85,11 @@ const AuthenticatedApp = () => {
   const { profile, loading: profileLoading, saveProfile } = useUserProfile();
   const [showTutorial, setShowTutorial] = useState(false);
   const [savingOnboarding, setSavingOnboarding] = useState(false);
+  const [hasEnteredApp, setHasEnteredApp] = useState(hasStoredAppEntry);
   const location = useLocation();
   const navigate = useNavigate();
   const isAuthCallback = location.pathname === '/auth/callback';
-  const shouldShowSplash = location.pathname === '/' && sessionStorage.getItem(APP_ENTERED_KEY) !== '1';
+  const shouldShowSplash = location.pathname === '/' && !hasEnteredApp;
   const onboardingComplete = isInitialOnboardingComplete(profile);
   const canShowAccountOverlays = Boolean(
     isAuthenticated &&
@@ -84,7 +101,8 @@ const AuthenticatedApp = () => {
   const showPersonalOnboarding = canShowAccountOverlays && !onboardingComplete;
 
   const handleEnter = () => {
-    sessionStorage.setItem(APP_ENTERED_KEY, '1');
+    storeAppEntry();
+    setHasEnteredApp(true);
     if (isAuthenticated) {
       navigate('/calendar');
     }
