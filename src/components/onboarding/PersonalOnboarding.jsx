@@ -279,8 +279,8 @@ export default function PersonalOnboarding({ onComplete, saving = false }) {
     {
       icon: BriefcaseBusiness,
       label: 'Lavoro',
-      title: 'Scegliamo cosa conta nel mondo reale.',
-      text: 'Un progetto principale. Il resto viene dopo.',
+      title: 'Se vuoi, diciamo cosa conta nel mondo reale.',
+      text: 'Questa parte e facoltativa. Se oggi non hai chiarezza, puoi lasciarla vuota e andare avanti.',
     },
     {
       icon: ShieldCheck,
@@ -300,11 +300,6 @@ export default function PersonalOnboarding({ onComplete, saving = false }) {
   };
 
   const next = () => {
-    if (step === 2 && !form.mainProject.trim()) {
-      setError('Scegli un progetto principale. Uno solo, anche provvisorio.');
-      return;
-    }
-
     setError('');
     setStep((value) => Math.min(value + 1, steps.length - 1));
   };
@@ -482,11 +477,11 @@ export default function PersonalOnboarding({ onComplete, saving = false }) {
                       onChange={(value) => update('workStatus', value)}
                     />
                     <label className={labelClass}>
-                      <span className={labelTextClass}>Progetto principale</span>
+                      <span className={labelTextClass}>Progetto principale facoltativo</span>
                       <input
                         value={form.mainProject}
                         onChange={(event) => update('mainProject', event.target.value)}
-                        placeholder="Uno solo. Anche provvisorio."
+                        placeholder="Puoi lasciarlo vuoto."
                         className={fieldClass}
                       />
                     </label>
@@ -534,6 +529,10 @@ export default function PersonalOnboarding({ onComplete, saving = false }) {
                         className={`${fieldClass} resize-none`}
                       />
                     </label>
+                  </div>
+
+                  <div className="rounded-2xl border border-emerald-300/18 bg-emerald-400/[0.07] p-4 text-sm leading-relaxed text-emerald-50/68">
+                    Se non vuoi definire lavoro, studio o progetto adesso, continua pure. La chat potra aiutarti a farlo piu avanti.
                   </div>
                 </>
               )}
