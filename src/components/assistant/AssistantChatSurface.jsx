@@ -19,6 +19,30 @@ const QUICK_PROMPTS = [
   'Crea una sveglia utile',
 ];
 
+const ACTION_TYPES = [
+  { value: 'create_task', label: 'Task' },
+  { value: 'create_event', label: 'Evento' },
+  { value: 'create_memo', label: 'Memo' },
+  { value: 'create_alarm', label: 'Sveglia' },
+];
+
+const PRIORITIES = [
+  { value: 'low', label: 'Bassa' },
+  { value: 'medium', label: 'Media' },
+  { value: 'high', label: 'Alta' },
+  { value: 'critical', label: 'Critica' },
+];
+
+const TASK_TYPES = [
+  { value: 'task', label: 'Task' },
+  { value: 'work', label: 'Lavoro' },
+  { value: 'event', label: 'Evento' },
+  { value: 'memo', label: 'Memo' },
+];
+
+const fieldClassName = 'min-h-10 w-full rounded-xl border border-white/10 bg-black/32 px-3 py-2 text-xs font-semibold text-white/78 outline-none transition-colors placeholder:text-white/22 focus:border-emerald-300/45';
+const labelClassName = 'font-mono text-[9px] uppercase tracking-[0.18em] text-emerald-300/45';
+
 const getTodayIso = () => new Date().toISOString().split('T')[0];
 
 const buildContext = ({ profile, location }) => {
@@ -124,6 +148,32 @@ export default function AssistantChatSurface({
     }
   };
 
+  const updateAction = (messageIndex, actionIndex, field, value) => {
+    setMessages((current) => current.map((message, index) => {
+      if (index !== messageIndex || message.applied) return message;
+
+      return {
+        ...message,
+        actions: message.actions.map((action, currentActionIndex) => (
+          currentActionIndex === actionIndex
+            ? { ...action, [field]: value }
+            : action
+        )),
+      };
+    }));
+  };
+
+  const removeAction = (messageIndex, actionIndex) => {
+    setMessages((current) => current.map((message, index) => {
+      if (index !== messageIndex || message.applied) return message;
+
+      return {
+        ...message,
+        actions: message.actions.filter((_, currentActionIndex) => currentActionIndex !== actionIndex),
+      };
+    }));
+  };
+
   const handleSubmit = (event) => {
     event.preventDefault();
     sendMessage();
@@ -180,13 +230,134 @@ export default function AssistantChatSurface({
                     Proposta app
                   </p>
                   {message.actions.map((action, actionIndex) => (
-                    <div key={`${action.type}-${actionIndex}`} className="rounded-xl border border-white/8 bg-white/[0.035] p-2 text-xs text-white/62">
-                      {getActionLabel(action)}
+                    <div key={`${action.type}-${actionIndex}`} className="space-y-3 rounded-2xl border border-white/8 bg-white/[0.035] p-3 text-xs text-white/62">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="min-w-0 truncate font-grotesk text-sm font-semibold text-white/78">
+                          {getActionLabel(action)}
+                        </p>
+                        {!message.applied && (
+                          <button
+                            type="button"
+                            onClick={() => removeAction(index, actionIndex)}
+                            className="shrink-0 rounded-lg border border-red-300/15 bg-red-400/8 px-2 py-1 font-mono text-[9px] uppercase tracking-[0.16em] text-red-100/70 transition-colors hover:border-red-300/35 hover:text-red-100"
+                          >
+                            Rimuovi
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <label className="space-y-1">
+                          <span className={labelClassName}>Tipo</span>
+                          <select
+                            value={action.type || 'create_task'}
+                            disabled={message.applied}
+                            onChange={(event) => updateAction(index, actionIndex, 'type', event.target.value)}
+                            className={fieldClassName}
+                          >
+                            {ACTION_TYPES.map((type) => (
+                              <option key={type.value} value={type.value}>{type.label}</option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <label className="space-y-1">
+                          <span className={labelClassName}>Titolo</span>
+                          <input
+                            value={action.title || ''}
+                            disabled={message.applied}
+                            onChange={(event) => updateAction(index, actionIndex, 'title', event.target.value)}
+                            className={fieldClassName}
+                            placeholder="Titolo"
+                          />
+                        </label>
+
+                        <label className="space-y-1">
+                          <span className={labelClassName}>Data</span>
+                          <input
+                            type="date"
+                            value={action.date || ''}
+                            disabled={message.applied}
+                            onChange={(event) => updateAction(index, actionIndex, 'date', event.target.value)}
+                            className={fieldClassName}
+                          />
+                        </label>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <label className="space-y-1">
+                            <span className={labelClassName}>Ora</span>
+                            <input
+                              type="time"
+                              value={action.time || ''}
+                              disabled={message.applied}
+                              onChange={(event) => updateAction(index, actionIndex, 'time', event.target.value)}
+                              className={fieldClassName}
+                            />
+                          </label>
+                          <label className="space-y-1">
+                            <span className={labelClassName}>Fine</span>
+                            <input
+                              type="time"
+                              value={action.end_time || ''}
+                              disabled={message.applied || action.type === 'create_alarm'}
+                              onChange={(event) => updateAction(index, actionIndex, 'end_time', event.target.value)}
+                              className={fieldClassName}
+                            />
+                          </label>
+                        </div>
+
+                        <label className="space-y-1">
+                          <span className={labelClassName}>Priorita</span>
+                          <select
+                            value={action.priority || 'medium'}
+                            disabled={message.applied || action.type === 'create_alarm'}
+                            onChange={(event) => updateAction(index, actionIndex, 'priority', event.target.value)}
+                            className={fieldClassName}
+                          >
+                            {PRIORITIES.map((priority) => (
+                              <option key={priority.value} value={priority.value}>{priority.label}</option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <label className="space-y-1">
+                          <span className={labelClassName}>Area</span>
+                          <select
+                            value={action.task_type || 'task'}
+                            disabled={message.applied || action.type === 'create_alarm'}
+                            onChange={(event) => updateAction(index, actionIndex, 'task_type', event.target.value)}
+                            className={fieldClassName}
+                          >
+                            {TASK_TYPES.map((type) => (
+                              <option key={type.value} value={type.value}>{type.label}</option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+
+                      <label className="block space-y-1">
+                        <span className={labelClassName}>
+                          {action.type === 'create_alarm' ? 'Promemoria' : 'Descrizione'}
+                        </span>
+                        <textarea
+                          value={action.type === 'create_alarm' ? action.reminder_text || '' : action.description || ''}
+                          disabled={message.applied}
+                          onChange={(event) => updateAction(
+                            index,
+                            actionIndex,
+                            action.type === 'create_alarm' ? 'reminder_text' : 'description',
+                            event.target.value,
+                          )}
+                          rows={2}
+                          className={`${fieldClassName} resize-none leading-relaxed`}
+                          placeholder="Dettagli utili..."
+                        />
+                      </label>
                     </div>
                   ))}
                   <button
                     type="button"
-                    disabled={message.applied || applying}
+                    disabled={message.applied || applying || message.actions.length === 0}
                     onClick={() => applyActions(index, message.actions)}
                     className="btn-cyber inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl text-[11px] disabled:opacity-45"
                   >
