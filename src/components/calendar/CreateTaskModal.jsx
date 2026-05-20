@@ -81,7 +81,7 @@ export default function CreateTaskModal({ date, existingTasksForDate = [], onClo
         <motion.div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
         <motion.div
-          className="relative z-10 my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-md space-y-4 overflow-y-auto glass-panel p-4 sm:p-6 sm:space-y-5"
+          className="relative z-10 my-auto max-h-[calc(100dvh_-_1.5rem)] w-full max-w-md space-y-4 overflow-y-auto glass-panel p-4 sm:p-6 sm:space-y-5"
           initial={{ y: 24, opacity: 0, scale: 0.95 }}
           animate={{ y: 0, opacity: 1, scale: 1 }}
           exit={{ y: 24, opacity: 0, scale: 0.95 }}

@@ -29,7 +29,7 @@ export default function AppAssistantChat({ open, onClose, profile, sourceMemo = 
           <motion.div
             className={`relative z-10 w-full transition-[max-width] duration-300 ${
               expanded
-                ? 'h-[calc(100dvh-1rem)] max-w-6xl sm:h-[min(92dvh,860px)]'
+                ? 'h-[calc(100dvh_-_1rem)] max-w-6xl sm:h-[min(92dvh,860px)]'
                 : 'max-w-2xl'
             }`}
             initial={{ y: 34, opacity: 0, scale: 0.96, rotateX: -7 }}
