@@ -30,13 +30,13 @@ const actionCards = [
   {
     action: 'assistant',
     icon: MessageCircle,
-    title: 'Assistente',
+    title: 'Chat Bot',
     description: 'Scrivi cosa ti serve. Prepara task, eventi, memo o sveglie.',
   },
   {
     to: '/calendar',
     icon: CalendarDays,
-    title: 'Calendario',
+    title: 'Calendar',
     description: 'Giorni, appuntamenti e memo.',
   },
   {
@@ -48,7 +48,7 @@ const actionCards = [
   {
     to: '/tomato',
     icon: Timer,
-    title: 'Tomato',
+    title: 'Timer',
     description: 'Timer focus senza casino.',
   },
   {
@@ -151,7 +151,7 @@ export default function Dashboard() {
             className="btn-cyber h-11 rounded-xl px-4 inline-flex items-center justify-center gap-2 text-xs"
           >
             <MessageCircle className="w-4 h-4" />
-            Assistente
+            Chat Bot
           </button>
           <Link
             to="/themes"
@@ -202,7 +202,7 @@ export default function Dashboard() {
               {nextTask?.title || 'Scegli un task e parti leggero'}
             </h2>
             <p className="text-sm text-muted-foreground">
-              {nextTask?.description || "Apri il Planner o chiedi all'assistente di prepararti una partenza semplice."}
+              {nextTask?.description || 'Apri il Planner o chiedi al Chat Bot di prepararti una partenza semplice.'}
             </p>
           </div>
           {nextTask ? (

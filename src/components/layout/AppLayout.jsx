@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useOutlet } from 'react-router-dom';
-import { Timer, ListTodo, MessageCircle, Palette, Brain, CalendarDays, LogOut, AlarmClock, BriefcaseBusiness, Menu, Bot, X, LayoutDashboard } from 'lucide-react';
+import { Timer, ListTodo, MessageCircle, Palette, Brain, CalendarDays, LogOut, AlarmClock, BriefcaseBusiness, Menu, Settings, X, LayoutDashboard } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/lib/AuthContext';
 import FreewayLogo from '@/components/brand/FreewayLogo';
@@ -9,10 +9,10 @@ import AppAssistantChat from '@/components/assistant/AppAssistantChat';
 
 const NAV_ITEMS = [
   { path: '/', icon: LayoutDashboard, label: 'Hub' },
-  { action: 'assistant', icon: MessageCircle, label: 'Assistente' },
-  { path: '/calendar', icon: CalendarDays, label: 'Calendario' },
+  { action: 'assistant', icon: MessageCircle, label: 'Chat Bot' },
+  { path: '/calendar', icon: CalendarDays, label: 'Calendar' },
   { path: '/planner', icon: ListTodo, label: 'Planner' },
-  { path: '/tomato', icon: Timer, label: 'Tomato' },
+  { path: '/tomato', icon: Timer, label: 'Timer' },
   { path: '/braindump', icon: Brain, label: 'Dump' },
   { path: '/work', icon: BriefcaseBusiness, label: 'Lavoro' },
   { path: '/alarms', icon: AlarmClock, label: 'Sveglie' },
@@ -111,18 +111,15 @@ export default function AppLayout() {
                 >
                   <FreewayLogo showWordmark />
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeMenu();
-                    setAssistantOpen(true);
-                  }}
+                <Link
+                  to="/account"
+                  onClick={closeMenu}
                   className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-300/20 bg-emerald-400/[0.08] text-emerald-200 transition-colors hover:border-primary/45 hover:bg-primary/15 hover:text-primary"
-                  aria-label="Apri assistente"
-                  title="Assistente"
+                  aria-label="Impostazioni profilo"
+                  title="Profilo"
                 >
-                  <Bot className="h-5 w-5" />
-                </button>
+                  <Settings className="h-5 w-5" />
+                </Link>
               </div>
 
               <nav className="space-y-2">

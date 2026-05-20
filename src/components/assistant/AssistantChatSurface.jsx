@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Bot, CheckCircle2, Loader2, Send, Sparkles, Wand2 } from 'lucide-react';
+import { Bot, CheckCircle2, Send, Sparkles, Wand2 } from 'lucide-react';
 import { requestAppAssistantReply } from '@/api/assistantClient';
 import { applyAssistantActions, getActionLabel, normalizeAssistantActions } from '@/lib/assistant-actions';
 
@@ -100,7 +100,7 @@ export default function AssistantChatSurface({
         },
       ]);
     } catch (err) {
-      setError(err?.message || 'Assistente non disponibile. Riprova tra poco.');
+      setError(err?.message || 'Chat Bot non disponibile. Riprova tra poco.');
       setMessages(nextMessages);
     } finally {
       setLoading(false);
@@ -145,7 +145,7 @@ export default function AssistantChatSurface({
           </motion.div>
           <div className="min-w-0">
             <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-emerald-300/60">
-              Assistente operativo
+              Chat Bot operativo
             </p>
             <h1 className={`${compact ? 'text-2xl' : 'text-3xl sm:text-5xl'} font-grotesk font-black leading-none text-white`}>
               Cosa ti serve oggi?
@@ -201,9 +201,39 @@ export default function AssistantChatSurface({
 
         {loading && (
           <div className="flex justify-start">
-            <div className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.045] px-3.5 py-3 text-sm text-white/55">
-              <Loader2 className="h-4 w-4 animate-spin text-emerald-300" />
-              Traduco in azioni...
+            <div className="relative overflow-hidden rounded-2xl border border-emerald-300/18 bg-white/[0.045] px-4 py-3 text-sm text-white/62 shadow-[0_0_28px_rgba(16,185,129,0.08)]">
+              <motion.span
+                className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-emerald-300/14 to-transparent"
+                animate={{ x: ['-140%', '340%'] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+              />
+              <div className="relative flex items-center gap-3">
+                <motion.div
+                  className="grid h-8 w-8 place-items-center rounded-xl border border-emerald-300/22 bg-emerald-400/10"
+                  animate={{ rotateY: [0, 18, 0], y: [0, -2, 0] }}
+                  transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+                  style={{ transformStyle: 'preserve-3d' }}
+                >
+                  <motion.span
+                    className="h-2.5 w-2.5 rounded-full bg-emerald-300 shadow-[0_0_18px_rgba(52,211,153,0.75)]"
+                    animate={{ scale: [0.7, 1.25, 0.7], opacity: [0.55, 1, 0.55] }}
+                    transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+                </motion.div>
+                <div>
+                  <p className="font-grotesk text-sm font-semibold text-emerald-50">Sto preparando la proposta</p>
+                  <div className="mt-1 flex gap-1.5">
+                    {[0, 1, 2].map((dot) => (
+                      <motion.span
+                        key={dot}
+                        className="h-1.5 w-1.5 rounded-full bg-emerald-300/70"
+                        animate={{ y: [0, -4, 0], opacity: [0.35, 1, 0.35] }}
+                        transition={{ duration: 0.8, repeat: Infinity, delay: dot * 0.12, ease: 'easeInOut' }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
