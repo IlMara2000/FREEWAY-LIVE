@@ -166,17 +166,6 @@ export default function CalendarView({ onStartTomato }) {
                     )}
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      openCreateForDay(day);
-                    }}
-                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-md border border-white/10 bg-black/35 text-white/45 opacity-100 transition-opacity sm:right-1.5 sm:top-1.5 sm:h-6 sm:w-6 sm:rounded-lg sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
-                    aria-label={`Aggiungi task al ${day} ${MONTHS[month]}`}
-                  >
-                    <CalendarPlus className="w-3.5 h-3.5" />
-                  </button>
                 </motion.div>
               );
             })}
@@ -238,7 +227,7 @@ export default function CalendarView({ onStartTomato }) {
 
               {selectedTasks.length === 0 ? (
                 <div className="rounded-2xl bg-white/[0.035] border border-white/[0.06] p-4 text-sm text-white/42">
-                  Nessuna task in calendario. Tocca un giorno per crearne una.
+                  Nessuna task in calendario. Seleziona un giorno e usa Aggiungi task.
                 </div>
               ) : (
                 <div className="space-y-2">

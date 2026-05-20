@@ -17,6 +17,7 @@ import ThemeStore from '@/pages/ThemeStore';
 import Account from '@/pages/Account';
 import Alarms from '@/pages/Alarms';
 import Work from '@/pages/Work';
+import AboutLegal from '@/pages/AboutLegal';
 import Tutorial from '@/components/tutorial/Tutorial';
 import AppLayout from '@/components/layout/AppLayout';
 import PageNotFound from '@/lib/PageNotFound';
@@ -254,6 +255,7 @@ const AuthenticatedApp = () => {
               <Route path="/themes" element={<ThemeStore />} />
               <Route path="/alarms" element={<Alarms />} />
               <Route path="/account" element={<Account />} />
+              <Route path="/about" element={<AboutLegal />} />
               <Route path="/splash" element={<Navigate to="/" replace />} />
               <Route path="*" element={<PageNotFound />} />
             </Route>

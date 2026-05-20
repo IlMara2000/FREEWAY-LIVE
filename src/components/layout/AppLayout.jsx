@@ -105,7 +105,7 @@ export default function AppLayout() {
             >
               <div className="flex items-center justify-between gap-3 pb-6 pl-20">
                 <Link
-                  to="/"
+                  to="/about"
                   onClick={closeMenu}
                   className="group flex h-14 items-center gap-3 rounded-2xl border border-primary/25 bg-primary/10 px-2.5 pr-4 glow-emerald transition-colors hover:border-cyan-200/35 hover:bg-primary/15"
                 >

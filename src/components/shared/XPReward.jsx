@@ -2,12 +2,14 @@ import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, ArrowUp } from 'lucide-react';
 
+const REWARD_DISPLAY_MS = 1800;
+
 export default function XPReward({ amount, show, onComplete, levelUp, newLevel }) {
   useEffect(() => {
     if (show) {
       const timer = setTimeout(() => {
         onComplete?.();
-      }, 2500);
+      }, REWARD_DISPLAY_MS);
       return () => clearTimeout(timer);
     }
   }, [show, onComplete]);
@@ -16,52 +18,41 @@ export default function XPReward({ amount, show, onComplete, levelUp, newLevel }
     <AnimatePresence>
       {show && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          className="pointer-events-none fixed right-4 top-[calc(1rem+env(safe-area-inset-top))] z-[85] sm:right-6"
+          initial={{ opacity: 0, y: -18, scale: 0.9, rotateX: -18, rotateY: 8 }}
+          animate={{ opacity: 1, y: 0, scale: 1, rotateX: 0, rotateY: 0 }}
+          exit={{ opacity: 0, y: -18, scale: 0.92, rotateX: -12 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+          style={{ transformStyle: 'preserve-3d' }}
         >
-          {/* XP amount */}
           <motion.div
-            className="flex flex-col items-center gap-3"
-            initial={{ scale: 0, y: 20 }}
-            animate={{ scale: 1, y: -40 }}
-            exit={{ scale: 0, opacity: 0, y: -80 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            className="flex min-w-[170px] flex-col gap-2 rounded-2xl border border-emerald-300/24 bg-[#02050c]/92 px-4 py-3 shadow-[0_18px_48px_rgba(0,0,0,0.5),0_0_28px_rgba(16,185,129,0.14)] backdrop-blur-xl"
+            animate={{ y: [0, -3, 0], rotateY: [0, 4, 0] }}
+            transition={{ duration: 1.2, ease: 'easeInOut' }}
           >
-            <motion.div
-              className="flex items-center gap-2 px-6 py-3 rounded-2xl glass-strong"
-              animate={{ boxShadow: ['0 0 20px rgba(0,255,136,0.3)', '0 0 40px rgba(0,255,136,0.6)', '0 0 20px rgba(0,255,136,0.3)'] }}
-              transition={{ duration: 0.8, repeat: 2 }}
-            >
-              <Zap className="w-6 h-6 text-primary" />
-              <span className="text-2xl font-grotesk font-bold text-primary text-glow">
+            <div className="flex items-center gap-2">
+              <span className="grid h-9 w-9 place-items-center rounded-xl border border-emerald-300/18 bg-emerald-400/10">
+                <Zap className="h-4 w-4 text-primary" />
+              </span>
+              <span className="font-grotesk text-xl font-bold text-primary text-glow">
                 +{amount} XP
               </span>
-            </motion.div>
+            </div>
 
             {levelUp && (
               <motion.div
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/20 border border-primary/30"
+                className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/15 px-3 py-2"
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.5 }}
+                transition={{ delay: 0.18 }}
               >
-                <ArrowUp className="w-5 h-5 text-primary" />
-                <span className="text-lg font-grotesk font-bold text-primary">
+                <ArrowUp className="h-4 w-4 text-primary" />
+                <span className="font-grotesk text-sm font-bold text-primary">
                   LIVELLO {newLevel}!
                 </span>
               </motion.div>
             )}
           </motion.div>
-
-          {/* Background flash */}
-          <motion.div
-            className="absolute inset-0 bg-primary/5"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 1, 0] }}
-            transition={{ duration: 0.6 }}
-          />
         </motion.div>
       )}
     </AnimatePresence>

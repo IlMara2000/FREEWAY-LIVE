@@ -5,8 +5,8 @@ import {
 } from '@/lib/day-by-day';
 import { Save } from 'lucide-react';
 
-const fieldClass = 'w-full rounded-xl border border-white/10 bg-black/25 px-3 py-2.5 text-sm text-white outline-none transition-colors focus:border-emerald-400/55';
-const labelClass = 'space-y-1.5';
+const fieldClass = 'min-h-11 w-full min-w-0 rounded-xl border border-white/10 bg-black/25 px-3 py-2.5 text-sm text-white outline-none transition-colors [color-scheme:dark] focus:border-emerald-400/55';
+const labelClass = 'min-w-0 space-y-1.5';
 const labelTextClass = 'font-mono text-[10px] uppercase tracking-widest text-white/35';
 
 function SelectField({ label, value, options, onChange }) {
@@ -59,7 +59,7 @@ export default function DayByDaySetup({ value, onSave, saving = false }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="glass-panel p-4 md:p-5 space-y-4">
+    <form onSubmit={handleSubmit} className="glass-panel min-w-0 space-y-4 p-4 md:p-5">
       <div className="space-y-1">
         <p className="font-mono text-[10px] uppercase tracking-widest text-emerald-400/65">
           Calibrazione Day by Day
@@ -72,7 +72,7 @@ export default function DayByDaySetup({ value, onSave, saving = false }) {
         </p>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid min-w-0 gap-3 lg:grid-cols-2">
         <label className={labelClass}>
           <span className={labelTextClass}>Dormo alle</span>
           <input
@@ -142,7 +142,7 @@ export default function DayByDaySetup({ value, onSave, saving = false }) {
 
       <div className="space-y-2">
         <span className={labelTextClass}>Ostacoli principali</span>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {DAY_BY_DAY_OPTIONS.obstacles.map(([obstacle, label]) => {
             const active = form.obstacles?.includes(obstacle);
 
@@ -164,7 +164,7 @@ export default function DayByDaySetup({ value, onSave, saving = false }) {
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid min-w-0 gap-3 lg:grid-cols-2">
         <label className={labelClass}>
           <span className={labelTextClass}>Obiettivo a 2 anni</span>
           <textarea

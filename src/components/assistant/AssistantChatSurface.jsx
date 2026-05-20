@@ -67,6 +67,7 @@ export default function AssistantChatSurface({
   profile,
   className = '',
   compact = false,
+  expanded = false,
   initialPrompt = '',
   sourceMemo = null,
 }) {
@@ -77,6 +78,7 @@ export default function AssistantChatSurface({
   const [loading, setLoading] = useState(false);
   const [applying, setApplying] = useState(false);
   const [error, setError] = useState('');
+  const [editingActionMessages, setEditingActionMessages] = useState(() => new Set());
   const listRef = useRef(null);
   const context = useMemo(() => buildContext({ profile, location }), [profile, location]);
 
@@ -141,6 +143,11 @@ export default function AssistantChatSurface({
       setMessages((current) => current.map((message, index) => (
         index === messageIndex ? { ...message, applied: true } : message
       )));
+      setEditingActionMessages((current) => {
+        const next = new Set(current);
+        next.delete(messageIndex);
+        return next;
+      });
     } catch (err) {
       setError(err?.message || 'Non riesco ad applicare la proposta.');
     } finally {
@@ -174,13 +181,25 @@ export default function AssistantChatSurface({
     }));
   };
 
+  const toggleActionEditor = (messageIndex) => {
+    setEditingActionMessages((current) => {
+      const next = new Set(current);
+      if (next.has(messageIndex)) {
+        next.delete(messageIndex);
+      } else {
+        next.add(messageIndex);
+      }
+      return next;
+    });
+  };
+
   const handleSubmit = (event) => {
     event.preventDefault();
     sendMessage();
   };
 
   return (
-    <section className={`relative overflow-hidden rounded-[1.4rem] border border-emerald-300/18 bg-[#02050c]/88 shadow-[0_28px_90px_rgba(0,0,0,0.64)] backdrop-blur-2xl ${className}`}>
+    <section className={`relative flex max-h-full flex-col overflow-hidden rounded-[1.4rem] border border-emerald-300/18 bg-[#02050c]/88 shadow-[0_28px_90px_rgba(0,0,0,0.64)] backdrop-blur-2xl ${className}`}>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_0%,rgba(16,185,129,0.14),transparent_34%),radial-gradient(circle_at_82%_12%,rgba(34,211,238,0.1),transparent_32%)]" />
 
       <header className="relative z-10 border-b border-white/10 p-4 sm:p-5">
@@ -212,7 +231,9 @@ export default function AssistantChatSurface({
 
       <div
         ref={listRef}
-        className={`relative z-10 min-h-0 space-y-3 overflow-y-auto p-4 sm:p-5 ${compact ? 'h-[min(54dvh,420px)]' : 'h-[min(58dvh,560px)]'}`}
+        className={`relative z-10 min-h-0 space-y-3 overflow-y-auto p-4 sm:p-5 ${
+          expanded ? 'flex-1' : compact ? 'h-[min(54dvh,420px)]' : 'h-[min(58dvh,560px)]'
+        }`}
       >
         {messages.map((message, index) => (
           <div key={`${message.role}-${index}`} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -226,10 +247,51 @@ export default function AssistantChatSurface({
 
               {message.actions?.length > 0 && (
                 <div className="mt-3 space-y-2 rounded-2xl border border-emerald-300/16 bg-black/24 p-3">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-emerald-300/70">
-                    Proposta app
-                  </p>
-                  {message.actions.map((action, actionIndex) => (
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-emerald-300/70">
+                      Proposta app
+                    </p>
+                    {!message.applied && (
+                      <button
+                        type="button"
+                        onClick={() => toggleActionEditor(index)}
+                        className="shrink-0 rounded-xl border border-emerald-200/15 bg-emerald-300/8 px-3 py-1.5 text-xs font-semibold text-emerald-50/72 transition-colors hover:border-emerald-200/35 hover:text-emerald-50"
+                      >
+                        {editingActionMessages.has(index) ? 'Chiudi modifica' : 'Modifica'}
+                      </button>
+                    )}
+                  </div>
+
+                  {!editingActionMessages.has(index) && (
+                    <div className="space-y-2">
+                      {message.actions.map((action, actionIndex) => {
+                        const when = [action.date, action.time].filter(Boolean).join(' ');
+                        const detail = action.type === 'create_alarm'
+                          ? action.reminder_text
+                          : action.description;
+
+                        return (
+                          <div key={`${action.type}-${actionIndex}`} className="rounded-2xl border border-white/8 bg-white/[0.035] p-3 text-xs text-white/62">
+                            <p className="font-grotesk text-sm font-semibold text-white/82">
+                              {getActionLabel(action)}
+                            </p>
+                            {when && (
+                              <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-emerald-300/48">
+                                {when}{action.end_time && action.type !== 'create_alarm' ? ` - ${action.end_time}` : ''}
+                              </p>
+                            )}
+                            {detail && (
+                              <p className="mt-2 line-clamp-2 text-white/48">
+                                {detail}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {editingActionMessages.has(index) && message.actions.map((action, actionIndex) => (
                     <div key={`${action.type}-${actionIndex}`} className="space-y-3 rounded-2xl border border-white/8 bg-white/[0.035] p-3 text-xs text-white/62">
                       <div className="flex items-center justify-between gap-2">
                         <p className="min-w-0 truncate font-grotesk text-sm font-semibold text-white/78">

@@ -73,7 +73,7 @@ export default function CreateTaskModal({ date, existingTasksForDate = [], onClo
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-3 sm:p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -81,10 +81,10 @@ export default function CreateTaskModal({ date, existingTasksForDate = [], onClo
         <motion.div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
         <motion.div
-          className="relative z-10 w-full max-w-md glass-panel p-6 space-y-5"
-          initial={{ y: 80, opacity: 0, scale: 0.95 }}
+          className="relative z-10 my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-md space-y-4 overflow-y-auto glass-panel p-4 sm:p-6 sm:space-y-5"
+          initial={{ y: 24, opacity: 0, scale: 0.95 }}
           animate={{ y: 0, opacity: 1, scale: 1 }}
-          exit={{ y: 80, opacity: 0, scale: 0.95 }}
+          exit={{ y: 24, opacity: 0, scale: 0.95 }}
           transition={{ type: 'spring', stiffness: 280, damping: 22 }}
         >
           <button onClick={onClose} className="absolute top-4 right-4 text-white/30 hover:text-white">
@@ -101,11 +101,11 @@ export default function CreateTaskModal({ date, existingTasksForDate = [], onClo
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Nome della task..."
-            className="w-full bg-white/5 border border-white/10 focus:border-emerald-500/50 rounded-xl p-4 font-grotesk text-sm text-white outline-none transition-all placeholder:text-white/25"
+            className="w-full rounded-xl border border-white/10 bg-white/5 p-3 font-grotesk text-sm text-white outline-none transition-all [color-scheme:dark] placeholder:text-white/25 focus:border-emerald-500/50 sm:p-4"
             onKeyDown={(e) => e.key === 'Enter' && handleSave()}
           />
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="space-y-1.5">
               <span className="font-mono text-[10px] uppercase tracking-widest text-white/35 flex items-center gap-1.5">
                 <Clock className="w-3 h-3" /> Inizio
@@ -114,7 +114,7 @@ export default function CreateTaskModal({ date, existingTasksForDate = [], onClo
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 focus:border-emerald-500/50 rounded-xl px-3 py-3 font-mono text-sm text-white outline-none transition-all"
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-3 font-mono text-sm text-white outline-none transition-all [color-scheme:dark] focus:border-emerald-500/50"
               />
             </label>
             <label className="space-y-1.5">
@@ -125,7 +125,7 @@ export default function CreateTaskModal({ date, existingTasksForDate = [], onClo
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 focus:border-emerald-500/50 rounded-xl px-3 py-3 font-mono text-sm text-white outline-none transition-all"
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-3 font-mono text-sm text-white outline-none transition-all [color-scheme:dark] focus:border-emerald-500/50"
               />
             </label>
           </div>
@@ -135,7 +135,7 @@ export default function CreateTaskModal({ date, existingTasksForDate = [], onClo
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Descrizione (se vuota la compilo io)..."
             rows={3}
-            className="w-full bg-white/5 border border-white/10 focus:border-emerald-500/50 rounded-xl p-4 font-grotesk text-sm text-white outline-none transition-all placeholder:text-white/25 resize-none"
+            className="w-full resize-none rounded-xl border border-white/10 bg-white/5 p-3 font-grotesk text-sm text-white outline-none transition-all placeholder:text-white/25 focus:border-emerald-500/50 sm:p-4"
           />
 
           <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-white/[0.03] border border-white/10">
@@ -159,13 +159,13 @@ export default function CreateTaskModal({ date, existingTasksForDate = [], onClo
             ))}
           </div>
 
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {['low', 'medium', 'high', 'critical'].map((p) => (
               <button
                 key={p}
                 type="button"
                 onClick={() => setPriority(p)}
-                className={`flex-1 py-2 rounded-xl font-mono text-[10px] uppercase tracking-wider transition-all ${
+                className={`py-2 rounded-xl font-mono text-[10px] uppercase tracking-wider transition-all ${
                   priority === p
                     ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400'
                     : 'border border-white/10 text-white/40 hover:text-white/70'
