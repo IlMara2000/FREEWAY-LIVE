@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Timer, Sparkles, Brain, BriefcaseBusiness, Clock } from 'lucide-react';
-import { requestTaskBreakdown } from '@/api/groqTaskAssistant';
+import { requestTaskBreakdown } from '@/api/assistantClient';
 import { formatDuration, getTaskDurationHours } from '@/lib/work-utils';
 import {
   AlertDialog,
@@ -17,12 +17,12 @@ import {
 export default function TaskModal({ task, onClose, onStartTomato }) {
   const [slicedContent, setSlicedContent] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [confirmGroqOpen, setConfirmGroqOpen] = useState(false);
+  const [confirmAiOpen, setConfirmAiOpen] = useState(false);
 
   if (!task) return null;
 
-  const handleGroqSlicer = async () => {
-    setConfirmGroqOpen(false);
+  const handleAiSlicer = async () => {
+    setConfirmAiOpen(false);
     setLoading(true);
     setSlicedContent(null);
 
@@ -105,7 +105,7 @@ export default function TaskModal({ task, onClose, onStartTomato }) {
 
           <div className="space-y-3">
             <button
-              onClick={() => setConfirmGroqOpen(true)}
+              onClick={() => setConfirmAiOpen(true)}
               disabled={loading}
               className="btn-cyber w-full py-3 rounded-2xl font-mono text-xs tracking-widest flex items-center justify-center gap-2"
             >
@@ -143,19 +143,19 @@ export default function TaskModal({ task, onClose, onStartTomato }) {
             </AnimatePresence>
           </div>
 
-          <AlertDialog open={confirmGroqOpen} onOpenChange={setConfirmGroqOpen}>
+          <AlertDialog open={confirmAiOpen} onOpenChange={setConfirmAiOpen}>
             <AlertDialogContent className="border-emerald-500/25 bg-background">
               <AlertDialogHeader>
-                <AlertDialogTitle>Inviare questa task a Groq?</AlertDialogTitle>
+                <AlertDialogTitle>Analizzare questa task?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Verranno inviati a Groq titolo e descrizione della task per generare micro-passi.
+                  Verranno usati titolo e descrizione della task per generare micro-passi.
                   Il risultato resta solo come suggerimento finche non decidi di usarlo.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Annulla</AlertDialogCancel>
-                <AlertDialogAction onClick={handleGroqSlicer}>
-                  Invia a Groq
+                <AlertDialogAction onClick={handleAiSlicer}>
+                  Analizza
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

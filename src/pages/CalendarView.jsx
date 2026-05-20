@@ -305,7 +305,7 @@ export default function CalendarView({ onStartTomato }) {
                     className="inline-flex h-9 items-center gap-2 rounded-xl border border-cyan-200/15 bg-cyan-300/8 px-3 text-xs font-semibold text-cyan-100"
                   >
                     <MessageCircle className="h-3.5 w-3.5" />
-                    Groq
+                    Chat
                   </button>
                 </div>
               </article>

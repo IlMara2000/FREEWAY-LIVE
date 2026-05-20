@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Loader2, Save, Sparkles } from 'lucide-react';
-import { requestTaskDescriptionSuggestion } from '@/api/groqTaskAssistant';
+import { requestTaskDescriptionSuggestion } from '@/api/assistantClient';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -44,7 +44,7 @@ export default function TaskDescriptionAssistant({
     [draft, task?.description]
   );
 
-  const canAskGroq = Boolean((task?.title || draft).trim()) && !isEnhancing;
+  const canAskAssistant = Boolean((task?.title || draft).trim()) && !isEnhancing;
   const descriptionRows = useMemo(
     () => Math.min(9, Math.max(3, Math.ceil(draft.length / 42))),
     [draft]
@@ -74,7 +74,7 @@ export default function TaskDescriptionAssistant({
       setSuggestion(result.suggestion || '');
       setSuggestionOpen(true);
     } catch (requestError) {
-      setError(requestError?.message || 'Groq non ha generato una descrizione.');
+      setError(requestError?.message || 'L assistente non ha generato una descrizione.');
     } finally {
       setIsEnhancing(false);
     }
@@ -113,12 +113,12 @@ export default function TaskDescriptionAssistant({
           type="button"
           size="sm"
           variant="outline"
-          disabled={!canAskGroq || isSaving}
+          disabled={!canAskAssistant || isSaving}
           onClick={() => setConfirmOpen(true)}
           className="h-8 px-3 border-primary/35 text-primary hover:bg-primary/10"
         >
           {isEnhancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-          Migliora con Groq
+          Migliora con AI
         </Button>
       </div>
 
@@ -129,16 +129,16 @@ export default function TaskDescriptionAssistant({
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent className="border-primary/20 bg-background">
           <AlertDialogHeader>
-            <AlertDialogTitle>Inviare questa task a Groq?</AlertDialogTitle>
+            <AlertDialogTitle>Analizzare questa task?</AlertDialogTitle>
             <AlertDialogDescription>
-              Verranno inviati a Groq titolo, descrizione, priorita e stato della task per generare una descrizione migliore.
+              Verranno usati titolo, descrizione, priorita e stato della task per generare una descrizione migliore.
               Il suggerimento non verra applicato finche non lo confermi.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annulla</AlertDialogCancel>
             <AlertDialogAction onClick={requestSuggestion}>
-              Invia a Groq
+              Analizza
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

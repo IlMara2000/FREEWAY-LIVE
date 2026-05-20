@@ -117,7 +117,7 @@ export default function AppLayout() {
                     setAssistantOpen(true);
                   }}
                   className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-300/20 bg-emerald-400/[0.08] text-emerald-200 transition-colors hover:border-primary/45 hover:bg-primary/15 hover:text-primary"
-                  aria-label="Apri assistente Groq"
+                  aria-label="Apri assistente"
                   title="Assistente"
                 >
                   <Bot className="h-5 w-5" />

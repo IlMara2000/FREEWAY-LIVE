@@ -12,7 +12,7 @@ const STEPS = [
   {
     icon: Sparkles,
     title: 'AI Slicer',
-    text: 'Apri una task e premi "Spacchetta con AI" — Groq la divide in micro-passi facili da seguire. Perfetto per l\'ADHD.',
+    text: 'Apri una task e premi "Spacchetta con AI": l assistente la divide in micro-passi facili da seguire. Perfetto per l ADHD.',
     color: 'emerald',
   },
   {

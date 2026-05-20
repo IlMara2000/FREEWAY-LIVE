@@ -1,5 +1,5 @@
 export async function requestTaskDescriptionSuggestion(task) {
-  const response = await fetch('/api/groq/task-description', {
+  const response = await fetch('/api/ai/task-description', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -16,14 +16,14 @@ export async function requestTaskDescriptionSuggestion(task) {
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(payload?.error || 'Groq non e disponibile in questo momento.');
+    throw new Error(payload?.error || 'Assistente non disponibile in questo momento.');
   }
 
   return payload;
 }
 
 export async function requestTaskBreakdown(task) {
-  const response = await fetch('/api/groq/task-breakdown', {
+  const response = await fetch('/api/ai/task-breakdown', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -37,14 +37,14 @@ export async function requestTaskBreakdown(task) {
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(payload?.error || 'Groq non e disponibile in questo momento.');
+    throw new Error(payload?.error || 'Assistente non disponibile in questo momento.');
   }
 
   return payload;
 }
 
 export async function requestAppAssistantReply({ message, history = [], context = {}, allowActions = false }) {
-  const response = await fetch('/api/groq/app-assistant', {
+  const response = await fetch('/api/ai/app-assistant', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -60,7 +60,7 @@ export async function requestAppAssistantReply({ message, history = [], context 
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(payload?.error || 'Assistente Groq non disponibile in questo momento.');
+    throw new Error(payload?.error || 'Assistente non disponibile in questo momento.');
   }
 
   return payload;

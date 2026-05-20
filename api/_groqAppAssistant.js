@@ -12,7 +12,7 @@ const APP_KNOWLEDGE = [
   'Tomato aiuta a lavorare in blocchi focus e registra XP/sessioni.',
   'Brain Dump serve a scaricare pensieri: ogni pensiero diventa un MEMO che resta sotto il calendario e puo essere inviato alla chat.',
   'Sveglie gestisce allarmi locali, legati o meno a promemoria e task.',
-  'Dashboard/Home e stata sostituita dalla chat Groq operativa.',
+  'Dashboard/Home e stata sostituita dalla chat operativa.',
   'Sistema anti-caos: massimo 3 task importanti al giorno e messaggi quando l utente carica troppo.',
   'Account contiene profilo, foto, reset onboarding/privacy e logout.',
 ].join('\n');
@@ -53,7 +53,7 @@ export async function createAppAssistantReply({
   model = process.env.GROQ_APP_ASSISTANT_MODEL || process.env.GROQ_TASK_MODEL || DEFAULT_MODEL,
 }) {
   if (!apiKey) {
-    const error = new Error('Configura GROQ_API_KEY per usare l assistente Groq.');
+    const error = new Error('Assistente non configurato.');
     error.statusCode = 503;
     throw error;
   }
@@ -129,7 +129,7 @@ export async function createAppAssistantReply({
       }),
     });
   } catch {
-    const error = new Error('Connessione a Groq non riuscita. Riprova tra poco.');
+    const error = new Error('Connessione all assistente non riuscita. Riprova tra poco.');
     error.statusCode = 502;
     throw error;
   }
@@ -137,7 +137,7 @@ export async function createAppAssistantReply({
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    const error = new Error(payload?.error?.message || `Groq non ha risposto correttamente (${response.status}).`);
+    const error = new Error(payload?.error?.message || `Assistente non ha risposto correttamente (${response.status}).`);
     error.statusCode = response.status;
     throw error;
   }
@@ -157,7 +157,7 @@ export async function createAppAssistantReply({
   }
 
   if (!reply) {
-    const error = new Error('Groq non ha generato una risposta utilizzabile.');
+    const error = new Error('Assistente non ha generato una risposta utilizzabile.');
     error.statusCode = 502;
     throw error;
   }

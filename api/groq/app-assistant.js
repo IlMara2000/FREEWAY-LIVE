@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     return res.status(200).json(result);
   } catch (error) {
     return res.status(error.statusCode || 500).json({
-      error: error.message || 'Errore durante la richiesta a Groq.',
+      error: error.message || 'Errore durante la richiesta all assistente.',
     });
   }
 }

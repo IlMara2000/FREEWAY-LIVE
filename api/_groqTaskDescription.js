@@ -24,7 +24,7 @@ export async function createTaskDescriptionSuggestion({
   model = process.env.GROQ_TASK_MODEL || DEFAULT_MODEL,
 }) {
   if (!apiKey) {
-    const error = new Error('Configura GROQ_API_KEY per usare Groq.');
+    const error = new Error('Assistente non configurato.');
     error.statusCode = 503;
     throw error;
   }
@@ -81,7 +81,7 @@ export async function createTaskDescriptionSuggestion({
       }),
     });
   } catch {
-    const error = new Error('Connessione a Groq non riuscita. Riprova tra poco.');
+    const error = new Error('Connessione all assistente non riuscita. Riprova tra poco.');
     error.statusCode = 502;
     throw error;
   }
@@ -89,7 +89,7 @@ export async function createTaskDescriptionSuggestion({
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    const error = new Error(payload?.error?.message || `Groq non ha risposto correttamente (${response.status}).`);
+    const error = new Error(payload?.error?.message || `Assistente non ha risposto correttamente (${response.status}).`);
     error.statusCode = response.status;
     throw error;
   }
@@ -98,7 +98,7 @@ export async function createTaskDescriptionSuggestion({
   const suggestion = parseJsonSuggestion(content);
 
   if (!suggestion) {
-    const error = new Error('Groq non ha generato una descrizione utilizzabile.');
+    const error = new Error('Assistente non ha generato una descrizione utilizzabile.');
     error.statusCode = 502;
     throw error;
   }

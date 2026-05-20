@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Bot, CheckCircle2, Loader2, Send, Sparkles, Wand2 } from 'lucide-react';
-import { requestAppAssistantReply } from '@/api/groqTaskAssistant';
+import { requestAppAssistantReply } from '@/api/assistantClient';
 import { applyAssistantActions, getActionLabel, normalizeAssistantActions } from '@/lib/assistant-actions';
 
 const STARTER_MESSAGES = [
@@ -101,7 +101,7 @@ export default function AssistantChatSurface({
         },
       ]);
     } catch (err) {
-      setError(err?.message || 'Groq non disponibile. Riprova tra poco.');
+      setError(err?.message || 'Assistente non disponibile. Riprova tra poco.');
       setMessages(nextMessages);
     } finally {
       setLoading(false);
@@ -146,7 +146,7 @@ export default function AssistantChatSurface({
           </motion.div>
           <div className="min-w-0">
             <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-emerald-300/60">
-              Groq operativo
+              Assistente operativo
             </p>
             <h1 className={`${compact ? 'text-2xl' : 'text-3xl sm:text-5xl'} font-grotesk font-black leading-none text-white`}>
               Cosa ti serve oggi?
@@ -155,7 +155,7 @@ export default function AssistantChatSurface({
               Scrivi il bisogno. La chat propone modifiche all app: task, eventi, memo e sveglie. Niente casino: prima vedi, poi applichi.
             </p>
             <p className="mt-1 text-[11px] leading-relaxed text-white/34">
-              Quando invii, il testo e un contesto sintetico dell app vengono mandati a Groq.
+              Quando invii, il testo e un contesto sintetico servono solo a preparare una proposta utile dentro l app.
             </p>
           </div>
         </div>

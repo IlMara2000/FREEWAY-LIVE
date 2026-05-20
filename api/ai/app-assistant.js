@@ -1,6 +1,6 @@
-import { createTaskBreakdown } from '../_groqTaskBreakdown.js';
+import { createAppAssistantReply } from '../_groqAppAssistant.js';
 
-const resolveGroqApiKey = () =>
+const resolveAssistantApiKey = () =>
   process.env.GROQ_API_KEY || process.env.NEXT_PUBLIC_GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
 
 const readJsonBody = async (req) => {
@@ -24,15 +24,17 @@ export default async function handler(req, res) {
 
   try {
     const input = await readJsonBody(req);
-    const result = await createTaskBreakdown({
+    const result = await createAppAssistantReply({
       input,
-      apiKey: resolveGroqApiKey(),
+      apiKey: resolveAssistantApiKey(),
     });
 
     return res.status(200).json(result);
   } catch (error) {
     return res.status(error.statusCode || 500).json({
-      error: error.message || 'Errore durante la richiesta all assistente.',
+      error: error.statusCode === 503
+        ? 'Assistente non configurato.'
+        : error.message || 'Errore durante la richiesta all assistente.',
     });
   }
 }

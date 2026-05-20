@@ -80,7 +80,7 @@ export const applyAssistantAction = async (action) => {
 
   return accountData.tasks.create(buildCalendarTaskPayload({
     title: action.title,
-    description: action.description || 'Creato dalla chat Groq.',
+    description: action.description || 'Creato dalla chat.',
     priority: action.priority || 'medium',
     date: action.date,
     start_time: action.time,

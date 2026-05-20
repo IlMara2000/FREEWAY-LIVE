@@ -35,7 +35,7 @@ export default function BrainDump() {
 
   const createMutation = useMutation({
     mutationFn: async (title) => {
-      await accountData.tasks.create(buildBrainDumpPayload(title, 'Memo nato dal Brain Dump. Puoi inviarlo alla chat Groq per trasformarlo in piano, task o sveglia.'));
+      await accountData.tasks.create(buildBrainDumpPayload(title, 'Memo nato dal Brain Dump. Puoi inviarlo alla chat per trasformarlo in piano, task o sveglia.'));
       const result = await addXP(BRAIN_DUMP_XP);
       setRewardData({
         amount: BRAIN_DUMP_XP,
@@ -93,7 +93,7 @@ export default function BrainDump() {
           Brain Dump
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Scarica ogni pensiero. Da qui diventa un MEMO sotto calendario e puo essere analizzato con Groq.
+          Scarica ogni pensiero. Da qui diventa un MEMO sotto calendario e puo essere analizzato nella chat.
         </p>
       </motion.div>
 
