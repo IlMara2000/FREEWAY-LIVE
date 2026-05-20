@@ -24,9 +24,11 @@ import useUserProfile from '@/hooks/useUserProfile';
 import PersonalOnboarding, { isInitialOnboardingComplete } from '@/components/onboarding/PersonalOnboarding';
 import NotificationConsent from '@/components/notifications/NotificationConsent';
 import useAlarmNotifications from '@/hooks/useAlarmNotifications';
+import MobileDesktopPrompt from '@/components/mobile/MobileDesktopPrompt';
 
 const TUTORIAL_KEY = 'fw_tutorial_done';
 const APP_ENTERED_KEY = 'fw_app_entered';
+const MOBILE_DESKTOP_PROMPT_KEY = 'fw_mobile_desktop_prompt_seen';
 
 const hasStoredAppEntry = () => {
   try {
@@ -41,6 +43,31 @@ const storeAppEntry = () => {
     sessionStorage.setItem(APP_ENTERED_KEY, '1');
   } catch {
     // Some embedded/mobile browser contexts can block storage; the in-memory state still lets the user continue.
+  }
+};
+
+const isMobileBrowserViewport = () => {
+  if (typeof window === 'undefined') return false;
+
+  const narrow = window.matchMedia?.('(max-width: 767px)').matches ?? window.innerWidth < 768;
+  const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+  const touchCapable = navigator.maxTouchPoints > 0;
+  return narrow && (coarsePointer || touchCapable);
+};
+
+const hasSeenMobileDesktopPrompt = () => {
+  try {
+    return sessionStorage.getItem(MOBILE_DESKTOP_PROMPT_KEY) === '1';
+  } catch {
+    return false;
+  }
+};
+
+const storeMobileDesktopPromptSeen = () => {
+  try {
+    sessionStorage.setItem(MOBILE_DESKTOP_PROMPT_KEY, '1');
+  } catch {
+    // The prompt still auto-closes if storage is unavailable.
   }
 };
 
@@ -89,6 +116,7 @@ const AuthenticatedApp = () => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [savingOnboarding, setSavingOnboarding] = useState(false);
   const [hasEnteredApp, setHasEnteredApp] = useState(hasStoredAppEntry);
+  const [showMobileDesktopPrompt, setShowMobileDesktopPrompt] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const isAuthCallback = location.pathname === '/auth/callback';
@@ -105,9 +133,16 @@ const AuthenticatedApp = () => {
   const showPersonalOnboarding = canShowAccountOverlays && !onboardingComplete && location.pathname === '/account';
   useAlarmNotifications(Boolean(isAuthenticated));
 
+  const maybeShowMobileDesktopPrompt = () => {
+    if (!isMobileBrowserViewport() || hasSeenMobileDesktopPrompt()) return;
+    storeMobileDesktopPromptSeen();
+    setShowMobileDesktopPrompt(true);
+  };
+
   const handleEnter = () => {
     storeAppEntry();
     setHasEnteredApp(true);
+    maybeShowMobileDesktopPrompt();
     navigate('/', { replace: true });
   };
 
@@ -115,6 +150,7 @@ const AuthenticatedApp = () => {
     if (!urlEntered) return;
     storeAppEntry();
     setHasEnteredApp(true);
+    maybeShowMobileDesktopPrompt();
     navigate('/', { replace: true });
   }, [navigate, urlEntered]);
 
@@ -232,6 +268,12 @@ const AuthenticatedApp = () => {
             saving={savingOnboarding}
             onComplete={handleOnboardingComplete}
           />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showMobileDesktopPrompt && (
+          <MobileDesktopPrompt onDone={() => setShowMobileDesktopPrompt(false)} />
         )}
       </AnimatePresence>
 
