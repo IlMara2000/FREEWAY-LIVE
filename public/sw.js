@@ -1,6 +1,5 @@
-const CACHE_NAME = 'freeway-life-v5';
+const CACHE_NAME = 'freeway-life-v6';
 const STATIC_ASSETS = [
-  '/',
   '/site.webmanifest',
   '/favicon.svg',
   '/web-app-manifest-192x192.png',
@@ -13,6 +12,12 @@ self.addEventListener('install', (event) => {
       .then((cache) => cache.addAll(STATIC_ASSETS))
       .then(() => self.skipWaiting())
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('activate', (event) => {
@@ -43,6 +48,21 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => caches.match('/') || Response.error())
+    );
+    return;
+  }
+
+  if (url.pathname.startsWith('/assets/') || ['script', 'style', 'worker'].includes(request.destination)) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request) || Response.error())
     );
     return;
   }

@@ -102,10 +102,10 @@ const DEFAULT_FORM = {
 };
 
 const PRIVACY_NOTICE = [
-  'Useremo queste risposte solo per personalizzare routine, task, tono dei messaggi e suggerimenti dentro l app.',
-  'Le risposte possono descrivere stato mentale, abitudini e lavoro: non inserire diagnosi, farmaci o dettagli clinici.',
-  'L app non offre supporto medico o psicologico e non sostituisce professionisti.',
-  'I dati vengono salvati nel tuo profilo dell app e puoi rifare l onboarding dal profilo.',
+  'Ti chiediamo queste cose solo per rendere l app piu adatta a te: routine, task, tono e suggerimenti meno generici.',
+  'Non e un questionario medico e non serve a farti diagnosi, profilarti o raccogliere dettagli personali inutili.',
+  'Freeway non nasce per rivendere informazioni a terzi: le risposte servono dentro l app, per aiutarti a usarla meglio.',
+  'Resta leggero: se qualcosa ti sembra troppo personale, non scriverlo. Puoi rifare questa calibrazione quando vuoi.',
 ].join(' ');
 
 function OptionGrid({ value, options, onChange, columns = 'grid-cols-2' }) {
@@ -558,8 +558,8 @@ export default function PersonalOnboarding({ onComplete, saving = false }) {
                       className="mt-1 h-4 w-4 accent-emerald-400"
                     />
                     <span className="text-sm leading-relaxed text-white/62">
-                      Ho letto e accetto che queste risposte vengano salvate nel mio profilo app per personalizzare
-                      routine, task e suggerimenti. So che non e' supporto medico o psicologico.
+                      Ho capito e accetto: queste risposte servono solo per personalizzare l app. Non devo inserire
+                      informazioni mediche o dati personali inutili.
                     </span>
                   </label>
                 </>
