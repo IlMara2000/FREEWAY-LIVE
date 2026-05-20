@@ -40,7 +40,7 @@ const TASK_TYPES = [
   { value: 'memo', label: 'Memo' },
 ];
 
-const fieldClassName = 'min-h-10 w-full rounded-xl border border-white/10 bg-black/32 px-3 py-2 text-xs font-semibold text-white/78 outline-none transition-colors placeholder:text-white/22 focus:border-emerald-300/45';
+const fieldClassName = 'min-h-10 w-full rounded-xl border border-white/10 bg-black/35 px-3 py-2 text-xs font-semibold text-white/80 outline-none transition-colors [color-scheme:dark] placeholder:text-white/25 focus:border-emerald-300/45';
 const labelClassName = 'font-mono text-[9px] uppercase tracking-[0.18em] text-emerald-300/45';
 
 const getTodayIso = () => new Date().toISOString().split('T')[0];
