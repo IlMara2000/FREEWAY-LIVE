@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useOutlet } from 'react-router-dom';
-import { Timer, ListTodo, MessageCircle, Palette, Brain, CalendarDays, LogOut, AlarmClock, BriefcaseBusiness, Menu, Bot, X } from 'lucide-react';
+import { Timer, ListTodo, MessageCircle, Palette, Brain, CalendarDays, LogOut, AlarmClock, BriefcaseBusiness, Menu, Bot, X, LayoutDashboard } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/lib/AuthContext';
 import FreewayLogo from '@/components/brand/FreewayLogo';
@@ -8,14 +8,15 @@ import useUserProfile from '@/hooks/useUserProfile';
 import AppAssistantChat from '@/components/assistant/AppAssistantChat';
 
 const NAV_ITEMS = [
-  { path: '/', icon: MessageCircle, label: 'Chat' },
+  { path: '/', icon: LayoutDashboard, label: 'Hub' },
+  { action: 'assistant', icon: MessageCircle, label: 'Assistente' },
   { path: '/calendar', icon: CalendarDays, label: 'Calendario' },
-  { path: '/work', icon: BriefcaseBusiness, label: 'Lavoro' },
-  { path: '/tomato', icon: Timer, label: 'Tomato' },
   { path: '/planner', icon: ListTodo, label: 'Planner' },
+  { path: '/tomato', icon: Timer, label: 'Tomato' },
   { path: '/braindump', icon: Brain, label: 'Dump' },
-  { path: '/themes', icon: Palette, label: 'Temi' },
+  { path: '/work', icon: BriefcaseBusiness, label: 'Lavoro' },
   { path: '/alarms', icon: AlarmClock, label: 'Sveglie' },
+  { path: '/themes', icon: Palette, label: 'Temi' },
 ];
 
 const contentVariants = {
@@ -102,7 +103,7 @@ export default function AppLayout() {
               exit="closed"
               transition={{ type: 'spring', stiffness: 360, damping: 34, mass: 0.75 }}
             >
-              <div className="flex items-center justify-between gap-3 pb-6">
+              <div className="flex items-center justify-between gap-3 pb-6 pl-20">
                 <Link
                   to="/"
                   onClick={closeMenu}
@@ -126,32 +127,50 @@ export default function AppLayout() {
 
               <nav className="space-y-2">
                 {NAV_ITEMS.map((item, index) => {
-                  const isActive = location.pathname === item.path;
+                  const isActive = item.path && location.pathname === item.path;
+                  const itemKey = item.path || item.action;
+                  const ItemIcon = item.icon;
+                  const commonClassName = `relative flex min-h-[3.25rem] w-full items-center gap-3 rounded-2xl border px-4 py-3 transition-colors ${
+                    isActive
+                      ? 'border-primary/35 bg-primary/12 text-primary shadow-[0_0_30px_rgba(16,185,129,0.12)]'
+                      : 'border-white/8 bg-white/[0.035] text-white/62 hover:border-primary/25 hover:text-white'
+                  }`;
+
                   return (
                     <motion.div
-                      key={item.path}
+                      key={itemKey}
                       initial={{ opacity: 0, x: -16 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.05 + index * 0.035, duration: 0.22 }}
                     >
-                      <Link
-                        to={item.path}
-                        onClick={closeMenu}
-                        className={`relative flex min-h-[3.25rem] items-center gap-3 rounded-2xl border px-4 py-3 transition-colors ${
-                          isActive
-                            ? 'border-primary/35 bg-primary/12 text-primary shadow-[0_0_30px_rgba(16,185,129,0.12)]'
-                            : 'border-white/8 bg-white/[0.035] text-white/62 hover:border-primary/25 hover:text-white'
-                        }`}
-                      >
-                        <item.icon className="h-5 w-5 shrink-0" />
-                        <span className="font-grotesk text-base font-semibold">{item.label}</span>
-                        {isActive && (
-                          <motion.span
-                            layoutId="drawer-active-dot"
-                            className="ml-auto h-2 w-2 rounded-full bg-primary shadow-[0_0_14px_rgba(16,185,129,0.7)]"
-                          />
-                        )}
-                      </Link>
+                      {item.action === 'assistant' ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            closeMenu();
+                            setAssistantOpen(true);
+                          }}
+                          className={commonClassName}
+                        >
+                          <ItemIcon className="h-5 w-5 shrink-0" />
+                          <span className="font-grotesk text-base font-semibold">{item.label}</span>
+                        </button>
+                      ) : (
+                        <Link
+                          to={item.path}
+                          onClick={closeMenu}
+                          className={commonClassName}
+                        >
+                          <ItemIcon className="h-5 w-5 shrink-0" />
+                          <span className="font-grotesk text-base font-semibold">{item.label}</span>
+                          {isActive && (
+                            <motion.span
+                              layoutId="drawer-active-dot"
+                              className="ml-auto h-2 w-2 rounded-full bg-primary shadow-[0_0_14px_rgba(16,185,129,0.7)]"
+                            />
+                          )}
+                        </Link>
+                      )}
                     </motion.div>
                   );
                 })}

@@ -14,10 +14,9 @@ const STARTER_MESSAGES = [
 ];
 
 const QUICK_PROMPTS = [
-  'Programma tre task leggeri per oggi',
-  'Trasforma questo caos in calendario',
-  'Creami una sveglia per domani mattina',
-  'Aiutami a pianificare un progetto senza esagerare',
+  'Programma 3 task leggeri',
+  'Trasforma caos in calendario',
+  'Crea una sveglia utile',
 ];
 
 const getTodayIso = () => new Date().toISOString().split('T')[0];
@@ -28,7 +27,7 @@ const buildContext = ({ profile, location }) => {
   const answers = onboarding?.answers || {};
 
   return {
-    page: location.pathname === '/' ? 'Chat Home' : location.pathname,
+    page: location.pathname === '/' ? 'Hub' : location.pathname,
     today: getTodayIso(),
     onboardingDone: Boolean(onboarding?.privacy?.accepted),
     dayByDayConfigured: Boolean(dayByDay.configured),
@@ -152,10 +151,10 @@ export default function AssistantChatSurface({
               Cosa ti serve oggi?
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/50">
-              Scrivi il bisogno. La chat propone modifiche all app: task, eventi, memo e sveglie. Niente casino: prima vedi, poi applichi.
+              Scrivi il bisogno. La chat propone modifiche all'app: task, eventi, memo e sveglie. Niente casino: prima vedi, poi applichi.
             </p>
             <p className="mt-1 text-[11px] leading-relaxed text-white/34">
-              Quando invii, il testo e un contesto sintetico servono solo a preparare una proposta utile dentro l app.
+              Quando invii, il testo e un contesto sintetico servono solo a preparare una proposta utile dentro l'app.
             </p>
           </div>
         </div>
@@ -217,14 +216,14 @@ export default function AssistantChatSurface({
           </p>
         )}
 
-        <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+        <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
           {QUICK_PROMPTS.map((prompt) => (
             <button
               key={prompt}
               type="button"
               disabled={loading}
               onClick={() => sendMessage(prompt)}
-              className="shrink-0 rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5 text-xs font-semibold text-white/48 transition-colors hover:border-emerald-300/25 hover:text-emerald-100 disabled:opacity-50"
+              className="min-w-0 rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-center text-xs font-semibold leading-tight text-white/52 transition-colors hover:border-emerald-300/25 hover:text-emerald-100 disabled:opacity-50"
             >
               {prompt}
             </button>

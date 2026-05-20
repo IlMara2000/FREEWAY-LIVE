@@ -99,8 +99,8 @@ export default function CalendarView({ onStartTomato }) {
         </div>
       </div>
 
-      <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
-        <div className="glass-panel p-2.5 sm:p-3 md:p-4">
+      <section className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
+        <div className="glass-panel min-w-0 overflow-hidden p-2.5 sm:p-3 md:p-4">
           <div className="grid grid-cols-7 mb-1 sm:mb-2">
             {DAYS.map((d, i) => (
               <div key={i} className="text-center font-mono text-[9px] text-emerald-400/50 uppercase tracking-wider py-1.5 sm:py-2 sm:text-[10px]">
@@ -129,7 +129,7 @@ export default function CalendarView({ onStartTomato }) {
                       handleDayClick(day);
                     }
                   }}
-                  className={`group relative min-h-[54px] rounded-xl p-1.5 sm:min-h-[92px] sm:rounded-2xl sm:p-2.5 md:min-h-[118px] flex flex-col items-stretch transition-all text-left overflow-hidden cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 ${
+                  className={`group relative min-h-[52px] rounded-xl p-1.5 sm:min-h-[92px] sm:rounded-2xl sm:p-2.5 md:min-h-[118px] flex min-w-0 flex-col items-stretch transition-all text-left overflow-hidden cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 ${
                     active
                       ? 'bg-emerald-500/12 border border-emerald-500/50 shadow-[0_0_28px_rgba(16,185,129,0.13)]'
                       : selected
@@ -152,7 +152,7 @@ export default function CalendarView({ onStartTomato }) {
                             <span className="h-1.5 w-1.5 rounded-full bg-current sm:hidden" />
                           </div>
                           {(task.start_time || task.end_time) && (
-                            <span className="block font-mono text-[9px] opacity-70 truncate">
+                            <span className="hidden font-mono text-[9px] opacity-70 truncate sm:block">
                               {task.start_time || '--:--'}-{task.end_time || '--:--'}
                             </span>
                           )}
@@ -183,7 +183,7 @@ export default function CalendarView({ onStartTomato }) {
           </div>
         </div>
 
-        <aside className="space-y-3">
+        <aside className="space-y-3 lg:sticky lg:top-8">
           <div className="glass-panel p-4 space-y-4">
             <div className="flex items-center justify-between">
               <p className="font-mono text-[10px] text-emerald-400/60 uppercase tracking-widest">Report mese</p>
