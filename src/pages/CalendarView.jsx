@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+// @ts-nocheck
+import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { accountData } from '@/api/accountDataClient';
 import { normalizeList } from '@/lib/normalize-list';
 import { getCalendarDateString, isTaskForCalendarDate } from '@/lib/task-workflows';
-import { BriefcaseBusiness, CalendarPlus, ChevronLeft, ChevronRight, Clock, Layers3 } from 'lucide-react';
+import { BriefcaseBusiness, CalendarPlus, ChevronLeft, ChevronRight, Clock, Layers3, MessageCircle, StickyNote } from 'lucide-react';
 import TaskModal from '@/components/calendar/TaskModal';
 import CreateTaskModal from '@/components/calendar/CreateTaskModal';
+import AppAssistantChat from '@/components/assistant/AppAssistantChat';
 import { formatDuration, getTaskDurationHours, getWorkColor } from '@/lib/work-utils';
 import PageShell from '@/components/shared/PageShell';
 
@@ -19,6 +21,7 @@ export default function CalendarView({ onStartTomato }) {
   const [selectedDay, setSelectedDay] = useState(today.getDate());
   const [selectedTask, setSelectedTask] = useState(null);
   const [createDate, setCreateDate] = useState(null);
+  const [assistantMemo, setAssistantMemo] = useState(null);
 
   const { data: taskResponse = [], refetch } = useQuery({
     queryKey: ['all-tasks'],
@@ -57,12 +60,7 @@ export default function CalendarView({ onStartTomato }) {
     setCreateDate(getDateString(safeDay));
   };
 
-  const handleDayClick = (day) => {
-    setSelectedDay(day);
-    if (getTasksForDay(day).length === 0) {
-      openCreateForDay(day);
-    }
-  };
+  const handleDayClick = (day) => setSelectedDay(day);
 
   const isToday = (day) =>
     day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
@@ -76,6 +74,11 @@ export default function CalendarView({ onStartTomato }) {
   const workTasks = monthTasks.filter((task) => task.task_type === 'work');
   const workHours = workTasks.reduce((sum, task) => sum + getTaskDurationHours(task), 0);
   const selectedTasks = selectedDay ? getTasksForDay(selectedDay) : [];
+  const memoTasks = useMemo(() => (
+    tasks
+      .filter((task) => task.is_brain_dump || task.task_type === 'memo')
+      .slice(0, 8)
+  ), [tasks]);
 
   return (
     <PageShell maxWidth="max-w-6xl" contentClassName="flex flex-col gap-5">
@@ -98,17 +101,17 @@ export default function CalendarView({ onStartTomato }) {
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
         <div className="glass-panel p-2.5 sm:p-3 md:p-4">
-          <div className="grid grid-cols-7 mb-2">
+          <div className="grid grid-cols-7 mb-1 sm:mb-2">
             {DAYS.map((d, i) => (
-              <div key={i} className="text-center font-mono text-[10px] text-emerald-400/50 uppercase tracking-wider py-2">
+              <div key={i} className="text-center font-mono text-[9px] text-emerald-400/50 uppercase tracking-wider py-1.5 sm:py-2 sm:text-[10px]">
                 {d}
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-7 gap-1.5 md:gap-2">
+          <div className="grid grid-cols-7 gap-1 sm:gap-1.5 md:gap-2">
             {cells.map((day, i) => {
-              if (!day) return <div key={i} className="min-h-[78px] sm:min-h-[92px] md:min-h-[118px]" />;
+              if (!day) return <div key={i} className="min-h-[54px] sm:min-h-[92px] md:min-h-[118px]" />;
               const dayTasks = getTasksForDay(day);
               const active = isToday(day);
               const selected = selectedDay === day;
@@ -126,7 +129,7 @@ export default function CalendarView({ onStartTomato }) {
                       handleDayClick(day);
                     }
                   }}
-                  className={`group relative min-h-[78px] rounded-[1.15rem] p-2 sm:min-h-[92px] sm:rounded-2xl sm:p-2.5 md:min-h-[118px] flex flex-col items-stretch transition-all text-left overflow-hidden cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 ${
+                  className={`group relative min-h-[54px] rounded-xl p-1.5 sm:min-h-[92px] sm:rounded-2xl sm:p-2.5 md:min-h-[118px] flex flex-col items-stretch transition-all text-left overflow-hidden cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 ${
                     active
                       ? 'bg-emerald-500/12 border border-emerald-500/50 shadow-[0_0_28px_rgba(16,185,129,0.13)]'
                       : selected
@@ -138,14 +141,15 @@ export default function CalendarView({ onStartTomato }) {
                     {String(day).padStart(2, '0')}
                   </span>
 
-                  <div className="mt-2 space-y-1 overflow-hidden">
+                  <div className="mt-1 space-y-1 overflow-hidden sm:mt-2">
                     {dayTasks.length > 0 ? dayTasks.slice(0, 3).map((task) => {
                       const colors = getWorkColor(task.priority);
                       return (
                         <div key={task.id} className={`rounded-md border px-1.5 py-1 ${colors.chip}`}>
                           <div className="flex items-center gap-1 min-w-0">
                             {task.task_type === 'work' && <BriefcaseBusiness className="w-3 h-3 shrink-0" />}
-                            <span className="text-[10px] font-semibold truncate">{task.title}</span>
+                            <span className="hidden text-[10px] font-semibold truncate sm:inline">{task.title}</span>
+                            <span className="h-1.5 w-1.5 rounded-full bg-current sm:hidden" />
                           </div>
                           {(task.start_time || task.end_time) && (
                             <span className="block font-mono text-[9px] opacity-70 truncate">
@@ -155,7 +159,7 @@ export default function CalendarView({ onStartTomato }) {
                         </div>
                       );
                     }) : (
-                      <span className="mt-auto text-[10px] text-white/20 opacity-0 group-hover:opacity-100 transition-opacity sm:opacity-100">+ task</span>
+                      <span className="mt-auto hidden text-[10px] text-white/20 opacity-0 transition-opacity group-hover:opacity-100 sm:block sm:opacity-100">+ task</span>
                     )}
                     {dayTasks.length > 3 && (
                       <span className="block text-[10px] font-mono text-white/35 px-1">+{dayTasks.length - 3}</span>
@@ -168,7 +172,7 @@ export default function CalendarView({ onStartTomato }) {
                       event.stopPropagation();
                       openCreateForDay(day);
                     }}
-                    className="absolute right-1.5 top-1.5 w-6 h-6 rounded-lg bg-black/35 border border-white/10 text-white/45 flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-md border border-white/10 bg-black/35 text-white/45 opacity-100 transition-opacity sm:right-1.5 sm:top-1.5 sm:h-6 sm:w-6 sm:rounded-lg sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
                     aria-label={`Aggiungi task al ${day} ${MONTHS[month]}`}
                   >
                     <CalendarPlus className="w-3.5 h-3.5" />
@@ -276,6 +280,40 @@ export default function CalendarView({ onStartTomato }) {
         </aside>
       </section>
 
+      <section className="glass-panel p-4 space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-widest text-emerald-400/60">Memo</p>
+            <h2 className="font-grotesk text-xl font-bold text-white">Pensieri dal Brain Dump</h2>
+          </div>
+          <StickyNote className="h-5 w-5 text-emerald-300/70" />
+        </div>
+        {memoTasks.length === 0 ? (
+          <p className="rounded-2xl border border-white/8 bg-white/[0.035] p-4 text-sm text-white/42">
+            Nessun memo. Scrivine uno nel Brain Dump e poi mandalo alla chat.
+          </p>
+        ) : (
+          <div className="grid gap-2 md:grid-cols-2">
+            {memoTasks.map((memo) => (
+              <article key={memo.id} className="rounded-2xl border border-white/10 bg-white/[0.035] p-3">
+                <p className="text-sm font-semibold text-white/82">{memo.title}</p>
+                <div className="mt-3 flex items-center justify-between gap-2">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-emerald-300/55">MEMO</span>
+                  <button
+                    type="button"
+                    onClick={() => setAssistantMemo(memo)}
+                    className="inline-flex h-9 items-center gap-2 rounded-xl border border-cyan-200/15 bg-cyan-300/8 px-3 text-xs font-semibold text-cyan-100"
+                  >
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    Groq
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
       <TaskModal
         task={selectedTask}
         onClose={() => setSelectedTask(null)}
@@ -297,6 +335,11 @@ export default function CalendarView({ onStartTomato }) {
         )) : []}
         onClose={() => setCreateDate(null)}
         onRefetch={refetch}
+      />
+      <AppAssistantChat
+        open={Boolean(assistantMemo)}
+        onClose={() => setAssistantMemo(null)}
+        sourceMemo={assistantMemo}
       />
     </PageShell>
   );

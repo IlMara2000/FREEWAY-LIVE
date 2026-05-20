@@ -43,7 +43,7 @@ export async function requestTaskBreakdown(task) {
   return payload;
 }
 
-export async function requestAppAssistantReply({ message, history = [], context = {} }) {
+export async function requestAppAssistantReply({ message, history = [], context = {}, allowActions = false }) {
   const response = await fetch('/api/groq/app-assistant', {
     method: 'POST',
     headers: {
@@ -53,6 +53,7 @@ export async function requestAppAssistantReply({ message, history = [], context 
       message,
       history,
       context,
+      allowActions,
     }),
   });
 

@@ -7,6 +7,7 @@ const ENTITY_CONFIG = {
   Task: { collection: 'tasks', defaultSort: '-created_date' },
   FocusSession: { collection: 'focusSessions', defaultSort: '-created_date' },
   UserProfile: { collection: 'userProfiles', defaultSort: '-updated_date' },
+  Alarm: { collection: 'alarms', defaultSort: 'time' },
 };
 
 const ENTITY_DEFAULTS = {
@@ -29,6 +30,16 @@ const ENTITY_DEFAULTS = {
     total_tasks_completed: 0,
     streak_days: 0,
     last_active_date: new Date().toISOString().split('T')[0],
+  }),
+  Alarm: () => ({
+    title: 'Sveglia',
+    time: '09:00',
+    date: '',
+    repeat: 'none',
+    enabled: true,
+    linked_task_id: '',
+    reminder_text: '',
+    last_notified_key: '',
   }),
 };
 
@@ -87,6 +98,7 @@ const createEmptyStore = () => ({
   tasks: [],
   focusSessions: [],
   userProfiles: [],
+  alarms: [],
 });
 
 const readStore = (accountId) => {
@@ -255,4 +267,5 @@ export const accountData = {
   tasks: createEntityClient('Task'),
   focusSessions: createEntityClient('FocusSession'),
   userProfiles: createEntityClient('UserProfile'),
+  alarms: createEntityClient('Alarm'),
 };

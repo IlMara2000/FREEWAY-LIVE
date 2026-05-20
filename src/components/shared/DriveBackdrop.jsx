@@ -33,7 +33,8 @@ function AmbientDriveScene({ tone = 'emerald' }) {
     }
 
     const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    const lowPower = reduceMotion || window.innerWidth < 720 || (navigator.hardwareConcurrency || 8) <= 4;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowPower ? 1.2 : 1.6));
     renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -58,7 +59,8 @@ function AmbientDriveScene({ tone = 'emerald' }) {
     scene.add(cyanLight, emeraldLight, amberLight);
 
     const tunnelRings = [];
-    for (let index = 0; index < 16; index += 1) {
+    const ringCount = lowPower ? 8 : 14;
+    for (let index = 0; index < ringCount; index += 1) {
       const material = new THREE.MeshBasicMaterial({
         color: index % 3 === 0 ? 0xf59e0b : index % 2 === 0 ? 0x22d3ee : 0x34d399,
         transparent: true,
@@ -67,7 +69,7 @@ function AmbientDriveScene({ tone = 'emerald' }) {
         blending: THREE.AdditiveBlending,
         depthWrite: false,
       });
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(2.55 + index * 0.04, 0.012, 8, 96), material);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(2.55 + index * 0.04, 0.012, 6, lowPower ? 56 : 84), material);
       ring.position.z = -2.5 - index * 1.7;
       ring.userData.baseZ = ring.position.z;
       ring.userData.phase = index * 0.37;
@@ -82,7 +84,7 @@ function AmbientDriveScene({ tone = 'emerald' }) {
       opacity: 0.42,
       blending: THREE.AdditiveBlending,
     });
-    const dashCount = 68;
+    const dashCount = lowPower ? 26 : 54;
     const dashes = new THREE.InstancedMesh(dashGeometry, dashMaterial, dashCount);
     tunnel.add(dashes);
 
@@ -93,13 +95,14 @@ function AmbientDriveScene({ tone = 'emerald' }) {
       opacity: 0.38,
       blending: THREE.AdditiveBlending,
     });
-    const trailCount = 36;
+    const trailCount = lowPower ? 14 : 28;
     const trails = new THREE.InstancedMesh(trailGeometry, trailMaterial, trailCount);
     tunnel.add(trails);
 
     const particlesGeometry = new THREE.BufferGeometry();
     const particles = [];
-    for (let index = 0; index < 520; index += 1) {
+    const particleCount = lowPower ? 160 : 360;
+    for (let index = 0; index < particleCount; index += 1) {
       particles.push(
         THREE.MathUtils.randFloatSpread(19),
         THREE.MathUtils.randFloat(-3.8, 6.8),
@@ -149,8 +152,8 @@ function AmbientDriveScene({ tone = 'emerald' }) {
       const elapsed = reduceMotion ? 0.2 : clock.getElapsedTime();
       const speed = reduceMotion ? 0 : 0.42;
 
-      root.rotation.y = Math.sin(elapsed * 0.24) * 0.032;
-      tunnel.rotation.z = Math.sin(elapsed * 0.16) * 0.07;
+      root.rotation.y = Math.sin(elapsed * 0.2) * 0.025;
+      tunnel.rotation.z = Math.sin(elapsed * 0.14) * 0.05;
       starField.rotation.y = elapsed * 0.007;
 
       tunnelRings.forEach((ring, index) => {
@@ -215,8 +218,8 @@ export default function DriveBackdrop({ tone = 'emerald' }) {
     <>
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute left-1/2 top-[46%] h-[72vh] w-[72vw] min-w-[320px] -translate-x-1/2 rounded-t-[45%] bg-gradient-to-t from-emerald-300/10 via-cyan-300/7 to-transparent blur-2xl" />
-        <div className="absolute -left-[15%] top-[18%] h-[40vh] w-[38vw] rounded-full bg-emerald-400/9 blur-3xl" />
-        <div className="absolute -right-[10%] top-[8%] h-[46vh] w-[36vw] rounded-full bg-cyan-300/8 blur-3xl" />
+        <div className="absolute -left-[15%] top-[18%] h-[36vh] w-[34vw] rounded-full bg-emerald-400/[0.055] blur-3xl" />
+        <div className="absolute -right-[10%] top-[8%] h-[40vh] w-[32vw] rounded-full bg-cyan-300/[0.05] blur-3xl" />
       </div>
 
       <AmbientDriveScene tone={tone} />

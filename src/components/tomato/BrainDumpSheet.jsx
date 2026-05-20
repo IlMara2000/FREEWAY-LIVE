@@ -18,7 +18,7 @@ export default function BrainDumpSheet({ open, onClose }) {
     setError('');
 
     try {
-      await accountData.tasks.create(buildBrainDumpPayload(text));
+      await accountData.tasks.create(buildBrainDumpPayload(text, 'Memo rapido nato dal Tomato. Puoi riprenderlo nel calendario o nel Brain Dump.'));
       invalidateTaskViews(queryClient);
       setText('');
       setSaved(true);
@@ -55,7 +55,7 @@ export default function BrainDumpSheet({ open, onClose }) {
               </div>
               <button onClick={onClose} className="text-white/30 hover:text-white"><X className="w-5 h-5" /></button>
             </div>
-            <p className="font-lexend text-xs text-white/45">Scarica il pensiero qui. Poi torna a fare focus.</p>
+            <p className="font-lexend text-xs text-white/45">Scarica il pensiero qui. Finisce come MEMO sotto calendario.</p>
 
             <div className="flex gap-2">
               <input

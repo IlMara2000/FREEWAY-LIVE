@@ -25,7 +25,7 @@ export default function PageShell({
     >
       <DriveBackdrop tone={tone} />
 
-      <div className="relative z-20 min-h-screen w-full px-4 pb-[calc(7.25rem+env(safe-area-inset-bottom))] pt-[calc(1.25rem+env(safe-area-inset-top))] md:px-8 md:pb-12 md:pt-8">
+      <div className="relative z-20 min-h-screen w-full px-4 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-[calc(5rem+env(safe-area-inset-top))] md:px-8 md:pb-12 md:pt-8">
         <div className={`mx-auto w-full ${maxWidth} ${contentClassName}`}>
           {children}
         </div>

@@ -8,9 +8,11 @@ const APP_KNOWLEDGE = [
   'Day by Day crea routine giornaliere leggere in base a energia, ostacoli, progetto principale, stato mentale e preferenze.',
   'Planner gestisce task oggi, inbox, pianificati e fatti. Le task hanno descrizione, priorita, orari, tipo task/lavoro e AI per migliorarle.',
   'Calendario crea task per giorno e puo collegare task lavoro con orari.',
+  'La Home e una chat operativa: quando l utente chiede task, eventi, memo o sveglie, puoi proporre azioni strutturate applicabili dall app.',
   'Tomato aiuta a lavorare in blocchi focus e registra XP/sessioni.',
-  'Brain Dump serve a scaricare pensieri e promuoverli a task quando serve.',
-  'Dashboard mostra stato, XP, prossima mossa, routine Day by Day e statistiche base.',
+  'Brain Dump serve a scaricare pensieri: ogni pensiero diventa un MEMO che resta sotto il calendario e puo essere inviato alla chat.',
+  'Sveglie gestisce allarmi locali, legati o meno a promemoria e task.',
+  'Dashboard/Home e stata sostituita dalla chat Groq operativa.',
   'Sistema anti-caos: massimo 3 task importanti al giorno e messaggi quando l utente carica troppo.',
   'Account contiene profilo, foto, reset onboarding/privacy e logout.',
 ].join('\n');
@@ -32,6 +34,7 @@ const normalizeMessages = (messages = []) =>
 
 const normalizeContext = (context = {}) => ({
   page: cleanText(context.page, 120),
+  today: cleanText(context.today, 40),
   dayByDayConfigured: Boolean(context.dayByDayConfigured),
   currentEnergy: cleanText(context.currentEnergy, 80),
   project: cleanText(context.project, 240),
@@ -58,6 +61,7 @@ export async function createAppAssistantReply({
   const userMessage = cleanText(input?.message);
   const history = normalizeMessages(input?.history);
   const context = normalizeContext(input?.context);
+  const wantsActions = Boolean(input?.allowActions);
 
   if (!userMessage) {
     const error = new Error('Scrivi una domanda per l assistente.');
@@ -82,10 +86,19 @@ export async function createAppAssistantReply({
               'Sei l assistente interno di Freeway Life.',
               'Rispondi in italiano, tono umano, pratico, diretto, zero guru, zero corporate.',
               'Aiuti l utente a usare l app: Day by Day, Planner, Calendario, Tomato, Brain Dump, Lavoro, Temi, Account.',
+              'Quando l utente chiede di creare, programmare, ricordare, pianificare, fissare eventi, task, memo o sveglie, proponi azioni strutturate.',
+              'Non creare piu di 5 azioni per risposta. Se la richiesta e confusa, proponi poche azioni semplici e chiedi conferma.',
               'Puoi spiegare passaggi concreti, suggerire cosa fare nella pagina corrente e aiutare a ridurre caos/overthinking.',
-              'Non promettere azioni che non puoi fare direttamente. Se serve cliccare o aprire una sezione, diglielo in passi brevi.',
+              'L app applichera le azioni solo dopo click dell utente, quindi non dire che hai gia creato qualcosa: di che hai preparato una proposta.',
               'Non fornire diagnosi, terapia o consigli medici. Se l utente parla di rischio o crisi seria, invitalo a contattare aiuto umano/professionale.',
               'Risposte brevi: massimo 140 parole salvo richiesta esplicita.',
+              wantsActions
+                ? 'IMPORTANTE: rispondi SOLO con JSON valido, senza markdown, nel formato {"reply":"testo breve","actions":[...]}'
+                : 'Rispondi come testo normale.',
+              wantsActions
+                ? 'Azioni supportate: create_task, create_event, create_memo, create_alarm. Campi: type,title,description,date YYYY-MM-DD,time HH:MM,end_time HH:MM,priority low|medium|high|critical,task_type,reminder_text.'
+                : '',
+              'Per date relative come oggi/domani usa sempre la data corrente fornita nel contesto sintetico. Non inventare date passate.',
               'Conosci queste funzioni dell app:',
               APP_KNOWLEDGE,
             ].join('\n'),
@@ -95,6 +108,7 @@ export async function createAppAssistantReply({
             content: [
               'Contesto sintetico utente/app:',
               `Pagina corrente: ${context.page || 'non nota'}`,
+              `Data corrente: ${context.today || new Date().toISOString().split('T')[0]}`,
               `Onboarding completato: ${context.onboardingDone ? 'si' : 'no'}`,
               `Day by Day configurato: ${context.dayByDayConfigured ? 'si' : 'no'}`,
               `Energia attuale: ${context.currentEnergy || 'non indicata'}`,
@@ -128,7 +142,19 @@ export async function createAppAssistantReply({
     throw error;
   }
 
-  const reply = cleanText(payload?.choices?.[0]?.message?.content, 2200);
+  const rawReply = cleanText(payload?.choices?.[0]?.message?.content, 3200);
+  let reply = rawReply;
+  let actions = [];
+
+  if (wantsActions) {
+    try {
+      const parsed = JSON.parse(rawReply);
+      reply = cleanText(parsed?.reply, 1800);
+      actions = Array.isArray(parsed?.actions) ? parsed.actions.slice(0, 8) : [];
+    } catch {
+      actions = [];
+    }
+  }
 
   if (!reply) {
     const error = new Error('Groq non ha generato una risposta utilizzabile.');
@@ -138,6 +164,7 @@ export async function createAppAssistantReply({
 
   return {
     reply,
+    actions,
     model: payload?.model || model,
   };
 }

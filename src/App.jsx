@@ -15,12 +15,15 @@ import Planner from '@/pages/Planner';
 import BrainDump from '@/pages/BrainDump';
 import ThemeStore from '@/pages/ThemeStore';
 import Account from '@/pages/Account';
+import Alarms from '@/pages/Alarms';
 import Work from '@/pages/Work';
 import Tutorial from '@/components/tutorial/Tutorial';
 import AppLayout from '@/components/layout/AppLayout';
 import PageNotFound from '@/lib/PageNotFound';
 import useUserProfile from '@/hooks/useUserProfile';
 import PersonalOnboarding, { isInitialOnboardingComplete } from '@/components/onboarding/PersonalOnboarding';
+import NotificationConsent from '@/components/notifications/NotificationConsent';
+import useAlarmNotifications from '@/hooks/useAlarmNotifications';
 
 const TUTORIAL_KEY = 'fw_tutorial_done';
 const APP_ENTERED_KEY = 'fw_app_entered';
@@ -55,7 +58,7 @@ const AuthCallback = () => {
 
       if (!cancelled) {
         storeAppEntry();
-        navigate('/calendar', { replace: true });
+        navigate('/', { replace: true });
       }
     };
 
@@ -89,7 +92,8 @@ const AuthenticatedApp = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const isAuthCallback = location.pathname === '/auth/callback';
-  const shouldShowSplash = location.pathname === '/' && !hasEnteredApp;
+  const urlEntered = new URLSearchParams(location.search).get('entered') === '1';
+  const shouldShowSplash = location.pathname === '/' && !hasEnteredApp && !urlEntered;
   const onboardingComplete = isInitialOnboardingComplete(profile);
   const canShowAccountOverlays = Boolean(
     isAuthenticated &&
@@ -98,15 +102,21 @@ const AuthenticatedApp = () => {
     !profileLoading &&
     profile
   );
-  const showPersonalOnboarding = canShowAccountOverlays && !onboardingComplete;
+  const showPersonalOnboarding = canShowAccountOverlays && !onboardingComplete && location.pathname === '/account';
+  useAlarmNotifications(Boolean(isAuthenticated));
 
   const handleEnter = () => {
     storeAppEntry();
     setHasEnteredApp(true);
-    if (isAuthenticated) {
-      navigate('/calendar');
-    }
+    navigate('/', { replace: true });
   };
+
+  useEffect(() => {
+    if (!urlEntered) return;
+    storeAppEntry();
+    setHasEnteredApp(true);
+    navigate('/', { replace: true });
+  }, [navigate, urlEntered]);
 
   const handleTutorialComplete = () => {
     localStorage.setItem(TUTORIAL_KEY, '1');
@@ -206,6 +216,7 @@ const AuthenticatedApp = () => {
               <Route path="/work" element={<Work />} />
               <Route path="/braindump" element={<BrainDump />} />
               <Route path="/themes" element={<ThemeStore />} />
+              <Route path="/alarms" element={<Alarms />} />
               <Route path="/account" element={<Account />} />
               <Route path="/splash" element={<Navigate to="/" replace />} />
               <Route path="*" element={<PageNotFound />} />
@@ -229,6 +240,8 @@ const AuthenticatedApp = () => {
           <Tutorial onComplete={handleTutorialComplete} />
         )}
       </AnimatePresence>
+
+      {canShowAccountOverlays && !showPersonalOnboarding && <NotificationConsent />}
     </>
   );
 };

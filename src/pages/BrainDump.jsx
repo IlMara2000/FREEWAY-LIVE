@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { accountData } from '@/api/accountDataClient';
@@ -13,7 +14,8 @@ import useUserProfile from '@/hooks/useUserProfile';
 import XPReward from '@/components/shared/XPReward';
 import TaskDescriptionAssistant from '@/components/tasks/TaskDescriptionAssistant';
 import PageShell from '@/components/shared/PageShell';
-import { Brain, Send, Trash2, ArrowRight, Zap } from 'lucide-react';
+import AppAssistantChat from '@/components/assistant/AppAssistantChat';
+import { Brain, Send, Trash2, ArrowRight, Zap, MessageCircle } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 
@@ -21,6 +23,7 @@ export default function BrainDump() {
   const [text, setText] = useState('');
   const [showReward, setShowReward] = useState(false);
   const [rewardData, setRewardData] = useState({ amount: 0, levelUp: false, newLevel: 1 });
+  const [assistantMemo, setAssistantMemo] = useState(null);
   const { profile, addXP } = useUserProfile();
   const queryClient = useQueryClient();
 
@@ -32,7 +35,7 @@ export default function BrainDump() {
 
   const createMutation = useMutation({
     mutationFn: async (title) => {
-      await accountData.tasks.create(buildBrainDumpPayload(title));
+      await accountData.tasks.create(buildBrainDumpPayload(title, 'Memo nato dal Brain Dump. Puoi inviarlo alla chat Groq per trasformarlo in piano, task o sveglia.'));
       const result = await addXP(BRAIN_DUMP_XP);
       setRewardData({
         amount: BRAIN_DUMP_XP,
@@ -90,7 +93,7 @@ export default function BrainDump() {
           Brain Dump
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Scarica ogni pensiero. Non giudicare, scrivi e basta.
+          Scarica ogni pensiero. Da qui diventa un MEMO sotto calendario e puo essere analizzato con Groq.
         </p>
       </motion.div>
 
@@ -120,7 +123,7 @@ export default function BrainDump() {
           </span>
           <Button type="submit" disabled={!text.trim() || createMutation.isPending} className="gap-2">
             <Send className="w-4 h-4" />
-            Dump
+            Memo
           </Button>
         </div>
       </motion.form>
@@ -147,6 +150,9 @@ export default function BrainDump() {
                 <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-foreground">{dump.title}</p>
+                  <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-emerald-300/50">
+                    MEMO
+                  </p>
                   <TaskDescriptionAssistant
                     task={dump}
                     sourceLabel="brain dump"
@@ -156,6 +162,16 @@ export default function BrainDump() {
                   />
                 </div>
                 <div className="flex items-center gap-1 opacity-100 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-cyan-200 hover:bg-cyan-300/10"
+                    onClick={() => setAssistantMemo(dump)}
+                    title="Invia memo alla chat"
+                    aria-label={`Invia memo alla chat ${dump.title}`}
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -201,6 +217,12 @@ export default function BrainDump() {
         onComplete={() => setShowReward(false)}
         levelUp={rewardData.levelUp}
         newLevel={rewardData.newLevel}
+      />
+      <AppAssistantChat
+        open={Boolean(assistantMemo)}
+        onClose={() => setAssistantMemo(null)}
+        profile={profile}
+        sourceMemo={assistantMemo}
       />
     </PageShell>
   );

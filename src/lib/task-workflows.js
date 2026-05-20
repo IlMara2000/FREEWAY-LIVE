@@ -150,6 +150,7 @@ export const buildBrainDumpPayload = (text, description = '') =>
     priority: TASK_PRIORITY.low,
     status: TASK_STATUS.inbox,
     is_brain_dump: true,
+    source: 'brain_dump_memo',
     xp_value: BRAIN_DUMP_XP,
   });
 

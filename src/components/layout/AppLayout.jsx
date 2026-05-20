@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useOutlet } from 'react-router-dom';
-import { Timer, ListTodo, LayoutDashboard, Palette, Brain, CalendarDays, LogOut, UserRound, BriefcaseBusiness, Menu, Bot, X } from 'lucide-react';
+import { Timer, ListTodo, MessageCircle, Palette, Brain, CalendarDays, LogOut, AlarmClock, BriefcaseBusiness, Menu, Bot, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/lib/AuthContext';
 import FreewayLogo from '@/components/brand/FreewayLogo';
@@ -8,14 +8,14 @@ import useUserProfile from '@/hooks/useUserProfile';
 import AppAssistantChat from '@/components/assistant/AppAssistantChat';
 
 const NAV_ITEMS = [
-  { path: '/', icon: LayoutDashboard, label: 'Hub' },
+  { path: '/', icon: MessageCircle, label: 'Chat' },
   { path: '/calendar', icon: CalendarDays, label: 'Calendario' },
   { path: '/work', icon: BriefcaseBusiness, label: 'Lavoro' },
   { path: '/tomato', icon: Timer, label: 'Tomato' },
   { path: '/planner', icon: ListTodo, label: 'Planner' },
   { path: '/braindump', icon: Brain, label: 'Dump' },
   { path: '/themes', icon: Palette, label: 'Temi' },
-  { path: '/account', icon: UserRound, label: 'Profilo' },
+  { path: '/alarms', icon: AlarmClock, label: 'Sveglie' },
 ];
 
 const contentVariants = {
@@ -49,35 +49,35 @@ export default function AppLayout() {
       <motion.button
         type="button"
         onClick={() => setMenuOpen((value) => !value)}
-        className={`fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom))] right-[calc(1.25rem+env(safe-area-inset-right))] z-[80] grid h-14 w-14 place-items-center overflow-hidden rounded-[1.2rem] border backdrop-blur-2xl transition-colors sm:h-16 sm:w-16 sm:rounded-[1.35rem] md:bottom-8 md:right-8 ${
+        className={`fixed left-[calc(1rem+env(safe-area-inset-left))] top-[calc(1rem+env(safe-area-inset-top))] z-[80] grid h-12 w-12 place-items-center overflow-hidden rounded-[1rem] border backdrop-blur-xl transition-colors sm:h-14 sm:w-14 ${
           menuOpen
-            ? 'border-red-200/45 bg-red-500 text-white shadow-[0_24px_55px_rgba(239,68,68,0.38),0_0_65px_rgba(239,68,68,0.28)]'
-            : 'border-emerald-200/25 bg-black/70 text-primary shadow-[0_24px_55px_rgba(0,0,0,0.58),0_0_45px_rgba(16,185,129,0.18)] hover:border-primary/45 hover:bg-primary/10'
+            ? 'border-red-200/45 bg-red-500/90 text-white shadow-[0_14px_34px_rgba(239,68,68,0.24)]'
+            : 'border-emerald-200/20 bg-[#02050c]/78 text-primary shadow-[0_14px_32px_rgba(0,0,0,0.42)] hover:border-primary/42 hover:bg-primary/10'
         }`}
         aria-label={menuOpen ? 'Chiudi menu' : 'Apri menu'}
         animate={{
-          rotateX: menuOpen ? [0, -14, 0] : 0,
-          rotateY: menuOpen ? [0, 12, 0] : 0,
-          scale: menuOpen ? [1, 1.08, 1] : 1,
+          rotateX: menuOpen ? [0, -9, 0] : 0,
+          rotateY: menuOpen ? [0, 9, 0] : 0,
+          scale: menuOpen ? [1, 1.04, 1] : 1,
         }}
         whileTap={{ scale: 0.92 }}
         transition={menuOpen ? { duration: 1.45, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.28 }}
         style={{ transformStyle: 'preserve-3d' }}
       >
         <motion.span
-          className={`absolute inset-1 rounded-[1.1rem] border ${
+          className={`absolute inset-1 rounded-[0.85rem] border ${
             menuOpen ? 'border-white/25 bg-white/10' : 'border-emerald-200/10 bg-white/[0.035]'
           }`}
           animate={{ rotate: menuOpen ? 360 : 0 }}
           transition={menuOpen ? { duration: 5, repeat: Infinity, ease: 'linear' } : { duration: 0.3 }}
         />
-        <span className={`absolute -inset-8 rounded-full ${menuOpen ? 'bg-red-200/20' : 'bg-emerald-200/12'} blur-xl`} />
+        <span className={`absolute -inset-4 rounded-full ${menuOpen ? 'bg-red-200/12' : 'bg-emerald-200/7'} blur-lg`} />
         <motion.span
           className="relative z-10"
           animate={{ rotateZ: menuOpen ? [0, 90, 0] : 0 }}
           transition={menuOpen ? { duration: 1.45, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.25 }}
         >
-          {menuOpen ? <X className="h-6 w-6 sm:h-7 sm:w-7" /> : <Menu className="h-6 w-6 sm:h-7 sm:w-7" />}
+          {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </motion.span>
       </motion.button>
 
@@ -137,7 +137,7 @@ export default function AppLayout() {
                       <Link
                         to={item.path}
                         onClick={closeMenu}
-                        className={`relative flex min-h-13 items-center gap-3 rounded-2xl border px-4 py-3 transition-colors ${
+                        className={`relative flex min-h-[3.25rem] items-center gap-3 rounded-2xl border px-4 py-3 transition-colors ${
                           isActive
                             ? 'border-primary/35 bg-primary/12 text-primary shadow-[0_0_30px_rgba(16,185,129,0.12)]'
                             : 'border-white/8 bg-white/[0.035] text-white/62 hover:border-primary/25 hover:text-white'
@@ -182,10 +182,9 @@ export default function AppLayout() {
         open={assistantOpen}
         onClose={() => setAssistantOpen(false)}
         profile={profile}
-        location={location}
       />
 
-      <main className="flex-1 overflow-hidden pb-6">
+      <main className="flex-1 overflow-hidden">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={location.pathname}

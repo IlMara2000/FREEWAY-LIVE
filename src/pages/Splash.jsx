@@ -59,7 +59,31 @@ const disposeObject = (object) => {
 
 export default function Splash({ onEnter }) {
   const canvasRef = useRef(null);
+  const containerRef = useRef(null);
   const pointerRef = useRef({ x: 0, y: 0 });
+  const enteredRef = useRef(false);
+
+  const triggerEnter = () => {
+    if (enteredRef.current) return;
+    enteredRef.current = true;
+    onEnter?.();
+  };
+
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element) return undefined;
+
+    const handleNativeEnter = () => triggerEnter();
+    element.addEventListener('click', handleNativeEnter);
+    element.addEventListener('pointerup', handleNativeEnter);
+    element.addEventListener('touchend', handleNativeEnter);
+
+    return () => {
+      element.removeEventListener('click', handleNativeEnter);
+      element.removeEventListener('pointerup', handleNativeEnter);
+      element.removeEventListener('touchend', handleNativeEnter);
+    };
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -78,7 +102,10 @@ export default function Splash({ onEnter }) {
       console.warn('Splash 3D scene unavailable:', error);
       return undefined;
     }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    const lowPower = reduceMotion || window.innerWidth < 720 || (navigator.hardwareConcurrency || 8) <= 4;
+    const roadSegments = lowPower ? 72 : 112;
+    const tubeSegments = lowPower ? 72 : 112;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowPower ? 1.25 : 1.75));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.38;
@@ -120,7 +147,7 @@ export default function Splash({ onEnter }) {
       opacity: 0.98,
       side: THREE.DoubleSide,
     });
-    const road = new THREE.Mesh(buildRoadSurface(freewayCurve), roadMaterial);
+    const road = new THREE.Mesh(buildRoadSurface(freewayCurve, 6.4, roadSegments), roadMaterial);
     root.add(road);
 
     const edgeMaterial = new THREE.MeshBasicMaterial({
@@ -129,8 +156,8 @@ export default function Splash({ onEnter }) {
       opacity: 1,
       blending: THREE.AdditiveBlending,
     });
-    const edgeGeometryLeft = new THREE.TubeGeometry(buildOffsetCurve(freewayCurve, -3.08), 128, 0.045, 8, false);
-    const edgeGeometryRight = new THREE.TubeGeometry(buildOffsetCurve(freewayCurve, 3.08), 128, 0.045, 8, false);
+    const edgeGeometryLeft = new THREE.TubeGeometry(buildOffsetCurve(freewayCurve, -3.08), tubeSegments, 0.04, 6, false);
+    const edgeGeometryRight = new THREE.TubeGeometry(buildOffsetCurve(freewayCurve, 3.08), tubeSegments, 0.04, 6, false);
     const leftEdge = new THREE.Mesh(edgeGeometryLeft, edgeMaterial);
     const rightEdge = new THREE.Mesh(edgeGeometryRight, edgeMaterial.clone());
     root.add(leftEdge, rightEdge);
@@ -141,8 +168,8 @@ export default function Splash({ onEnter }) {
       opacity: 0.46,
       blending: THREE.AdditiveBlending,
     });
-    const shoulderLeft = new THREE.Mesh(new THREE.TubeGeometry(buildOffsetCurve(freewayCurve, -2.25), 128, 0.02, 8, false), shoulderMaterial);
-    const shoulderRight = new THREE.Mesh(new THREE.TubeGeometry(buildOffsetCurve(freewayCurve, 2.25), 128, 0.02, 8, false), shoulderMaterial.clone());
+    const shoulderLeft = new THREE.Mesh(new THREE.TubeGeometry(buildOffsetCurve(freewayCurve, -2.25), tubeSegments, 0.018, 6, false), shoulderMaterial);
+    const shoulderRight = new THREE.Mesh(new THREE.TubeGeometry(buildOffsetCurve(freewayCurve, 2.25), tubeSegments, 0.018, 6, false), shoulderMaterial.clone());
     root.add(shoulderLeft, shoulderRight);
 
     const dashGeometry = new THREE.BoxGeometry(0.11, 0.03, 1.28);
@@ -152,7 +179,7 @@ export default function Splash({ onEnter }) {
       opacity: 0.95,
       blending: THREE.AdditiveBlending,
     });
-    const dashCount = 58;
+    const dashCount = lowPower ? 24 : 48;
     const laneDashes = new THREE.InstancedMesh(dashGeometry, dashMaterial, dashCount);
     root.add(laneDashes);
 
@@ -163,7 +190,7 @@ export default function Splash({ onEnter }) {
       opacity: 0.88,
       blending: THREE.AdditiveBlending,
     });
-    const vehicleCount = 92;
+    const vehicleCount = lowPower ? 28 : 64;
     const lightTrails = new THREE.InstancedMesh(vehicleGeometry, vehicleMaterial, vehicleCount);
     root.add(lightTrails);
 
@@ -178,7 +205,7 @@ export default function Splash({ onEnter }) {
     ];
     [3.35, 4.15, 5.05].forEach((radius, index) => {
       const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(radius, 0.018 + index * 0.006, 12, 128),
+        new THREE.TorusGeometry(radius, 0.018 + index * 0.006, 8, lowPower ? 72 : 112),
         ringMaterials[index]
       );
       ring.rotation.set(index * 0.14, index * 0.22, 0);
@@ -208,7 +235,8 @@ export default function Splash({ onEnter }) {
 
     const starsGeometry = new THREE.BufferGeometry();
     const starPositions = [];
-    for (let i = 0; i < 760; i += 1) {
+    const starCount = lowPower ? 220 : 520;
+    for (let i = 0; i < starCount; i += 1) {
       starPositions.push(
         THREE.MathUtils.randFloatSpread(32),
         THREE.MathUtils.randFloat(-3.6, 10.5),
@@ -275,8 +303,8 @@ export default function Splash({ onEnter }) {
       const time = reduceMotion ? 0.18 : elapsed;
       const pointer = pointerRef.current;
 
-      root.rotation.y += ((pointer.x * 0.13) - root.rotation.y) * 0.045;
-      root.rotation.x += ((-pointer.y * 0.045) - root.rotation.x) * 0.045;
+      root.rotation.y += ((pointer.x * 0.1) - root.rotation.y) * 0.04;
+      root.rotation.x += ((-pointer.y * 0.035) - root.rotation.x) * 0.04;
       camera.lookAt(pointer.x * 0.5, -0.18 + pointer.y * 0.16, -9.8);
 
       placeAlongCurve(laneDashes, dashCount, time, 0, reduceMotion ? 0 : -0.12);
@@ -289,7 +317,7 @@ export default function Splash({ onEnter }) {
         true
       );
 
-      portal.rotation.z = time * 0.18;
+      portal.rotation.z = time * 0.13;
       portal.children.forEach((ring, index) => {
         ring.rotation.z = (index % 2 === 0 ? 1 : -1) * time * (0.34 + index * 0.16);
         ring.scale.setScalar(1 + Math.sin(time * 1.8 + index) * 0.025);
@@ -324,7 +352,7 @@ export default function Splash({ onEnter }) {
   };
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-[#02050c]" onPointerMove={handlePointerMove}>
+    <div ref={containerRef} className="fixed inset-0 overflow-hidden bg-[#02050c]" onPointerMove={handlePointerMove}>
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute left-1/2 top-[56%] h-[78vh] w-[70vw] -translate-x-1/2 rounded-t-[45%] bg-gradient-to-t from-emerald-300/15 via-cyan-300/10 to-transparent blur-2xl" />
         <div
@@ -367,9 +395,17 @@ export default function Splash({ onEnter }) {
         }}
       />
 
-      <motion.button
-        type="button"
-        onClick={onEnter}
+      <motion.a
+        href="/?entered=1"
+        role="button"
+        onClick={triggerEnter}
+        onPointerUp={triggerEnter}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            triggerEnter();
+          }
+        }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
@@ -411,7 +447,7 @@ export default function Splash({ onEnter }) {
             TOCCA PER ENTRARE
           </motion.p>
         </motion.div>
-      </motion.button>
+      </motion.a>
     </div>
   );
 }
