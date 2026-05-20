@@ -7,7 +7,6 @@ import {
   ChevronRight,
   HeartPulse,
   LockKeyhole,
-  PenLine,
   ShieldCheck,
   Sparkles,
 } from 'lucide-react';
@@ -100,7 +99,6 @@ const DEFAULT_FORM = {
   sleepTime: '00:30',
   wakeTime: '08:30',
   privacyAccepted: false,
-  privacySignature: '',
 };
 
 const PRIVACY_NOTICE = [
@@ -194,8 +192,7 @@ function SelectField({ label, value, options, onChange }) {
 export const isInitialOnboardingComplete = (profile) =>
   Boolean(
     profile?.initial_onboarding?.version >= ONBOARDING_VERSION &&
-    profile?.initial_onboarding?.privacy?.accepted &&
-    profile?.initial_onboarding?.privacy?.signature
+    profile?.initial_onboarding?.privacy?.accepted
   );
 
 export const buildInitialOnboardingProfilePatch = (form) => {
@@ -232,7 +229,7 @@ export const buildInitialOnboardingProfilePatch = (form) => {
       },
       privacy: {
         accepted: true,
-        signature: form.privacySignature.trim(),
+        consentMethod: 'checkbox',
         notice: PRIVACY_NOTICE,
         acceptedAt: completedAt,
       },
@@ -292,7 +289,7 @@ export default function PersonalOnboarding({ onComplete, saving = false }) {
 
   const currentStep = steps[step];
   const Icon = currentStep.icon;
-  const canSubmit = form.privacyAccepted && form.privacySignature.trim().length >= 2;
+  const canSubmit = form.privacyAccepted;
 
   const update = (key, value) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -311,7 +308,7 @@ export default function PersonalOnboarding({ onComplete, saving = false }) {
 
   const handleSubmit = () => {
     if (!canSubmit || saving) {
-      setError('Per continuare devi accettare la privacy e firmare.');
+      setError('Per continuare devi accettare la privacy.');
       return;
     }
 
@@ -565,19 +562,6 @@ export default function PersonalOnboarding({ onComplete, saving = false }) {
                       routine, task e suggerimenti. So che non e' supporto medico o psicologico.
                     </span>
                   </label>
-
-                  <label className={labelClass}>
-                    <span className={labelTextClass}>Firma privacy</span>
-                    <div className="relative">
-                      <PenLine className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/28" />
-                      <input
-                        value={form.privacySignature}
-                        onChange={(event) => update('privacySignature', event.target.value)}
-                        placeholder="Firma digitando nome, iniziali o ACCETTO"
-                        className={`${fieldClass} pl-10`}
-                      />
-                    </div>
-                  </label>
                 </>
               )}
             </motion.div>
@@ -620,7 +604,7 @@ export default function PersonalOnboarding({ onComplete, saving = false }) {
                 className="btn-cyber inline-flex h-12 items-center justify-center gap-2 rounded-xl text-xs disabled:opacity-45"
               >
                 <Check className="h-4 w-4" />
-                {saving ? 'Salvataggio...' : 'Firma e inizia'}
+                {saving ? 'Salvataggio...' : 'Accetta e inizia'}
               </button>
             )}
           </div>

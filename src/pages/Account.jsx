@@ -262,7 +262,7 @@ export default function Account() {
             </h2>
             <p className="mt-1 text-sm leading-relaxed text-white/45">
               Le risposte iniziali servono solo a personalizzare routine, task e tono dell app.
-              Puoi rifarle quando vuoi: al reset ti verra' chiesto di firmare di nuovo.
+              Puoi rifarle quando vuoi: al reset ti verra' chiesto di accettare di nuovo.
             </p>
           </div>
         </div>
