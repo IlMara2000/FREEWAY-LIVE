@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, ArrowUp } from 'lucide-react';
 
@@ -14,7 +15,9 @@ export default function XPReward({ amount, show, onComplete, levelUp, newLevel }
     }
   }, [show, onComplete]);
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <AnimatePresence>
       {show && (
         <motion.div
@@ -55,6 +58,7 @@ export default function XPReward({ amount, show, onComplete, levelUp, newLevel }
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

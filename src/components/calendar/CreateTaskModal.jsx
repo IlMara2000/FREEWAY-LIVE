@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BriefcaseBusiness, Clock, Plus, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -70,7 +71,9 @@ export default function CreateTaskModal({ date, existingTasksForDate = [], onClo
     }
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <AnimatePresence>
       <motion.div
         className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-3 sm:p-4"
@@ -192,6 +195,7 @@ export default function CreateTaskModal({ date, existingTasksForDate = [], onClo
           </button>
         </motion.div>
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

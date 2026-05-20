@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { accountData } from '@/api/accountDataClient';
 import { normalizeList } from '@/lib/normalize-list';
@@ -349,64 +350,67 @@ export default function Planner() {
         )}
       </div>
 
-      <AnimatePresence>
-        {pendingCompleteTask && (
-          <motion.div
-            className="fixed inset-0 z-[70] flex items-center justify-center p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <button
-              type="button"
-              className="absolute inset-0 bg-black/68 backdrop-blur-sm"
-              onClick={() => setPendingCompleteTask(null)}
-              aria-label="Annulla completamento"
-            />
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {pendingCompleteTask && (
             <motion.div
-              className="relative z-10 w-full max-w-sm rounded-3xl border border-emerald-300/18 bg-[#02050c]/95 p-5 shadow-[0_28px_90px_rgba(0,0,0,0.58)]"
-              initial={{ y: 24, opacity: 0, scale: 0.94, rotateX: -8 }}
-              animate={{ y: 0, opacity: 1, scale: 1, rotateX: 0 }}
-              exit={{ y: 18, opacity: 0, scale: 0.94, rotateX: -8 }}
-              transition={{ type: 'spring', stiffness: 310, damping: 26 }}
-              style={{ transformStyle: 'preserve-3d' }}
+              className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
             >
-              <div className="flex items-start gap-3">
-                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-emerald-300/22 bg-emerald-400/10 text-emerald-200">
-                  <AlertTriangle className="h-5 w-5" />
+              <button
+                type="button"
+                className="absolute inset-0 bg-black/68 backdrop-blur-sm"
+                onClick={() => setPendingCompleteTask(null)}
+                aria-label="Annulla completamento"
+              />
+              <motion.div
+                className="relative z-10 w-full max-w-sm rounded-3xl border border-emerald-300/18 bg-[#02050c]/95 p-5 shadow-[0_28px_90px_rgba(0,0,0,0.58)]"
+                initial={{ y: 24, opacity: 0, scale: 0.94, rotateX: -8 }}
+                animate={{ y: 0, opacity: 1, scale: 1, rotateX: 0 }}
+                exit={{ y: 18, opacity: 0, scale: 0.94, rotateX: -8 }}
+                transition={{ type: 'spring', stiffness: 310, damping: 26 }}
+                style={{ transformStyle: 'preserve-3d' }}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-emerald-300/22 bg-emerald-400/10 text-emerald-200">
+                    <AlertTriangle className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-grotesk text-xl font-bold text-white">
+                      Completo davvero?
+                    </p>
+                    <p className="mt-1 text-sm leading-relaxed text-white/52">
+                      Stai per segnare come fatta "{pendingCompleteTask.title}". Puoi confermare o annullare.
+                    </p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="font-grotesk text-xl font-bold text-white">
-                    Completo davvero?
-                  </p>
-                  <p className="mt-1 text-sm leading-relaxed text-white/52">
-                    Stai per segnare come fatta "{pendingCompleteTask.title}". Puoi confermare o annullare.
-                  </p>
-                </div>
-              </div>
 
-              <div className="mt-5 grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-11 rounded-xl border-white/10 bg-white/[0.035] text-white/65 hover:bg-white/10 hover:text-white"
-                  onClick={() => setPendingCompleteTask(null)}
-                >
-                  Annulla
-                </Button>
-                <Button
-                  type="button"
-                  className="btn-cyber h-11 rounded-xl"
-                  disabled={completeMutation.isPending}
-                  onClick={confirmCompleteTask}
-                >
-                  {completeMutation.isPending ? 'Completo...' : 'Conferma'}
-                </Button>
-              </div>
+                <div className="mt-5 grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 rounded-xl border-white/10 bg-white/[0.035] text-white/65 hover:bg-white/10 hover:text-white"
+                    onClick={() => setPendingCompleteTask(null)}
+                  >
+                    Annulla
+                  </Button>
+                  <Button
+                    type="button"
+                    className="btn-cyber h-11 rounded-xl"
+                    disabled={completeMutation.isPending}
+                    onClick={confirmCompleteTask}
+                  >
+                    {completeMutation.isPending ? 'Completo...' : 'Conferma'}
+                  </Button>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       <XPReward
         amount={rewardData.amount}
