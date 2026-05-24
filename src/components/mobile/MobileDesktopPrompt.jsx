@@ -15,13 +15,22 @@ export default function MobileDesktopPrompt({ onDone }) {
 
   return (
     <motion.div
-      className="fixed inset-0 z-[98] grid place-items-center bg-black/82 p-5 backdrop-blur-xl"
+      className="fixed inset-0 z-[98] grid cursor-pointer place-items-center bg-black/82 p-5 backdrop-blur-xl"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.22 }}
-      role="status"
+      role="button"
+      tabIndex={0}
+      aria-label="Chiudi consiglio desktop"
       aria-live="polite"
+      onClick={() => onDone?.()}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onDone?.();
+        }
+      }}
     >
       <motion.div
         className="relative w-full max-w-sm overflow-hidden rounded-[1.35rem] border border-emerald-300/24 bg-[#02050c]/96 p-5 text-center shadow-[0_28px_90px_rgba(0,0,0,0.72)]"
@@ -48,7 +57,7 @@ export default function MobileDesktopPrompt({ onDone }) {
             Da PC rende meglio.
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-white/58">
-            Da telefono puoi entrare comunque, ma per lavorare con calendario, task e chat l app e piu comoda da browser desktop.
+            Puoi entrare anche da telefono. Per task, calendario e chat, da PC e piu comoda.
           </p>
 
           <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/10">
