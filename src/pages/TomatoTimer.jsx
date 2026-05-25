@@ -5,9 +5,10 @@ import { useAuth } from '@/lib/AuthContext';
 import useUserProfile from '@/hooks/useUserProfile';
 import { accountData } from '@/api/accountDataClient';
 import { invalidateFocusViews } from '@/lib/task-workflows';
+import { FREEWAY_OS_SOUNDS, normalizeFreewayOS, patchFocusShield, patchSoundscape } from '@/lib/freeway-os';
 import XPReward from '@/components/shared/XPReward';
 import BrainDumpSheet from '@/components/tomato/BrainDumpSheet';
-import { Brain, ChevronLeft, Gauge, Pause, Play, RotateCcw, Sparkles, Zap } from 'lucide-react';
+import { Brain, ChevronLeft, Gauge, Pause, Play, RotateCcw, ShieldCheck, Sparkles, Volume2, VolumeX, Zap } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 
 const pageVariants = {
@@ -86,6 +87,35 @@ const writeStoredTimerState = (accountId, state) => {
   } catch (error) {
     console.warn('Tomato timer storage unavailable:', error);
   }
+};
+
+const createNoiseBuffer = (context, mode) => {
+  const seconds = 2;
+  const frameCount = context.sampleRate * seconds;
+  const buffer = context.createBuffer(1, frameCount, context.sampleRate);
+  const output = buffer.getChannelData(0);
+  let brown = 0;
+  let pink0 = 0;
+  let pink1 = 0;
+  let pink2 = 0;
+
+  for (let index = 0; index < frameCount; index += 1) {
+    const white = Math.random() * 2 - 1;
+
+    if (mode === 'deep') {
+      brown = (brown + (0.025 * white)) / 1.025;
+      output[index] = brown * 3.2;
+    } else if (mode === 'rain') {
+      pink0 = 0.99886 * pink0 + white * 0.0555179;
+      pink1 = 0.99332 * pink1 + white * 0.0750759;
+      pink2 = 0.96900 * pink2 + white * 0.1538520;
+      output[index] = (pink0 + pink1 + pink2 + white * 0.11) * 0.18;
+    } else {
+      output[index] = white * 0.34;
+    }
+  }
+
+  return buffer;
 };
 
 const disposeThreeObject = (object) => {
@@ -350,25 +380,108 @@ export default function TomatoTimer({ taskContext, onBack }) {
     };
   }
   const initialState = initialStateRef.current.state;
-  const { addXP, addFocusMinutes } = useUserProfile();
+  const { profile, saveProfile, addXP, addFocusMinutes } = useUserProfile();
   const queryClient = useQueryClient();
+  const freewayOS = normalizeFreewayOS(profile?.freeway_os);
   const [selectedPreset, setSelectedPreset] = useState(initialState.selectedPreset);
   const [timeLeft, setTimeLeft] = useState(initialState.timeLeft);
   const [isRunning, setIsRunning] = useState(initialState.isRunning);
   const [isCompleted, setIsCompleted] = useState(initialState.isCompleted);
   const [endsAt, setEndsAt] = useState(initialState.endsAt);
   const [timerTaskContext, setTimerTaskContext] = useState(initialState.taskContext);
+  const [soundMode, setSoundMode] = useState(freewayOS.soundscape || 'off');
+  const [soundActive, setSoundActive] = useState(false);
+  const [focusLock, setFocusLock] = useState(Boolean(freewayOS.focusShield.enabled));
   const [showReward, setShowReward] = useState(false);
   const [rewardData, setRewardData] = useState({ amount: 0, levelUp: false, newLevel: 1 });
   const [showBrainDump, setShowBrainDump] = useState(false);
   const intervalRef = useRef(null);
   const completionRef = useRef(false);
+  const audioRef = useRef(null);
 
   const totalSeconds = getPresetSeconds(PRESETS[selectedPreset]);
   const progress = ((totalSeconds - timeLeft) / totalSeconds) * 100;
 
   const formatTime = (s) =>
     `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
+
+  const persistFreewayOS = useCallback(async (nextOS) => {
+    if (!profile || !saveProfile) return;
+    await saveProfile({
+      ...profile,
+      freeway_os: nextOS,
+    });
+  }, [profile, saveProfile]);
+
+  const stopSoundscape = useCallback(() => {
+    const current = audioRef.current;
+    audioRef.current = null;
+
+    if (!current) return;
+
+    try {
+      current.source.stop();
+      current.source.disconnect();
+      current.gain.disconnect();
+      current.filter?.disconnect();
+      current.context.close();
+    } catch {
+      // The browser can already have closed the audio graph.
+    }
+
+    setSoundActive(false);
+  }, []);
+
+  const startSoundscape = useCallback(async (mode) => {
+    stopSoundscape();
+
+    if (mode === 'off' || typeof window === 'undefined') {
+      setSoundActive(false);
+      return;
+    }
+
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) {
+      setSoundActive(false);
+      return;
+    }
+
+    const context = new AudioContext();
+    const source = context.createBufferSource();
+    const gain = context.createGain();
+    const filter = context.createBiquadFilter();
+
+    source.buffer = createNoiseBuffer(context, mode);
+    source.loop = true;
+    gain.gain.value = mode === 'white' ? 0.045 : mode === 'deep' ? 0.07 : 0.095;
+    filter.type = mode === 'deep' ? 'lowpass' : mode === 'rain' ? 'highpass' : 'peaking';
+    filter.frequency.value = mode === 'deep' ? 420 : mode === 'rain' ? 650 : 1200;
+    filter.Q.value = mode === 'white' ? 0.35 : 0.8;
+
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(context.destination);
+
+    if (context.state === 'suspended') {
+      await context.resume();
+    }
+
+    source.start();
+    audioRef.current = { context, source, gain, filter };
+    setSoundActive(true);
+  }, [stopSoundscape]);
+
+  const handleSoundMode = async (mode) => {
+    setSoundMode(mode);
+    await persistFreewayOS(patchSoundscape(freewayOS, mode));
+    await startSoundscape(mode);
+  };
+
+  const handleFocusLock = async () => {
+    const nextValue = !focusLock;
+    setFocusLock(nextValue);
+    await persistFreewayOS(patchFocusShield(freewayOS, { enabled: nextValue }));
+  };
 
   const completeSession = useCallback(async () => {
     if (completionRef.current) return;
@@ -409,6 +522,13 @@ export default function TomatoTimer({ taskContext, onBack }) {
     setEndsAt(storedState.endsAt);
     setTimerTaskContext(storedState.taskContext);
   }, [accountId]);
+
+  useEffect(() => {
+    setFocusLock(Boolean(freewayOS.focusShield.enabled));
+    setSoundMode(freewayOS.soundscape || 'off');
+  }, [freewayOS.focusShield.enabled, freewayOS.soundscape]);
+
+  useEffect(() => () => stopSoundscape(), [stopSoundscape]);
 
   useEffect(() => {
     if (taskContext && !isRunning && !isCompleted) {
@@ -636,8 +756,10 @@ export default function TomatoTimer({ taskContext, onBack }) {
                   whileTap={{ scale: 0.9 }}
                   type="button"
                   onClick={reset}
+                  disabled={isRunning && focusLock}
                   aria-label="Reset tomato"
-                  className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-black/35 text-white/55 backdrop-blur-xl transition-colors hover:border-amber-300/35 hover:text-amber-100"
+                  title={isRunning && focusLock ? 'Focus lock attivo' : 'Reset tomato'}
+                  className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-black/35 text-white/55 backdrop-blur-xl transition-colors hover:border-amber-300/35 hover:text-amber-100 disabled:cursor-not-allowed disabled:opacity-30"
                 >
                   <RotateCcw className="h-5 w-5" />
                 </motion.button>
@@ -677,7 +799,55 @@ export default function TomatoTimer({ taskContext, onBack }) {
                 </motion.button>
               </div>
 
-              <div className="mt-7 grid w-full max-w-2xl gap-2 sm:grid-cols-3">
+              <div className="mt-6 grid w-full max-w-3xl gap-2 lg:grid-cols-[1fr_220px]">
+                <div className="rounded-2xl border border-white/10 bg-black/25 p-3 backdrop-blur-xl">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-cyan-100/60">
+                      {soundActive ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                      <span className="font-mono text-[9px] uppercase tracking-[0.22em]">Ambiente focus</span>
+                    </div>
+                    <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/35">
+                      {soundActive ? 'audio on' : 'tap per avviare'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {FREEWAY_OS_SOUNDS.map((sound) => (
+                      <button
+                        key={sound.value}
+                        type="button"
+                        onClick={() => handleSoundMode(sound.value)}
+                        className={`min-h-10 rounded-xl border px-2 text-xs font-semibold transition-colors ${
+                          soundMode === sound.value
+                            ? 'border-cyan-200/40 bg-cyan-300/14 text-cyan-50'
+                            : 'border-white/10 bg-white/[0.035] text-white/45 hover:text-white'
+                        }`}
+                      >
+                        {sound.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleFocusLock}
+                  className={`rounded-2xl border p-3 text-left backdrop-blur-xl transition-colors ${
+                    focusLock
+                      ? 'border-emerald-300/35 bg-emerald-400/14 text-emerald-50'
+                      : 'border-white/10 bg-black/25 text-white/55 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4" />
+                    <span className="font-mono text-[9px] uppercase tracking-[0.22em]">Focus lock</span>
+                  </div>
+                  <p className="mt-2 text-xs leading-relaxed text-current/70">
+                    {focusLock ? 'Reset bloccato durante la sessione.' : 'Aggiunge attrito alle uscite facili.'}
+                  </p>
+                </button>
+              </div>
+
+              <div className="mt-4 grid w-full max-w-2xl gap-2 sm:grid-cols-3">
                 <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 backdrop-blur-xl">
                   <div className="flex items-center gap-2 text-cyan-100/60">
                     <Gauge className="h-4 w-4" />

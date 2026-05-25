@@ -264,6 +264,29 @@ export default function CalendarView({ onStartTomato }) {
                   })}
                 </div>
               )}
+
+              {selectedTasks.length > 0 && (
+                <div className="rounded-2xl border border-cyan-200/12 bg-cyan-300/[0.045] p-3">
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-cyan-200/55">
+                    Timeline
+                  </p>
+                  <div className="mt-3 space-y-2">
+                    {selectedTasks.map((task) => (
+                      <div key={`timeline-${task.id}`} className="grid grid-cols-[54px_1fr] gap-3">
+                        <span className="pt-0.5 font-mono text-[10px] text-white/42">
+                          {task.start_time || '--:--'}
+                        </span>
+                        <div className="rounded-xl border border-white/[0.08] bg-black/25 px-3 py-2">
+                          <p className="truncate text-sm font-semibold text-white/[0.82]">{task.title}</p>
+                          <p className="mt-1 truncate text-[11px] text-white/38">
+                            {task.description || 'Nessun dettaglio. Apri la task se vuoi completarla.'}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </motion.div>
           </AnimatePresence>
         </aside>

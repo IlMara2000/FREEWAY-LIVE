@@ -10,6 +10,7 @@ import StatCard from '@/components/shared/StatCard';
 import PageShell from '@/components/shared/PageShell';
 import DayByDayPanel from '@/components/daybyday/DayByDayPanel';
 import AppAssistantChat from '@/components/assistant/AppAssistantChat';
+import OperatingSystemPanel from '@/components/freeway/OperatingSystemPanel';
 import {
   AlarmClock,
   Brain,
@@ -227,6 +228,8 @@ export default function Dashboard() {
       </section>
 
       <DayByDayPanel />
+
+      <OperatingSystemPanel />
 
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {stats.map((stat, index) => (
