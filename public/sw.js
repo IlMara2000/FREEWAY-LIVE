@@ -1,4 +1,4 @@
-const CACHE_NAME = 'freeway-life-v8';
+const CACHE_NAME = 'freeway-life-v9';
 const STATIC_ASSETS = [
   '/site.webmanifest',
   '/favicon.svg',
