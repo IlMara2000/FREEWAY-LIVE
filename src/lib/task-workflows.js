@@ -35,6 +35,40 @@ export const FOCUS_VIEW_QUERY_KEYS = [
 
 const cleanText = (value) => (typeof value === 'string' ? value.trim() : '');
 
+const parseDateKey = (dateKey) => {
+  const [year, month, day] = String(dateKey || '').split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+};
+
+const formatDateKey = (date) => {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
+};
+
+const addDateUnits = (dateKey, recurrence, index) => {
+  const date = parseDateKey(dateKey);
+  if (!date || !index) return dateKey;
+
+  if (recurrence === 'daily') date.setDate(date.getDate() + index);
+  if (recurrence === 'weekly') date.setDate(date.getDate() + (index * 7));
+  if (recurrence === 'monthly') date.setMonth(date.getMonth() + index);
+
+  return formatDateKey(date);
+};
+
+const clampCount = (value, min = 1, max = 12) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return min;
+  return Math.min(Math.max(Math.round(parsed), min), max);
+};
+
+export const getTodayDateKey = () => formatDateKey(new Date());
+
 export const sanitizeTaskPriority = (priority) =>
   Object.values(TASK_PRIORITY).includes(priority) ? priority : TASK_PRIORITY.medium;
 
@@ -61,6 +95,11 @@ export const getTaskXP = (priority) => TASK_XP_BY_PRIORITY[sanitizeTaskPriority(
  *   day_by_day_area?: string;
  *   day_by_day_weight?: string;
  *   source?: string;
+ *   recurrence_rule?: string;
+ *   recurrence_group_id?: string;
+ *   recurrence_index?: number;
+ *   recurrence_total?: number;
+ *   copied_from_title?: string;
  * }} [input]
  */
 export const buildTaskPayload = ({
@@ -80,6 +119,11 @@ export const buildTaskPayload = ({
   day_by_day_area,
   day_by_day_weight,
   source,
+  recurrence_rule,
+  recurrence_group_id,
+  recurrence_index,
+  recurrence_total,
+  copied_from_title,
 } = {}) => {
   const sanitizedPriority = sanitizeTaskPriority(priority);
   const sanitizedStatus = sanitizeTaskStatus(status);
@@ -101,6 +145,11 @@ export const buildTaskPayload = ({
     ...(day_by_day_area ? { day_by_day_area } : {}),
     ...(day_by_day_weight ? { day_by_day_weight } : {}),
     ...(source ? { source } : {}),
+    ...(recurrence_rule ? { recurrence_rule } : {}),
+    ...(recurrence_group_id ? { recurrence_group_id } : {}),
+    ...(recurrence_index ? { recurrence_index } : {}),
+    ...(recurrence_total ? { recurrence_total } : {}),
+    ...(copied_from_title ? { copied_from_title } : {}),
   };
 };
 
@@ -109,6 +158,7 @@ export const buildPlannerTaskPayload = ({
   description,
   priority,
   status,
+  due_date,
   start_time,
   end_time,
   task_type,
@@ -118,6 +168,7 @@ export const buildPlannerTaskPayload = ({
     description,
     priority,
     status: status === TASK_STATUS.done ? TASK_STATUS.today : status,
+    due_date,
     start_time,
     end_time,
     task_type,
@@ -142,6 +193,59 @@ export const buildCalendarTaskPayload = ({
     end_time,
     task_type,
   });
+
+export const buildTaskSeriesPayloads = (basePayload, {
+  copies = 1,
+  recurrence = 'none',
+  recurrenceCount = 1,
+} = {}) => {
+  const safeRecurrence = ['daily', 'weekly', 'monthly'].includes(recurrence) ? recurrence : 'none';
+  const total = safeRecurrence === 'none'
+    ? clampCount(copies, 1, 8)
+    : clampCount(recurrenceCount, 1, 24);
+
+  if (total <= 1) return [basePayload];
+
+  const groupId = `series_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const originalTitle = cleanText(basePayload.title);
+
+  return Array.from({ length: total }, (_, index) => {
+    const isSameDayCopy = safeRecurrence === 'none' && index > 0;
+    const dueDate = safeRecurrence === 'none'
+      ? basePayload.due_date
+      : addDateUnits(basePayload.due_date || getTodayDateKey(), safeRecurrence, index);
+
+    return {
+      ...basePayload,
+      title: isSameDayCopy ? `${originalTitle} copia ${index + 1}` : originalTitle,
+      ...(dueDate ? { due_date: dueDate } : {}),
+      ...(safeRecurrence !== 'none' && index > 0 ? { status: TASK_STATUS.scheduled } : {}),
+      recurrence_group_id: groupId,
+      recurrence_index: index + 1,
+      recurrence_total: total,
+      copied_from_title: originalTitle,
+      ...(safeRecurrence !== 'none' ? { recurrence_rule: safeRecurrence } : {}),
+    };
+  });
+};
+
+export const buildTaskDuplicatePayload = (task = {}, overrides = {}) => {
+  const dueDate = overrides.due_date ?? task.due_date;
+
+  return buildTaskPayload({
+    title: `${cleanText(task.title) || 'Task'} copia`,
+    description: task.description,
+    priority: task.priority,
+    status: overrides.status || task.status || TASK_STATUS.today,
+    due_date: dueDate,
+    start_time: task.start_time,
+    end_time: task.end_time,
+    task_type: task.task_type,
+    xp_value: task.xp_value,
+    copied_from_title: task.title,
+    ...overrides,
+  });
+};
 
 export const buildBrainDumpPayload = (text, description = '') =>
   buildTaskPayload({

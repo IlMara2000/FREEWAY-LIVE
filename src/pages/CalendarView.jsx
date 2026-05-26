@@ -1,10 +1,15 @@
 // @ts-nocheck
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { accountData } from '@/api/accountDataClient';
 import { normalizeList } from '@/lib/normalize-list';
-import { getCalendarDateString, isTaskForCalendarDate } from '@/lib/task-workflows';
+import {
+  buildTaskDuplicatePayload,
+  getCalendarDateString,
+  invalidateTaskViews,
+  isTaskForCalendarDate,
+} from '@/lib/task-workflows';
 import { BriefcaseBusiness, CalendarPlus, ChevronLeft, ChevronRight, Clock, Layers3, MessageCircle, StickyNote } from 'lucide-react';
 import TaskModal from '@/components/calendar/TaskModal';
 import CreateTaskModal from '@/components/calendar/CreateTaskModal';
@@ -22,6 +27,7 @@ export default function CalendarView({ onStartTomato }) {
   const [selectedTask, setSelectedTask] = useState(null);
   const [createDate, setCreateDate] = useState(null);
   const [assistantMemo, setAssistantMemo] = useState(null);
+  const queryClient = useQueryClient();
 
   const { data: taskResponse = [], refetch } = useQuery({
     queryKey: ['all-tasks'],
@@ -61,6 +67,17 @@ export default function CalendarView({ onStartTomato }) {
   };
 
   const handleDayClick = (day) => setSelectedDay(day);
+
+  const handleDuplicateTask = async (task) => {
+    if (!task) return;
+
+    const duplicatedTask = await accountData.tasks.create(buildTaskDuplicatePayload(task, {
+      status: task.status === 'done' ? 'today' : task.status,
+    }));
+    invalidateTaskViews(queryClient);
+    await refetch();
+    setSelectedTask(duplicatedTask);
+  };
 
   const isToday = (day) =>
     day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
@@ -330,6 +347,7 @@ export default function CalendarView({ onStartTomato }) {
         task={selectedTask}
         onClose={() => setSelectedTask(null)}
         onStartTomato={onStartTomato}
+        onDuplicate={handleDuplicateTask}
       />
       <CreateTaskModal
         date={createDate}

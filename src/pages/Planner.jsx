@@ -4,7 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { accountData } from '@/api/accountDataClient';
 import { normalizeList } from '@/lib/normalize-list';
 import {
+  buildTaskDuplicatePayload,
   buildPlannerTaskPayload,
+  buildTaskSeriesPayloads,
+  getTodayDateKey,
   invalidateTaskViews,
   TASK_STATUS,
 } from '@/lib/task-workflows';
@@ -14,7 +17,7 @@ import useUserProfile from '@/hooks/useUserProfile';
 import XPReward from '@/components/shared/XPReward';
 import TaskDescriptionAssistant from '@/components/tasks/TaskDescriptionAssistant';
 import PageShell from '@/components/shared/PageShell';
-import { AlertTriangle, Plus, Check, Trash2, BriefcaseBusiness, Clock } from 'lucide-react';
+import { AlertTriangle, Plus, Check, Trash2, BriefcaseBusiness, Clock, Copy, Repeat2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -39,6 +42,13 @@ const STATUS_TABS = [
   { value: 'done', label: 'Fatti' },
 ];
 
+const RECURRENCE_OPTIONS = [
+  { value: 'none', label: 'No' },
+  { value: 'daily', label: 'Giornaliera' },
+  { value: 'weekly', label: 'Settimanale' },
+  { value: 'monthly', label: 'Mensile' },
+];
+
 export default function Planner() {
   const [activeTab, setActiveTab] = useState('today');
   const [newTitle, setNewTitle] = useState('');
@@ -47,6 +57,9 @@ export default function Planner() {
   const [newStartTime, setNewStartTime] = useState('09:00');
   const [newEndTime, setNewEndTime] = useState('17:00');
   const [newTaskType, setNewTaskType] = useState('task');
+  const [newCopies, setNewCopies] = useState(1);
+  const [newRecurrence, setNewRecurrence] = useState('none');
+  const [newRecurrenceCount, setNewRecurrenceCount] = useState(4);
   const [antiChaosMessage, setAntiChaosMessage] = useState('');
   const [showReward, setShowReward] = useState(false);
   const [rewardData, setRewardData] = useState({ amount: 0, levelUp: false, newLevel: 1 });
@@ -61,11 +74,17 @@ export default function Planner() {
   const tasks = normalizeList(taskResponse);
 
   const createMutation = useMutation({
-    mutationFn: (data) => accountData.tasks.create(data),
+    mutationFn: async (data) => {
+      const payloads = Array.isArray(data) ? data : [data];
+      return Promise.all(payloads.map((payload) => accountData.tasks.create(payload)));
+    },
     onSuccess: () => {
       invalidateTaskViews(queryClient);
       setNewTitle('');
       setNewDescription('');
+      setNewCopies(1);
+      setNewRecurrence('none');
+      setNewRecurrenceCount(4);
     },
   });
 
@@ -121,14 +140,21 @@ export default function Planner() {
     }
 
     setAntiChaosMessage('');
-    createMutation.mutate(buildPlannerTaskPayload({
+    const basePayload = buildPlannerTaskPayload({
       title: newTitle.trim(),
       description: newDescription.trim() || (newTaskType === 'work' ? 'Turno di lavoro' : 'Nessuna descrizione'),
       priority: newPriority,
       status: activeTab,
+      due_date: newRecurrence !== 'none' ? getTodayDateKey() : undefined,
       start_time: newStartTime,
       end_time: newEndTime,
       task_type: newTaskType,
+    });
+
+    createMutation.mutate(buildTaskSeriesPayloads(basePayload, {
+      copies: newCopies,
+      recurrence: newRecurrence,
+      recurrenceCount: newRecurrenceCount,
     }));
   };
 
@@ -254,6 +280,56 @@ export default function Planner() {
               </SelectContent>
             </Select>
           </div>
+
+          <div className="grid gap-2 rounded-2xl border border-white/10 bg-black/20 p-3 md:grid-cols-[1fr_1fr_1fr]">
+            <label className="space-y-1">
+              <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                <Copy className="h-3 w-3" /> Copie
+              </span>
+              <Input
+                type="number"
+                min="1"
+                max="8"
+                value={newCopies}
+                disabled={newRecurrence !== 'none'}
+                onChange={(event) => setNewCopies(event.target.value)}
+                className="h-10 rounded-xl border-white/10 bg-black/25 disabled:opacity-40"
+                aria-label="Numero copie task"
+              />
+            </label>
+
+            <label className="space-y-1">
+              <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                <Repeat2 className="h-3 w-3" /> Ricorrenza
+              </span>
+              <Select value={newRecurrence} onValueChange={setNewRecurrence}>
+                <SelectTrigger className="h-10 rounded-xl border-white/10 bg-black/25">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RECURRENCE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
+
+            <label className="space-y-1">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                Ripeti
+              </span>
+              <Input
+                type="number"
+                min="2"
+                max="24"
+                value={newRecurrenceCount}
+                disabled={newRecurrence === 'none'}
+                onChange={(event) => setNewRecurrenceCount(event.target.value)}
+                className="h-10 rounded-xl border-white/10 bg-black/25 disabled:opacity-40"
+                aria-label="Numero ripetizioni task"
+              />
+            </label>
+          </div>
         </motion.form>
       )}
 
@@ -331,6 +407,19 @@ export default function Planner() {
                         <Check className="w-4 h-4" />
                       </Button>
                     )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-cyan-200 hover:bg-cyan-300/10"
+                      disabled={createMutation.isPending}
+                      onClick={() => createMutation.mutate(buildTaskDuplicatePayload(task, {
+                        status: task.status === TASK_STATUS.done ? TASK_STATUS.today : task.status,
+                      }))}
+                      title="Copia task"
+                      aria-label={`Copia ${task.title}`}
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"

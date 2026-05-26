@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Timer, Sparkles, Brain, BriefcaseBusiness, Clock } from 'lucide-react';
+import { X, Timer, Sparkles, Brain, BriefcaseBusiness, Clock, Copy } from 'lucide-react';
 import { requestTaskBreakdown } from '@/api/assistantClient';
 import { formatDuration, getTaskDurationHours } from '@/lib/work-utils';
 import {
@@ -14,7 +14,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-export default function TaskModal({ task, onClose, onStartTomato }) {
+export default function TaskModal({ task, onClose, onStartTomato, onDuplicate }) {
   const [slicedContent, setSlicedContent] = useState(null);
   const [loading, setLoading] = useState(false);
   const [confirmAiOpen, setConfirmAiOpen] = useState(false);
@@ -71,6 +71,11 @@ export default function TaskModal({ task, onClose, onStartTomato }) {
             <h2 className="font-grotesk font-black text-xl text-white leading-tight">{task.title}</h2>
             {task.due_date && (
               <p className="font-mono text-xs text-white/40 mt-1">{task.due_date}</p>
+            )}
+            {task.recurrence_rule && (
+              <p className="mt-2 inline-flex rounded-full border border-emerald-300/18 bg-emerald-300/8 px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest text-emerald-200/70">
+                Ricorrente {task.recurrence_index || 1}/{task.recurrence_total || '?'}
+              </p>
             )}
           </div>
 
@@ -168,6 +173,16 @@ export default function TaskModal({ task, onClose, onStartTomato }) {
             <Timer className="w-4 h-4" />
             Avvia Tomato Timer
           </button>
+
+          {onDuplicate && (
+            <button
+              onClick={() => onDuplicate(task)}
+              className="w-full py-3 rounded-2xl glass border border-cyan-300/25 font-grotesk font-semibold text-cyan-100/85 text-sm flex items-center justify-center gap-2 hover:bg-cyan-300/10 transition-colors"
+            >
+              <Copy className="w-4 h-4" />
+              Copia task
+            </button>
+          )}
         </motion.div>
       </motion.div>
     </AnimatePresence>

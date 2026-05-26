@@ -1,11 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BriefcaseBusiness, Clock, Plus, X } from 'lucide-react';
+import { BriefcaseBusiness, Clock, Copy, Plus, Repeat2, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { accountData } from '@/api/accountDataClient';
-import { buildCalendarTaskPayload, invalidateTaskViews } from '@/lib/task-workflows';
+import {
+  buildCalendarTaskPayload,
+  buildTaskSeriesPayloads,
+  invalidateTaskViews,
+} from '@/lib/task-workflows';
 import { getAntiChaosMessage } from '@/lib/day-by-day';
+
+const RECURRENCE_OPTIONS = [
+  { value: 'none', label: 'No' },
+  { value: 'daily', label: 'Ogni giorno' },
+  { value: 'weekly', label: 'Ogni settimana' },
+  { value: 'monthly', label: 'Ogni mese' },
+];
 
 export default function CreateTaskModal({ date, existingTasksForDate = [], onClose, onRefetch }) {
   const [title, setTitle] = useState('');
@@ -14,6 +25,9 @@ export default function CreateTaskModal({ date, existingTasksForDate = [], onClo
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('17:00');
   const [taskType, setTaskType] = useState('task');
+  const [copies, setCopies] = useState(1);
+  const [recurrence, setRecurrence] = useState('none');
+  const [recurrenceCount, setRecurrenceCount] = useState(4);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const queryClient = useQueryClient();
@@ -26,6 +40,9 @@ export default function CreateTaskModal({ date, existingTasksForDate = [], onClo
     setStartTime('09:00');
     setEndTime('17:00');
     setTaskType('task');
+    setCopies(1);
+    setRecurrence('none');
+    setRecurrenceCount(4);
     setSaving(false);
     setError('');
   }, [date]);
@@ -52,7 +69,7 @@ export default function CreateTaskModal({ date, existingTasksForDate = [], onClo
     }
 
     try {
-      await accountData.tasks.create(buildCalendarTaskPayload({
+      const basePayload = buildCalendarTaskPayload({
         title: title.trim(),
         description: description.trim() || (taskType === 'work' ? 'Turno di lavoro' : 'Nessuna descrizione'),
         priority,
@@ -60,7 +77,14 @@ export default function CreateTaskModal({ date, existingTasksForDate = [], onClo
         start_time: startTime,
         end_time: endTime,
         task_type: taskType,
-      }));
+      });
+      const payloads = buildTaskSeriesPayloads(basePayload, {
+        copies,
+        recurrence,
+        recurrenceCount,
+      });
+
+      await Promise.all(payloads.map((payload) => accountData.tasks.create(payload)));
       invalidateTaskViews(queryClient);
       await onRefetch?.();
       onClose();
@@ -179,6 +203,71 @@ export default function CreateTaskModal({ date, existingTasksForDate = [], onClo
             ))}
           </div>
 
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="font-mono text-[10px] uppercase tracking-widest text-emerald-300/65">
+                  Copie e ricorrenza
+                </p>
+                <p className="mt-1 text-xs text-white/38">
+                  Duplica subito oppure crea una serie nel calendario.
+                </p>
+              </div>
+              <Repeat2 className="h-4 w-4 shrink-0 text-emerald-300/60" />
+            </div>
+
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <label className="space-y-1.5">
+                <span className="font-mono text-[10px] uppercase tracking-widest text-white/35 flex items-center gap-1.5">
+                  <Copy className="w-3 h-3" /> Copie
+                </span>
+                <input
+                  type="number"
+                  min="1"
+                  max="8"
+                  value={copies}
+                  disabled={recurrence !== 'none'}
+                  onChange={(event) => setCopies(event.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-3 font-mono text-sm text-white outline-none transition-all [color-scheme:dark] disabled:opacity-35 focus:border-emerald-500/50"
+                  aria-label="Numero copie"
+                />
+              </label>
+
+              <label className="space-y-1.5">
+                <span className="font-mono text-[10px] uppercase tracking-widest text-white/35">
+                  Ricorrenza
+                </span>
+                <select
+                  value={recurrence}
+                  onChange={(event) => setRecurrence(event.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-3 font-mono text-sm text-white outline-none transition-all [color-scheme:dark] focus:border-emerald-500/50"
+                  aria-label="Ricorrenza task"
+                >
+                  {RECURRENCE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            {recurrence !== 'none' && (
+              <label className="block space-y-1.5">
+                <span className="font-mono text-[10px] uppercase tracking-widest text-white/35">
+                  Quante volte
+                </span>
+                <input
+                  type="number"
+                  min="2"
+                  max="24"
+                  value={recurrenceCount}
+                  onChange={(event) => setRecurrenceCount(event.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-3 font-mono text-sm text-white outline-none transition-all [color-scheme:dark] focus:border-emerald-500/50"
+                  aria-label="Numero ricorrenze"
+                />
+              </label>
+            )}
+          </div>
+
           {error && (
             <p className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 font-mono text-[11px] text-red-200">
               {error}
@@ -191,7 +280,7 @@ export default function CreateTaskModal({ date, existingTasksForDate = [], onClo
             className="btn-cyber w-full py-3 rounded-2xl font-mono text-xs tracking-widest flex items-center justify-center gap-2 disabled:opacity-40"
           >
             <Plus className="w-4 h-4" />
-            {saving ? 'SALVATAGGIO...' : 'CREA TASK'}
+            {saving ? 'SALVATAGGIO...' : recurrence !== 'none' ? 'CREA SERIE' : Number(copies) > 1 ? 'CREA COPIE' : 'CREA TASK'}
           </button>
         </motion.div>
       </motion.div>
