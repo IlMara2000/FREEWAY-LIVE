@@ -8,6 +8,8 @@ const ENTITY_CONFIG = {
   FocusSession: { collection: 'focusSessions', defaultSort: '-created_date' },
   UserProfile: { collection: 'userProfiles', defaultSort: '-updated_date' },
   Alarm: { collection: 'alarms', defaultSort: 'time' },
+  Note: { collection: 'notes', defaultSort: '-updated_date' },
+  NoteFolder: { collection: 'noteFolders', defaultSort: 'name' },
 };
 
 const ENTITY_DEFAULTS = {
@@ -40,6 +42,19 @@ const ENTITY_DEFAULTS = {
     linked_task_id: '',
     reminder_text: '',
     last_notified_key: '',
+  }),
+  Note: () => ({
+    title: 'Nuova nota',
+    content: '',
+    priority: 'medium',
+    source: 'brain_dump_note',
+    due_date: '',
+    folder_id: '',
+    attachments: [],
+    linked_task_ids: [],
+  }),
+  NoteFolder: () => ({
+    name: 'Nuova cartella',
   }),
 };
 
@@ -99,6 +114,8 @@ const createEmptyStore = () => ({
   focusSessions: [],
   userProfiles: [],
   alarms: [],
+  notes: [],
+  noteFolders: [],
 });
 
 const readStore = (accountId) => {
@@ -268,4 +285,6 @@ export const accountData = {
   focusSessions: createEntityClient('FocusSession'),
   userProfiles: createEntityClient('UserProfile'),
   alarms: createEntityClient('Alarm'),
+  notes: createEntityClient('Note'),
+  noteFolders: createEntityClient('NoteFolder'),
 };

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Timer, Sparkles, Brain, BriefcaseBusiness, Clock, Copy } from 'lucide-react';
+import { X, Timer, Sparkles, Brain, BriefcaseBusiness, Clock, Copy, StickyNote, BookOpen } from 'lucide-react';
 import { requestTaskBreakdown } from '@/api/assistantClient';
 import { formatDuration, getTaskDurationHours } from '@/lib/work-utils';
 import {
@@ -14,7 +14,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-export default function TaskModal({ task, onClose, onStartTomato, onDuplicate }) {
+export default function TaskModal({ task, onClose, onStartTomato, onDuplicate, onOpenLinkedNote }) {
   const [slicedContent, setSlicedContent] = useState(null);
   const [loading, setLoading] = useState(false);
   const [confirmAiOpen, setConfirmAiOpen] = useState(false);
@@ -100,6 +100,16 @@ export default function TaskModal({ task, onClose, onStartTomato, onDuplicate })
                 </p>
               </div>
             )}
+            {task.task_type === 'study' && (
+              <div className="glass rounded-xl p-3 border-cyan-300/20">
+                <p className="font-mono text-[10px] text-cyan-200/70 uppercase tracking-widest flex items-center gap-1.5">
+                  <BookOpen className="w-3 h-3" /> Studio
+                </p>
+                <p className="font-mono text-sm text-white mt-1">
+                  {formatDuration(getTaskDurationHours(task))}
+                </p>
+              </div>
+            )}
           </div>
 
           {task.description && (
@@ -174,9 +184,25 @@ export default function TaskModal({ task, onClose, onStartTomato, onDuplicate })
             Avvia Tomato Timer
           </button>
 
+          {onOpenLinkedNote && Array.isArray(task.linked_note_ids) && task.linked_note_ids.length > 0 && (
+            <button
+              onClick={() => {
+                onOpenLinkedNote(task);
+                onClose();
+              }}
+              className="w-full py-3 rounded-2xl glass border border-amber-300/20 font-grotesk font-semibold text-amber-100/85 text-sm flex items-center justify-center gap-2 hover:bg-amber-300/10 transition-colors"
+            >
+              <StickyNote className="w-4 h-4" />
+              Note collegate ({task.linked_note_ids.length})
+            </button>
+          )}
+
           {onDuplicate && (
             <button
-              onClick={() => onDuplicate(task)}
+              onClick={() => {
+                onDuplicate(task);
+                onClose();
+              }}
               className="w-full py-3 rounded-2xl glass border border-cyan-300/25 font-grotesk font-semibold text-cyan-100/85 text-sm flex items-center justify-center gap-2 hover:bg-cyan-300/10 transition-colors"
             >
               <Copy className="w-4 h-4" />

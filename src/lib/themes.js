@@ -161,6 +161,17 @@ export const THEMES = {
   },
 };
 
+export const CUSTOM_THEME_KEY = 'fw_theme_customizer';
+export const ACTIVE_THEME_KEY = 'fw_active_theme';
+export const DEFAULT_THEME_CUSTOMIZATION = {
+  accent: '',
+  radius: 12,
+  surface: 72,
+  blur: 20,
+  glow: 16,
+  grid: 4,
+};
+
 export const getThemeList = () =>
   Object.values(THEMES).sort((a, b) => a.minLevel - b.minLevel);
 
@@ -168,6 +179,57 @@ export const getThemeIdsForLevel = (level = 1) =>
   getThemeList()
     .filter((theme) => theme.minLevel <= level)
     .map((theme) => theme.id);
+
+export const readStoredActiveThemeId = () => {
+  if (typeof window === 'undefined') return 'emerald';
+
+  try {
+    const stored = window.localStorage.getItem(ACTIVE_THEME_KEY);
+    return THEMES[stored] ? stored : 'emerald';
+  } catch {
+    return 'emerald';
+  }
+};
+
+export const writeStoredActiveThemeId = (themeId) => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    if (THEMES[themeId]) {
+      window.localStorage.setItem(ACTIVE_THEME_KEY, themeId);
+    }
+  } catch {
+    // Ignore storage failures.
+  }
+};
+
+export const sanitizeCustomTheme = (custom = {}) => ({
+  accent: typeof custom.accent === 'string' ? custom.accent : '',
+  radius: Math.min(Math.max(Number(custom.radius) || DEFAULT_THEME_CUSTOMIZATION.radius, 4), 28),
+  surface: Math.min(Math.max(Number(custom.surface) || DEFAULT_THEME_CUSTOMIZATION.surface, 52), 92),
+  blur: Math.min(Math.max(Number(custom.blur) || DEFAULT_THEME_CUSTOMIZATION.blur, 8), 36),
+  glow: Math.min(Math.max(Number(custom.glow) || DEFAULT_THEME_CUSTOMIZATION.glow, 4), 40),
+  grid: Math.min(Math.max(Number(custom.grid) || DEFAULT_THEME_CUSTOMIZATION.grid, 0), 16),
+});
+
+export const readCustomTheme = () => {
+  if (typeof window === 'undefined') return DEFAULT_THEME_CUSTOMIZATION;
+
+  try {
+    return sanitizeCustomTheme(JSON.parse(window.localStorage.getItem(CUSTOM_THEME_KEY)) || DEFAULT_THEME_CUSTOMIZATION);
+  } catch {
+    return DEFAULT_THEME_CUSTOMIZATION;
+  }
+};
+
+export const writeCustomTheme = (custom = {}) => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(CUSTOM_THEME_KEY, JSON.stringify(sanitizeCustomTheme(custom)));
+  } catch {
+    // Ignore storage failures.
+  }
+};
 
 export function hexToHslValue(hex) {
   const normalized = hex.replace('#', '');
@@ -192,26 +254,65 @@ export function hexToHslValue(hex) {
   return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 }
 
+export function hexToRgbValue(hex) {
+  const normalized = String(hex || '').replace('#', '');
+  if (normalized.length !== 6) return '0 255 136';
+
+  return [
+    parseInt(normalized.slice(0, 2), 16),
+    parseInt(normalized.slice(2, 4), 16),
+    parseInt(normalized.slice(4, 6), 16),
+  ].join(' ');
+}
+
 export function applyThemeToDocument(theme, custom = {}) {
   if (typeof document === 'undefined' || !theme) return;
 
-  const accent = custom.accent || theme.accent;
+  const safeCustom = sanitizeCustomTheme(custom);
+  const accent = safeCustom.accent || theme.accent;
   const accentHSL = hexToHslValue(accent);
+  const accentRgb = hexToRgbValue(accent);
   const root = document.documentElement;
+  const surfaceOpacity = (safeCustom.surface / 100).toFixed(2);
+  const strongSurfaceOpacity = (Math.min(safeCustom.surface + 10, 96) / 100).toFixed(2);
+  const glowSoftOpacity = (safeCustom.glow / 100).toFixed(2);
+  const glowMidOpacity = (Math.min(safeCustom.glow * 1.3, 44) / 100).toFixed(2);
+  const glowStrongOpacity = (Math.min(safeCustom.glow * 1.55, 52) / 100).toFixed(2);
+  const surfaceTintOpacity = (Math.min(safeCustom.glow * 0.42, 18) / 100).toFixed(2);
+  const surfaceHighlightOpacity = (Math.min(0.18 + safeCustom.glow / 100, 0.42)).toFixed(2);
+  const borderOpacity = (Math.min(0.09 + safeCustom.glow / 180, 0.24)).toFixed(2);
+  const topBorderOpacity = (Math.min(0.20 + safeCustom.glow / 120, 0.48)).toFixed(2);
+  const buttonFillOpacity = (Math.min(0.10 + safeCustom.glow / 120, 0.34)).toFixed(2);
+  const buttonBorderOpacity = (Math.min(0.24 + safeCustom.glow / 90, 0.60)).toFixed(2);
+  const textGlowOpacity = (Math.min(0.18 + safeCustom.glow / 60, 0.75)).toFixed(2);
+  const gridOpacity = (safeCustom.grid / 100).toFixed(2);
 
   root.style.setProperty('--primary', accentHSL);
   root.style.setProperty('--accent', accentHSL);
   root.style.setProperty('--ring', accentHSL);
   root.style.setProperty('--chart-1', accentHSL);
+  root.style.setProperty('--sidebar-primary', accentHSL);
+  root.style.setProperty('--theme-accent-rgb', accentRgb);
+  root.style.setProperty('--theme-surface-opacity', surfaceOpacity);
+  root.style.setProperty('--theme-surface-strong-opacity', strongSurfaceOpacity);
+  root.style.setProperty('--theme-blur', `${safeCustom.blur}px`);
+  root.style.setProperty('--theme-glow-soft-opacity', glowSoftOpacity);
+  root.style.setProperty('--theme-glow-mid-opacity', glowMidOpacity);
+  root.style.setProperty('--theme-glow-strong-opacity', glowStrongOpacity);
+  root.style.setProperty('--theme-surface-tint-opacity', surfaceTintOpacity);
+  root.style.setProperty('--theme-surface-highlight-opacity', surfaceHighlightOpacity);
+  root.style.setProperty('--theme-surface-border-opacity', borderOpacity);
+  root.style.setProperty('--theme-surface-top-opacity', topBorderOpacity);
+  root.style.setProperty('--theme-button-fill-opacity', buttonFillOpacity);
+  root.style.setProperty('--theme-button-border-opacity', buttonBorderOpacity);
+  root.style.setProperty('--theme-text-glow-opacity', textGlowOpacity);
+  root.style.setProperty('--theme-grid-opacity', gridOpacity);
 
-  if (custom.radius) {
-    root.style.setProperty('--radius', `${custom.radius}px`);
-  }
+  root.style.setProperty('--radius', `${safeCustom.radius}px`);
+}
 
-  document.body.style.backgroundImage = `
-    linear-gradient(rgba(255,255,255,0.01) 1px, transparent 1px),
-    radial-gradient(circle at 15% 50%, ${theme.bgGlow}, transparent 45%),
-    radial-gradient(circle at 85% 30%, ${accent}20, transparent 45%),
-    radial-gradient(circle at 50% 120%, ${accent}18, transparent 50%)
-  `;
+export function bootstrapThemeFromStorage() {
+  const themeId = readStoredActiveThemeId();
+  const theme = THEMES[themeId] || THEMES.emerald;
+  applyThemeToDocument(theme, readCustomTheme());
 }

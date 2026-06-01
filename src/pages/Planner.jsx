@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { accountData } from '@/api/accountDataClient';
 import { normalizeList } from '@/lib/normalize-list';
 import {
-  buildTaskDuplicatePayload,
   buildPlannerTaskPayload,
   buildTaskSeriesPayloads,
   getTodayDateKey,
   invalidateTaskViews,
+  setTaskClipboard,
   TASK_STATUS,
 } from '@/lib/task-workflows';
 import { getAntiChaosMessage } from '@/lib/day-by-day';
@@ -16,8 +17,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useUserProfile from '@/hooks/useUserProfile';
 import XPReward from '@/components/shared/XPReward';
 import TaskDescriptionAssistant from '@/components/tasks/TaskDescriptionAssistant';
+import TaskModal from '@/components/calendar/TaskModal';
 import PageShell from '@/components/shared/PageShell';
-import { AlertTriangle, Plus, Check, Trash2, BriefcaseBusiness, Clock, Copy, Repeat2 } from 'lucide-react';
+import { AlertTriangle, Plus, Check, Trash2, BriefcaseBusiness, Clock, Copy, Repeat2, StickyNote, BookOpen } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -64,8 +66,10 @@ export default function Planner() {
   const [showReward, setShowReward] = useState(false);
   const [rewardData, setRewardData] = useState({ amount: 0, levelUp: false, newLevel: 1 });
   const [pendingCompleteTask, setPendingCompleteTask] = useState(null);
+  const [selectedTask, setSelectedTask] = useState(null);
   const { profile, addXP, incrementTasksCompleted } = useUserProfile();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: taskResponse = [], isLoading } = useQuery({
     queryKey: ['tasks', activeTab],
@@ -142,7 +146,13 @@ export default function Planner() {
     setAntiChaosMessage('');
     const basePayload = buildPlannerTaskPayload({
       title: newTitle.trim(),
-      description: newDescription.trim() || (newTaskType === 'work' ? 'Turno di lavoro' : 'Nessuna descrizione'),
+      description: newDescription.trim() || (
+        newTaskType === 'work'
+          ? 'Turno di lavoro'
+          : newTaskType === 'study'
+            ? 'Sessione di studio'
+            : 'Nessuna descrizione'
+      ),
       priority: newPriority,
       status: activeTab,
       due_date: newRecurrence !== 'none' ? getTodayDateKey() : undefined,
@@ -172,6 +182,12 @@ export default function Planner() {
     deleteMutation.error,
     updateDescriptionMutation.error,
   ].find(Boolean);
+
+  const openLinkedNote = (task) => {
+    const noteId = task?.linked_note_ids?.[0];
+    if (!noteId) return;
+    navigate(`/braindump?note=${encodeURIComponent(noteId)}`);
+  };
 
   return (
     <PageShell maxWidth="max-w-4xl" contentClassName="space-y-6">
@@ -271,6 +287,12 @@ export default function Planner() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="task">Task</SelectItem>
+                <SelectItem value="study">
+                  <span className="inline-flex items-center gap-2">
+                    <BookOpen className="w-3.5 h-3.5" />
+                    Studio
+                  </span>
+                </SelectItem>
                 <SelectItem value="work">
                   <span className="inline-flex items-center gap-2">
                     <BriefcaseBusiness className="w-3.5 h-3.5" />
@@ -363,7 +385,8 @@ export default function Planner() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, x: -100 }}
-                className="glass rounded-2xl p-4 group"
+                className="glass rounded-2xl p-4 group cursor-pointer"
+                onClick={() => setSelectedTask(task)}
               >
                 <div className="flex items-start gap-3">
                   <div className={`mt-2 w-2.5 h-2.5 rounded-full shrink-0 ${PRIORITY_COLORS[task.priority]}`} />
@@ -374,10 +397,10 @@ export default function Planner() {
                     }`}>
                       {task.title}
                     </p>
-                    {(task.start_time || task.end_time || task.task_type === 'work') && (
+                    {(task.start_time || task.end_time || task.task_type === 'work' || task.task_type === 'study') && (
                       <p className="text-[10px] font-mono text-muted-foreground truncate mt-1">
                         {task.start_time || '--:--'} - {task.end_time || '--:--'}
-                        {task.task_type === 'work' ? ' - Lavoro' : ''}
+                        {task.task_type === 'work' ? ' - Lavoro' : task.task_type === 'study' ? ' - Studio' : ''}
                       </p>
                     )}
                     <TaskDescriptionAssistant
@@ -398,37 +421,59 @@ export default function Planner() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setPendingCompleteTask(task);
+                        }}
                         className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
                         disabled={completeMutation.isPending}
-                        onClick={() => setPendingCompleteTask(task)}
                         title="Completa task"
                         aria-label={`Completa ${task.title}`}
                       >
                         <Check className="w-4 h-4" />
                       </Button>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-cyan-200 hover:bg-cyan-300/10"
-                      disabled={createMutation.isPending}
-                      onClick={() => createMutation.mutate(buildTaskDuplicatePayload(task, {
-                        status: task.status === TASK_STATUS.done ? TASK_STATUS.today : task.status,
-                      }))}
-                      title="Copia task"
-                      aria-label={`Copia ${task.title}`}
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                      disabled={deleteMutation.isPending}
-                      onClick={() => deleteMutation.mutate(task.id)}
-                      title="Elimina task"
-                      aria-label={`Elimina ${task.title}`}
-                    >
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setTaskClipboard(task);
+                        }}
+                        className="h-8 w-8 text-muted-foreground hover:text-cyan-200 hover:bg-cyan-300/10"
+                        disabled={createMutation.isPending}
+                        title="Copia task"
+                        aria-label={`Copia ${task.title}`}
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                      {Array.isArray(task.linked_note_ids) && task.linked_note_ids.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openLinkedNote(task);
+                          }}
+                          className="h-8 w-8 text-muted-foreground hover:text-amber-100 hover:bg-amber-300/10"
+                          title="Apri nota collegata"
+                          aria-label={`Apri nota collegata per ${task.title}`}
+                        >
+                          <StickyNote className="w-4 h-4" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          deleteMutation.mutate(task.id);
+                        }}
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        disabled={deleteMutation.isPending}
+                        title="Elimina task"
+                        aria-label={`Elimina ${task.title}`}
+                      >
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -507,6 +552,12 @@ export default function Planner() {
         onComplete={() => setShowReward(false)}
         levelUp={rewardData.levelUp}
         newLevel={rewardData.newLevel}
+      />
+      <TaskModal
+        task={selectedTask}
+        onClose={() => setSelectedTask(null)}
+        onDuplicate={(task) => setTaskClipboard(task)}
+        onOpenLinkedNote={openLinkedNote}
       />
     </PageShell>
   );

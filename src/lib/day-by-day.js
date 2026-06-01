@@ -312,6 +312,7 @@ export const isImportantTask = (task = {}) =>
 export const inferTaskArea = (task = {}) => {
   if (task.day_by_day_area || task.area) return task.day_by_day_area || task.area;
   if (task.task_type === 'work') return 'lavoro';
+  if (task.task_type === 'study') return 'studio';
 
   const text = `${task.title || ''} ${task.description || ''}`.toLowerCase();
   if (text.includes('sonno') || text.includes('dormi') || text.includes('schermi')) return 'sonno';

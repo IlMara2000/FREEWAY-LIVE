@@ -17,6 +17,7 @@ import ThemeStore from '@/pages/ThemeStore';
 import Account from '@/pages/Account';
 import Alarms from '@/pages/Alarms';
 import Work from '@/pages/Work';
+import School from '@/pages/School';
 import AboutLegal from '@/pages/AboutLegal';
 import Tutorial from '@/components/tutorial/Tutorial';
 import AppLayout from '@/components/layout/AppLayout';
@@ -250,6 +251,7 @@ const AuthenticatedApp = () => {
                 }
               />
               <Route path="/planner" element={<Planner />} />
+              <Route path="/school" element={<School />} />
               <Route path="/work" element={<Work />} />
               <Route path="/braindump" element={<BrainDump />} />
               <Route path="/themes" element={<ThemeStore />} />

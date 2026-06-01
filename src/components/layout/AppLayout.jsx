@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useOutlet } from 'react-router-dom';
-import { Timer, ListTodo, MessageCircle, Palette, Brain, CalendarDays, LogOut, AlarmClock, BriefcaseBusiness, Menu, Settings, X, LayoutDashboard } from 'lucide-react';
+import { Timer, ListTodo, MessageCircle, Palette, Brain, CalendarDays, LogOut, AlarmClock, BriefcaseBusiness, Menu, Settings, X, LayoutDashboard, BookOpen } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/lib/AuthContext';
 import FreewayLogo from '@/components/brand/FreewayLogo';
 import useUserProfile from '@/hooks/useUserProfile';
 import AppAssistantChat from '@/components/assistant/AppAssistantChat';
+import { applyThemeToDocument, CUSTOM_THEME_KEY, readCustomTheme, THEMES } from '@/lib/themes';
 
 const NAV_ITEMS = [
   { path: '/', icon: LayoutDashboard, label: 'Hub' },
@@ -14,6 +15,7 @@ const NAV_ITEMS = [
   { path: '/planner', icon: ListTodo, label: 'Planner' },
   { path: '/tomato', icon: Timer, label: 'Timer' },
   { path: '/braindump', icon: Brain, label: 'Dump' },
+  { path: '/school', icon: BookOpen, label: 'Scuola' },
   { path: '/work', icon: BriefcaseBusiness, label: 'Lavoro' },
   { path: '/alarms', icon: AlarmClock, label: 'Sveglie' },
   { path: '/themes', icon: Palette, label: 'Temi' },
@@ -44,6 +46,23 @@ export default function AppLayout() {
   const [assistantOpen, setAssistantOpen] = useState(false);
 
   const closeMenu = () => setMenuOpen(false);
+
+  useEffect(() => {
+    const activeThemeId = profile?.active_theme || 'emerald';
+    const theme = THEMES[activeThemeId] || THEMES.emerald;
+    const applyCurrentTheme = () => applyThemeToDocument(theme, readCustomTheme());
+
+    applyCurrentTheme();
+
+    const handleStorage = (event) => {
+      if (!event.key || event.key === CUSTOM_THEME_KEY) {
+        applyCurrentTheme();
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [profile?.active_theme]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

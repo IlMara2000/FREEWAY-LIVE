@@ -33,7 +33,11 @@ export const FOCUS_VIEW_QUERY_KEYS = [
   ['dashboard'],
 ];
 
+export const TASK_CLIPBOARD_STORAGE_KEY = 'fw_task_clipboard';
+export const TASK_CLIPBOARD_EVENT = 'fw:task-clipboard-changed';
+
 const cleanText = (value) => (typeof value === 'string' ? value.trim() : '');
+const canUseStorage = () => typeof window !== 'undefined' && Boolean(window.localStorage);
 
 const parseDateKey = (dateKey) => {
   const [year, month, day] = String(dateKey || '').split('-').map(Number);
@@ -246,6 +250,82 @@ export const buildTaskDuplicatePayload = (task = {}, overrides = {}) => {
     ...overrides,
   });
 };
+
+export const getTaskClipboard = () => {
+  if (!canUseStorage()) return null;
+
+  try {
+    const raw = window.localStorage.getItem(TASK_CLIPBOARD_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.title) return null;
+
+    return {
+      title: cleanText(parsed.title),
+      description: cleanText(parsed.description),
+      priority: sanitizeTaskPriority(parsed.priority),
+      task_type: parsed.task_type || 'task',
+      start_time: parsed.start_time || '',
+      end_time: parsed.end_time || '',
+      xp_value: Number.isFinite(Number(parsed.xp_value)) ? Number(parsed.xp_value) : getTaskXP(parsed.priority),
+      copied_at: parsed.copied_at || '',
+    };
+  } catch {
+    return null;
+  }
+};
+
+const emitTaskClipboardChanged = (clipboard) => {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(TASK_CLIPBOARD_EVENT, { detail: clipboard || null }));
+};
+
+export const setTaskClipboard = (task = {}) => {
+  const clipboard = {
+    title: cleanText(task.copied_from_title || task.title || 'Task'),
+    description: cleanText(task.description),
+    priority: sanitizeTaskPriority(task.priority),
+    task_type: task.task_type || 'task',
+    start_time: task.start_time || '',
+    end_time: task.end_time || '',
+    xp_value: Number.isFinite(Number(task.xp_value)) ? Number(task.xp_value) : getTaskXP(task.priority),
+    copied_at: new Date().toISOString(),
+  };
+
+  if (canUseStorage()) {
+    try {
+      window.localStorage.setItem(TASK_CLIPBOARD_STORAGE_KEY, JSON.stringify(clipboard));
+    } catch {
+      // Ignore storage failures; in-memory usage still works through event detail.
+    }
+  }
+
+  emitTaskClipboardChanged(clipboard);
+  return clipboard;
+};
+
+export const clearTaskClipboard = () => {
+  if (canUseStorage()) {
+    try {
+      window.localStorage.removeItem(TASK_CLIPBOARD_STORAGE_KEY);
+    } catch {
+      // Ignore storage failures.
+    }
+  }
+
+  emitTaskClipboardChanged(null);
+};
+
+export const buildTaskPastePayload = (clipboard, date) =>
+  buildCalendarTaskPayload({
+    title: clipboard?.title || 'Task',
+    description: clipboard?.description || '',
+    priority: clipboard?.priority || TASK_PRIORITY.medium,
+    date,
+    start_time: clipboard?.start_time || '',
+    end_time: clipboard?.end_time || '',
+    task_type: clipboard?.task_type || 'task',
+  });
 
 export const buildBrainDumpPayload = (text, description = '') =>
   buildTaskPayload({

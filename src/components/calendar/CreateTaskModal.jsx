@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BriefcaseBusiness, Clock, Copy, Plus, Repeat2, X } from 'lucide-react';
+import { BookOpen, BriefcaseBusiness, Clock, Copy, Plus, Repeat2, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { accountData } from '@/api/accountDataClient';
 import {
@@ -71,7 +71,13 @@ export default function CreateTaskModal({ date, existingTasksForDate = [], onClo
     try {
       const basePayload = buildCalendarTaskPayload({
         title: title.trim(),
-        description: description.trim() || (taskType === 'work' ? 'Turno di lavoro' : 'Nessuna descrizione'),
+        description: description.trim() || (
+          taskType === 'work'
+            ? 'Turno di lavoro'
+            : taskType === 'study'
+              ? 'Sessione di studio'
+              : 'Nessuna descrizione'
+        ),
         priority,
         date,
         start_time: startTime,
@@ -165,9 +171,10 @@ export default function CreateTaskModal({ date, existingTasksForDate = [], onClo
             className="w-full resize-none rounded-xl border border-white/10 bg-white/5 p-3 font-grotesk text-sm text-white outline-none transition-all placeholder:text-white/25 focus:border-emerald-500/50 sm:p-4"
           />
 
-          <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-white/[0.03] border border-white/10">
+          <div className="grid grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-1">
             {[
               { value: 'task', label: 'Task' },
+              { value: 'study', label: 'Studio' },
               { value: 'work', label: 'Lavoro' },
             ].map((type) => (
               <button
@@ -181,6 +188,7 @@ export default function CreateTaskModal({ date, existingTasksForDate = [], onClo
                 }`}
               >
                 {type.value === 'work' && <BriefcaseBusiness className="w-3.5 h-3.5" />}
+                {type.value === 'study' && <BookOpen className="w-3.5 h-3.5" />}
                 {type.label}
               </button>
             ))}

@@ -3,26 +3,21 @@ import { motion } from 'framer-motion';
 import useUserProfile from '@/hooks/useUserProfile';
 import {
   applyThemeToDocument,
+  DEFAULT_THEME_CUSTOMIZATION,
   getThemeIdsForLevel,
   getThemeList,
+  readCustomTheme,
+  sanitizeCustomTheme,
   THEMES,
+  writeStoredActiveThemeId,
+  writeCustomTheme,
 } from '@/lib/themes';
-import { Check, Lock, Palette, SlidersHorizontal } from 'lucide-react';
+import { Check, Eye, Layers3, Lock, Palette, Sparkles, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import XPBar from '@/components/shared/XPBar';
 import PageShell from '@/components/shared/PageShell';
 
-const CUSTOM_THEME_KEY = 'fw_theme_customizer';
 const themeList = getThemeList();
-
-const readCustomTheme = () => {
-  if (typeof window === 'undefined') return { accent: '', radius: 12 };
-  try {
-    return JSON.parse(localStorage.getItem(CUSTOM_THEME_KEY)) || { accent: '', radius: 12 };
-  } catch {
-    return { accent: '', radius: 12 };
-  }
-};
 
 export default function ThemeStore() {
   const { profile, loading, setActiveTheme } = useUserProfile();
@@ -40,13 +35,16 @@ export default function ThemeStore() {
   const nextTheme = themeList.find((theme) => !unlockedThemes.includes(theme.id));
 
   useEffect(() => {
-    localStorage.setItem(CUSTOM_THEME_KEY, JSON.stringify(customTheme));
-    applyThemeToDocument(activeThemeData, customTheme);
+    const sanitized = sanitizeCustomTheme(customTheme);
+    writeCustomTheme(sanitized);
+    applyThemeToDocument(activeThemeData, sanitized);
   }, [activeThemeData, customTheme]);
 
   const handleActivate = async (themeId) => {
     if (!profile || themeId === activeTheme) return;
     setPendingTheme(themeId);
+    writeStoredActiveThemeId(themeId);
+    applyThemeToDocument(THEMES[themeId] || THEMES.emerald, customTheme);
     try {
       await setActiveTheme(themeId);
     } finally {
@@ -55,11 +53,11 @@ export default function ThemeStore() {
   };
 
   const updateCustomTheme = (key, value) => {
-    setCustomTheme((current) => ({ ...current, [key]: value }));
+    setCustomTheme((current) => sanitizeCustomTheme({ ...current, [key]: value }));
   };
 
   const resetCustomTheme = () => {
-    setCustomTheme({ accent: '', radius: 12 });
+    setCustomTheme(DEFAULT_THEME_CUSTOMIZATION);
   };
 
   return (
@@ -138,10 +136,10 @@ export default function ThemeStore() {
           <div>
             <h2 className="font-grotesk font-semibold text-foreground flex items-center gap-2">
               <SlidersHorizontal className="w-4 h-4 text-primary" />
-              Custom Lab
+              Motore CSS globale
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Preset locale attivo.
+              Questa pagina pilota variabili CSS globali: accento, raggi, vetro, glow e griglia.
             </p>
           </div>
           <Button
@@ -186,9 +184,93 @@ export default function ThemeStore() {
             />
           </label>
         </div>
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          {[
+            { key: 'surface', label: 'Glass', min: 52, max: 92, suffix: '%' },
+            { key: 'blur', label: 'Blur', min: 8, max: 36, suffix: 'px' },
+            { key: 'glow', label: 'Glow', min: 4, max: 40, suffix: '' },
+            { key: 'grid', label: 'Griglia', min: 0, max: 16, suffix: '%' },
+          ].map((control) => (
+            <label key={control.key} className="glass rounded-xl p-3 space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs font-mono text-muted-foreground uppercase tracking-widest">
+                  {control.label}
+                </span>
+                <span className="text-xs font-mono text-primary">
+                  {customTheme[control.key]}{control.suffix}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={control.min}
+                max={control.max}
+                value={customTheme[control.key]}
+                onChange={(event) => updateCustomTheme(control.key, Number(event.target.value))}
+                className="w-full accent-primary"
+                aria-label={control.label}
+              />
+            </label>
+          ))}
+        </div>
+
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+          <div className="glass-panel p-4 space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="font-mono text-[10px] uppercase tracking-widest text-primary/60">Preview</p>
+                <h3 className="font-grotesk text-lg font-semibold text-foreground">Controllo reale del look</h3>
+              </div>
+              <Eye className="w-4 h-4 text-primary/70" />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="glass rounded-xl p-4">
+                <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Card</p>
+                <p className="mt-2 text-sm text-foreground">Qui leggi subito vetro, bordi, contrasto e luce.</p>
+                <Button className="btn-cyber mt-4 h-10 rounded-xl px-4 text-xs">Azione primaria</Button>
+              </div>
+              <div className="glass rounded-xl p-4">
+                <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Accent</p>
+                <div className="mt-3 h-3 rounded-full bg-white/10">
+                  <div
+                    className="h-3 rounded-full"
+                    style={{ width: '72%', background: `linear-gradient(90deg, ${customTheme.accent || activeThemeData.accent}, ${(customTheme.accent || activeThemeData.accent)}66)` }}
+                  />
+                </div>
+                <p className="mt-3 text-sm text-muted-foreground">La modifica qui e nel resto dell'app e la stessa.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="glass-panel p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <h3 className="font-grotesk font-semibold text-foreground">Cosa stai controllando</h3>
+            </div>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li>Accento: bottoni, glow, slider, focus ring, badge attivi.</li>
+              <li>Radius: bordi globali e pannelli vetro.</li>
+              <li>Glass: densita delle superfici e profondita visiva.</li>
+              <li>Blur: sfocatura reale dei pannelli.</li>
+              <li>Glow: intensita luci e riflessi.</li>
+              <li>Griglia: presenza del pattern di sfondo.</li>
+            </ul>
+          </div>
+        </div>
       </motion.section>
 
       <section className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="font-grotesk font-semibold text-foreground flex items-center gap-2">
+              <Layers3 className="w-4 h-4 text-primary" />
+              Libreria temi
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Il preset scelto definisce la base. I controlli sopra rifiniscono il CSS globale.
+            </p>
+          </div>
+        </div>
         {themeList.map((theme, index) => {
           const isUnlocked = unlockedThemes.includes(theme.id);
           const isActive = activeTheme === theme.id;

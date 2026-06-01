@@ -15,6 +15,7 @@ import {
   AlarmClock,
   Brain,
   BriefcaseBusiness,
+  BookOpen,
   CalendarDays,
   ChevronRight,
   Flame,
@@ -57,6 +58,12 @@ const actionCards = [
     icon: Brain,
     title: 'Brain Dump',
     description: 'Svuota la testa e crea memo.',
+  },
+  {
+    to: '/school',
+    icon: BookOpen,
+    title: 'Scuola',
+    description: 'Compiti, verifiche ed esami.',
   },
   {
     to: '/work',

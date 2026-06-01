@@ -86,9 +86,6 @@ export default function Login() {
           </div>
         )}
 
-        <p className="text-center text-[11px] text-muted-foreground leading-relaxed">
-          Nessun accesso via email. Solo Google tramite Supabase.
-        </p>
       </motion.div>
     </div>
   );

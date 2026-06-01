@@ -35,6 +35,7 @@ const PRIORITIES = [
 
 const TASK_TYPES = [
   { value: 'task', label: 'Task' },
+  { value: 'study', label: 'Studio' },
   { value: 'work', label: 'Lavoro' },
   { value: 'event', label: 'Evento' },
   { value: 'memo', label: 'Memo' },
@@ -202,27 +203,24 @@ export default function AssistantChatSurface({
     <section className={`relative flex max-h-full flex-col overflow-hidden rounded-[1.4rem] border border-emerald-300/18 bg-[#02050c]/88 shadow-[0_28px_90px_rgba(0,0,0,0.64)] backdrop-blur-2xl ${className}`}>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_0%,rgba(16,185,129,0.14),transparent_34%),radial-gradient(circle_at_82%_12%,rgba(34,211,238,0.1),transparent_32%)]" />
 
-      <header className="relative z-10 border-b border-white/10 p-4 sm:p-5">
+      <header className="relative z-10 shrink-0 border-b border-white/10 p-3 pr-14 sm:p-5 sm:pr-20">
         <div className="flex items-start gap-3">
           <motion.div
-            className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-emerald-300/25 bg-emerald-400/12 text-emerald-200 shadow-[0_0_36px_rgba(16,185,129,0.14)]"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-emerald-300/25 bg-emerald-400/12 text-emerald-200 shadow-[0_0_36px_rgba(16,185,129,0.14)] sm:h-12 sm:w-12"
             animate={{ rotateY: [0, 10, 0], y: [0, -2, 0] }}
             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
             style={{ transformStyle: 'preserve-3d' }}
           >
-            <Bot className="h-5 w-5" />
+            <Bot className="h-4 w-4 sm:h-5 sm:w-5" />
           </motion.div>
           <div className="min-w-0">
             <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-emerald-300/60">
               Chat Bot operativo
             </p>
-            <h1 className={`${compact ? 'text-2xl' : 'text-3xl sm:text-5xl'} font-grotesk font-black leading-none text-white`}>
+            <h1 className={`${compact ? 'text-[1.85rem] sm:text-2xl' : 'text-3xl sm:text-5xl'} font-grotesk font-black leading-none text-white`}>
               Cosa ti serve oggi?
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/50">
-              Scrivi il bisogno. La chat propone modifiche all'app: task, eventi, memo e sveglie. Niente casino: prima vedi, poi applichi.
-            </p>
-            <p className="mt-1 text-[11px] leading-relaxed text-white/34">
+            <p className="mt-1 text-[10px] leading-relaxed text-white/34 sm:text-[11px]">
               Quando invii, il testo e un contesto sintetico servono solo a preparare una proposta utile dentro l'app.
             </p>
           </div>
@@ -232,7 +230,7 @@ export default function AssistantChatSurface({
       <div
         ref={listRef}
         className={`relative z-10 min-h-0 space-y-3 overflow-y-auto p-4 sm:p-5 ${
-          expanded ? 'flex-1' : compact ? 'h-[min(54dvh,420px)]' : 'h-[min(58dvh,560px)]'
+          expanded ? 'flex-1' : compact ? 'h-[min(31dvh,240px)] sm:h-[min(54dvh,420px)]' : 'h-[min(40dvh,340px)] sm:h-[min(58dvh,560px)]'
         }`}
       >
         {messages.map((message, index) => (
@@ -472,7 +470,7 @@ export default function AssistantChatSurface({
         )}
       </div>
 
-      <div className="relative z-10 border-t border-white/10 p-4 sm:p-5">
+      <div className="relative z-10 shrink-0 border-t border-white/10 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:p-5">
         {error && (
           <p className="mb-3 rounded-xl border border-red-400/25 bg-red-500/10 p-3 text-xs text-red-100">
             {error}
@@ -486,14 +484,14 @@ export default function AssistantChatSurface({
               type="button"
               disabled={loading}
               onClick={() => sendMessage(prompt)}
-              className="min-w-0 rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-center text-xs font-semibold leading-tight text-white/52 transition-colors hover:border-emerald-300/25 hover:text-emerald-100 disabled:opacity-50"
+              className="min-w-0 rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2.5 text-center text-xs font-semibold leading-tight text-white/52 transition-colors hover:border-emerald-300/25 hover:text-emerald-100 disabled:opacity-50"
             >
               {prompt}
             </button>
           ))}
         </div>
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-[1fr_auto] gap-2">
+        <form onSubmit={handleSubmit} className="grid grid-cols-[1fr_auto] items-end gap-2">
           <textarea
             value={input}
             onChange={(event) => setInput(event.target.value)}
@@ -504,12 +502,12 @@ export default function AssistantChatSurface({
             }}
             placeholder="Es: domani devo preparare una proposta, ricordami alle 9 e dividila in task..."
             rows={compact ? 2 : 3}
-            className="min-w-0 resize-none rounded-xl border border-white/10 bg-black/35 px-3 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-emerald-400/55"
+            className="min-w-0 resize-none rounded-xl border border-white/10 bg-black/35 px-3 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-emerald-400/55 max-sm:max-h-24"
           />
           <button
             type="submit"
             disabled={!input.trim() || loading}
-            className="btn-cyber grid h-full min-h-12 w-14 place-items-center rounded-xl disabled:opacity-45"
+            className="btn-cyber grid h-12 w-12 place-items-center rounded-xl disabled:opacity-45 sm:min-h-12 sm:w-14"
             aria-label="Invia messaggio"
           >
             {loading ? <Sparkles className="h-4 w-4" /> : <Send className="h-4 w-4" />}

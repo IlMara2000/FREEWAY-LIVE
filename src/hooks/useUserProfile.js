@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { ACCOUNT_DATA_CHANGED_EVENT, accountData } from '@/api/accountDataClient';
 import { useAuth } from '@/lib/AuthContext';
 import { normalizeList } from '@/lib/normalize-list';
-import { getThemeIdsForLevel } from '@/lib/themes';
+import { applyThemeToDocument, getThemeIdsForLevel, THEMES, writeStoredActiveThemeId, readCustomTheme } from '@/lib/themes';
 
 // XP thresholds per level
 const LEVEL_THRESHOLDS = [0, 100, 300, 600, 1000, 1500, 2200, 3000, 4000, 5500, 7500, 10000];
@@ -82,11 +82,15 @@ export default function useUserProfile() {
       if (profiles.length > 0) {
         const nextProfile = normalizeProfile(profiles[0]);
         setProfile(nextProfile);
+        writeStoredActiveThemeId(nextProfile.active_theme || 'emerald');
+        applyThemeToDocument(THEMES[nextProfile.active_theme] || THEMES.emerald, readCustomTheme());
         return nextProfile;
       }
 
       const newProfile = normalizeProfile(await accountData.userProfiles.create(createDefaultProfile()));
       setProfile(newProfile);
+      writeStoredActiveThemeId(newProfile.active_theme || 'emerald');
+      applyThemeToDocument(THEMES[newProfile.active_theme] || THEMES.emerald, readCustomTheme());
       return newProfile;
     } catch (error) {
       console.warn('User profile unavailable:', error);
@@ -125,6 +129,8 @@ export default function useUserProfile() {
   const saveProfile = useCallback(async (nextProfile) => {
     const normalized = normalizeProfile(nextProfile);
     setProfile(normalized);
+    writeStoredActiveThemeId(normalized.active_theme || 'emerald');
+    applyThemeToDocument(THEMES[normalized.active_theme] || THEMES.emerald, readCustomTheme());
 
     try {
       const saved = normalized.id
