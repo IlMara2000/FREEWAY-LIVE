@@ -80,6 +80,26 @@ const toNumber = (value, fallback = 0) => {
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
+const getTargetGradeConfig = (studentType) => {
+  if (studentType === 'university') {
+    return {
+      min: 18,
+      max: 31,
+      step: 1,
+      defaultValue: '18',
+      format: (value) => (value >= 31 ? '30 e lode' : `${value}/30`),
+    };
+  }
+
+  return {
+    min: 1,
+    max: 10,
+    step: 0.5,
+    defaultValue: '8',
+    format: (value) => `${value}/10`,
+  };
+};
+
 const inferStudyKind = (task = {}) => {
   const text = `${task.title || ''} ${task.description || ''}`.toLowerCase();
   if (text.includes('esame')) return 'Esame';
@@ -135,13 +155,26 @@ export default function School() {
   const totalHours = monthlyRows.reduce((sum, row) => sum + row.hours, 0);
   const totalAssessments = schoolTasks.filter((task) => ['Verifica', 'Esame'].includes(inferStudyKind(task))).length;
   const monthlyAverageHours = monthlyRows.length ? totalHours / monthlyRows.length : 0;
-  const targetGrade = toNumber(profile.targetGrade, 8);
+  const targetGradeConfig = getTargetGradeConfig(profile.studentType);
+  const targetGrade = clamp(toNumber(profile.targetGrade, Number(targetGradeConfig.defaultValue)), targetGradeConfig.min, targetGradeConfig.max);
   const monthlyTargetHours = toNumber(profile.monthlyTargetHours, 0);
   const targetGapHours = monthlyTargetHours > 0 ? monthlyStudyHours - monthlyTargetHours : 0;
   const revisionHours = (sessionMinutes / 60) * revisionMultiplier;
 
   const updateProfile = (key, value) => {
     setProfile((current) => ({ ...current, [key]: value }));
+  };
+
+  const handleStudentTypeChange = (value) => {
+    const nextConfig = getTargetGradeConfig(value);
+    const currentTarget = toNumber(profile.targetGrade, Number(nextConfig.defaultValue));
+    const normalizedTarget = clamp(currentTarget, nextConfig.min, nextConfig.max);
+
+    setProfile((current) => ({
+      ...current,
+      studentType: value,
+      targetGrade: String(normalizedTarget),
+    }));
   };
 
   const resetProfile = () => setProfile(DEFAULT_PROFILE);
@@ -214,7 +247,7 @@ export default function School() {
           <div className="grid gap-3 md:grid-cols-2">
             <label className="space-y-2">
               <span className="font-mono text-[10px] uppercase tracking-widest text-white/42">Livello</span>
-              <Select value={profile.studentType} onValueChange={(value) => updateProfile('studentType', value)}>
+              <Select value={profile.studentType} onValueChange={handleStudentTypeChange}>
                 <SelectTrigger className="h-11 rounded-xl border-white/10 bg-black/20">
                   <SelectValue />
                 </SelectTrigger>
@@ -310,9 +343,9 @@ export default function School() {
               <span className="font-mono text-[10px] uppercase tracking-widest text-white/42">Voto target</span>
               <Input
                 type="number"
-                min="1"
-                max="10"
-                step="0.5"
+                min={String(targetGradeConfig.min)}
+                max={String(targetGradeConfig.max)}
+                step={String(targetGradeConfig.step)}
                 value={profile.targetGrade}
                 onChange={(event) => updateProfile('targetGrade', event.target.value)}
                 className="h-11 rounded-xl border-white/10 bg-black/20"
@@ -352,7 +385,7 @@ export default function School() {
               <ul className="mt-3 space-y-2 text-sm text-white/62">
                 <li>Ore al giorno: <span className="font-semibold text-white">{formatDuration(hoursPerDay)}</span></li>
                 <li>Ripasso per verifica: <span className="font-semibold text-white">{formatDuration(revisionHours)}</span></li>
-                <li>Voto target: <span className="font-semibold text-white">{targetGrade}/10</span></li>
+                <li>Voto target: <span className="font-semibold text-white">{targetGradeConfig.format(targetGrade)}</span></li>
               </ul>
             </div>
           </div>
