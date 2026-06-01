@@ -13,7 +13,7 @@ export const THEMES = {
     id: 'ruby',
     name: 'Rubino',
     description: 'Rosso acceso, aggressivo, perfetto per sprint intensi.',
-    minLevel: 2,
+    minLevel: 7,
     accent: '#FF3366',
     accentHSL: '345 100% 60%',
     bgGlow: 'rgba(255, 51, 102, 0.15)',
@@ -23,7 +23,7 @@ export const THEMES = {
     id: 'arctic',
     name: 'Artico',
     description: 'Blu ghiaccio, pulito e calmo per lavoro profondo.',
-    minLevel: 3,
+    minLevel: 2,
     accent: '#38BDF8',
     accentHSL: '198 93% 60%',
     bgGlow: 'rgba(56, 189, 248, 0.15)',
@@ -33,7 +33,7 @@ export const THEMES = {
     id: 'amethyst',
     name: 'Ametista',
     description: 'Viola elettrico, più creativo e notturno.',
-    minLevel: 4,
+    minLevel: 9,
     accent: '#A855F7',
     accentHSL: '270 95% 65%',
     bgGlow: 'rgba(168, 85, 247, 0.15)',
@@ -53,7 +53,7 @@ export const THEMES = {
     id: 'mint',
     name: 'Menta',
     description: 'Fresco, chiaro e meno cyber.',
-    minLevel: 6,
+    minLevel: 4,
     accent: '#5EEAD4',
     accentHSL: '174 72% 62%',
     bgGlow: 'rgba(94, 234, 212, 0.14)',
@@ -63,7 +63,7 @@ export const THEMES = {
     id: 'coral',
     name: 'Corallo',
     description: 'Energia soft, utile per giornate leggere.',
-    minLevel: 7,
+    minLevel: 6,
     accent: '#FB7185',
     accentHSL: '351 95% 71%',
     bgGlow: 'rgba(251, 113, 133, 0.14)',
@@ -73,7 +73,7 @@ export const THEMES = {
     id: 'cobalt',
     name: 'Cobalto',
     description: 'Blu tecnico, preciso e molto dashboard.',
-    minLevel: 8,
+    minLevel: 3,
     accent: '#2563EB',
     accentHSL: '221 83% 53%',
     bgGlow: 'rgba(37, 99, 235, 0.14)',
@@ -83,7 +83,7 @@ export const THEMES = {
     id: 'lime',
     name: 'Lime',
     description: 'Acido, veloce, da task list aggressiva.',
-    minLevel: 9,
+    minLevel: 14,
     accent: '#A3E635',
     accentHSL: '84 81% 55%',
     bgGlow: 'rgba(163, 230, 53, 0.14)',
@@ -93,7 +93,7 @@ export const THEMES = {
     id: 'rose',
     name: 'Rosa',
     description: 'Più personale, morbido, ma ancora contrastato.',
-    minLevel: 10,
+    minLevel: 12,
     accent: '#F472B6',
     accentHSL: '330 81% 70%',
     bgGlow: 'rgba(244, 114, 182, 0.14)',
@@ -103,7 +103,7 @@ export const THEMES = {
     id: 'amber',
     name: 'Ambra',
     description: 'Un tema caldo da sera, meno abbagliante del Solare.',
-    minLevel: 12,
+    minLevel: 10,
     accent: '#F59E0B',
     accentHSL: '38 92% 50%',
     bgGlow: 'rgba(245, 158, 11, 0.14)',
@@ -113,7 +113,7 @@ export const THEMES = {
     id: 'violet',
     name: 'Violetto',
     description: 'Viola saturo per un look più premium.',
-    minLevel: 14,
+    minLevel: 16,
     accent: '#7C3AED',
     accentHSL: '262 83% 58%',
     bgGlow: 'rgba(124, 58, 237, 0.14)',
@@ -123,7 +123,7 @@ export const THEMES = {
     id: 'cyan',
     name: 'Ciano',
     description: 'Alta leggibilità e sensazione da console futuristica.',
-    minLevel: 16,
+    minLevel: 8,
     accent: '#06B6D4',
     accentHSL: '188 95% 42%',
     bgGlow: 'rgba(6, 182, 212, 0.14)',
@@ -161,6 +161,8 @@ export const THEMES = {
   },
 };
 
+export const MAX_THEME_LEVEL = Math.max(...Object.values(THEMES).map((theme) => theme.minLevel));
+
 export const CUSTOM_THEME_KEY = 'fw_theme_customizer';
 export const ACTIVE_THEME_KEY = 'fw_active_theme';
 export const DEFAULT_THEME_CUSTOMIZATION = {
@@ -173,7 +175,7 @@ export const DEFAULT_THEME_CUSTOMIZATION = {
 };
 
 export const getThemeList = () =>
-  Object.values(THEMES).sort((a, b) => a.minLevel - b.minLevel);
+  Object.values(THEMES).sort((a, b) => (a.minLevel - b.minLevel) || a.name.localeCompare(b.name));
 
 export const getThemeIdsForLevel = (level = 1) =>
   getThemeList()

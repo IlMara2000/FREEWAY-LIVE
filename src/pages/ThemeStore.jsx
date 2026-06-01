@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import useUserProfile from '@/hooks/useUserProfile';
 import {
@@ -6,6 +6,7 @@ import {
   DEFAULT_THEME_CUSTOMIZATION,
   getThemeIdsForLevel,
   getThemeList,
+  MAX_THEME_LEVEL,
   readCustomTheme,
   sanitizeCustomTheme,
   THEMES,
@@ -20,9 +21,10 @@ import PageShell from '@/components/shared/PageShell';
 const themeList = getThemeList();
 
 export default function ThemeStore() {
-  const { profile, loading, setActiveTheme } = useUserProfile();
+  const { profile, loading, setActiveTheme, grantMaxLevel } = useUserProfile();
   const [pendingTheme, setPendingTheme] = useState(null);
   const [customTheme, setCustomTheme] = useState(readCustomTheme);
+  const maxLevelGrantedRef = useRef(false);
 
   const level = profile?.level || 1;
   const totalXP = profile?.total_xp || 0;
@@ -39,6 +41,16 @@ export default function ThemeStore() {
     writeCustomTheme(sanitized);
     applyThemeToDocument(activeThemeData, sanitized);
   }, [activeThemeData, customTheme]);
+
+  useEffect(() => {
+    if (!profile || loading || maxLevelGrantedRef.current || (profile.level || 1) >= MAX_THEME_LEVEL) return;
+
+    maxLevelGrantedRef.current = true;
+    grantMaxLevel().catch((error) => {
+      console.warn('Unable to grant max theme level:', error);
+      maxLevelGrantedRef.current = false;
+    });
+  }, [grantMaxLevel, loading, profile]);
 
   const handleActivate = async (themeId) => {
     if (!profile || themeId === activeTheme) return;

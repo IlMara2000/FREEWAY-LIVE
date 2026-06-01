@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { ACCOUNT_DATA_CHANGED_EVENT, accountData } from '@/api/accountDataClient';
 import { useAuth } from '@/lib/AuthContext';
 import { normalizeList } from '@/lib/normalize-list';
-import { applyThemeToDocument, getThemeIdsForLevel, THEMES, writeStoredActiveThemeId, readCustomTheme } from '@/lib/themes';
+import { applyThemeToDocument, getThemeIdsForLevel, MAX_THEME_LEVEL, THEMES, writeStoredActiveThemeId, readCustomTheme } from '@/lib/themes';
 
 // XP thresholds per level
 const LEVEL_THRESHOLDS = [0, 100, 300, 600, 1000, 1500, 2200, 3000, 4000, 5500, 7500, 10000];
@@ -29,6 +29,17 @@ export function getLevelFromXP(xp) {
     }
   }
   return 1;
+}
+
+export function getMinimumXPForLevel(level) {
+  const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
+  const maxTableLevel = LEVEL_THRESHOLDS.length;
+
+  if (safeLevel <= maxTableLevel) {
+    return LEVEL_THRESHOLDS[safeLevel - 1];
+  }
+
+  return LEVEL_THRESHOLDS[maxTableLevel - 1] + (safeLevel - maxTableLevel) * XP_PER_LEVEL_AFTER_TABLE;
 }
 
 export function getXPForCurrentLevel(xp) {
@@ -59,10 +70,26 @@ export default function useUserProfile() {
   const profileRef = useRef(null);
   const accountId = user?.id || user?.email || 'guest';
 
-  const normalizeProfile = useCallback((nextProfile) => ({
-    ...createDefaultProfile(),
-    ...(nextProfile || {}),
-  }), []);
+  const normalizeProfile = useCallback((nextProfile) => {
+    const merged = {
+      ...createDefaultProfile(),
+      ...(nextProfile || {}),
+    };
+    const totalXP = Math.max(0, Number(merged.total_xp) || 0);
+    const derivedLevel = getLevelFromXP(totalXP);
+    const normalizedLevel = Math.max(1, Number(merged.level) || derivedLevel, derivedLevel);
+
+    return {
+      ...merged,
+      total_xp: totalXP,
+      level: normalizedLevel,
+      unlocked_themes: Array.from(new Set([
+        ...(Array.isArray(merged.unlocked_themes) ? merged.unlocked_themes : []),
+        ...getThemeIdsForLevel(normalizedLevel),
+        'emerald',
+      ])),
+    };
+  }, []);
 
   useEffect(() => {
     profileRef.current = profile;
@@ -201,6 +228,23 @@ export default function useUserProfile() {
     return saveProfile(nextProfile);
   }, [getLatestProfile, saveProfile]);
 
+  const grantMaxLevel = useCallback(async () => {
+    const latestProfile = await getLatestProfile();
+    if (!latestProfile) return undefined;
+
+    const targetLevel = MAX_THEME_LEVEL;
+    const targetXP = getMinimumXPForLevel(targetLevel);
+    const nextProfile = {
+      ...latestProfile,
+      total_xp: Math.max(latestProfile.total_xp || 0, targetXP),
+      level: Math.max(latestProfile.level || 1, targetLevel),
+      unlocked_themes: getThemeIdsForLevel(targetLevel),
+      last_active_date: new Date().toISOString().split('T')[0],
+    };
+
+    return saveProfile(nextProfile);
+  }, [getLatestProfile, saveProfile]);
+
   return {
     profile,
     loading,
@@ -209,6 +253,7 @@ export default function useUserProfile() {
     addFocusMinutes,
     incrementTasksCompleted,
     setActiveTheme,
+    grantMaxLevel,
     reload: loadProfile,
   };
 }
