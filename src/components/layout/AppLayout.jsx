@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/AuthContext';
 import FreewayLogo from '@/components/brand/FreewayLogo';
 import useUserProfile from '@/hooks/useUserProfile';
 import AppAssistantChat from '@/components/assistant/AppAssistantChat';
-import { applyThemeToDocument, CUSTOM_THEME_KEY, readCustomTheme, THEMES } from '@/lib/themes';
+import { applyThemeToDocument, CUSTOM_THEME_KEY, readCustomTheme, readStoredActiveThemeId, THEMES } from '@/lib/themes';
 
 const NAV_ITEMS = [
   { path: '/', icon: LayoutDashboard, label: 'Hub' },
@@ -48,7 +48,7 @@ export default function AppLayout() {
   const closeMenu = () => setMenuOpen(false);
 
   useEffect(() => {
-    const activeThemeId = profile?.active_theme || 'emerald';
+    const activeThemeId = profile?.active_theme || readStoredActiveThemeId();
     const theme = THEMES[activeThemeId] || THEMES.emerald;
     const applyCurrentTheme = () => applyThemeToDocument(theme, readCustomTheme());
 

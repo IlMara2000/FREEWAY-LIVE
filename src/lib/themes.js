@@ -267,6 +267,31 @@ export function hexToRgbValue(hex) {
   ].join(' ');
 }
 
+function getThemeSurfaceTriplets(accentHSL, custom = {}) {
+  const [rawHue = '155'] = String(accentHSL).split(' ');
+  const hue = Number.parseInt(rawHue, 10);
+  const safeHue = Number.isFinite(hue) ? hue : 155;
+  const surfaceBoost = Math.min(Math.max((Number(custom.surface) || 72) - 72, -20), 20);
+
+  return {
+    card: `${safeHue} 24% ${Math.max(6, 8 + surfaceBoost * 0.08).toFixed(1)}%`,
+    popover: `${safeHue} 24% ${Math.max(5, 7 + surfaceBoost * 0.07).toFixed(1)}%`,
+    secondary: `${safeHue} 22% ${Math.max(8, 11 + surfaceBoost * 0.08).toFixed(1)}%`,
+    muted: `${safeHue} 20% ${Math.max(9, 13 + surfaceBoost * 0.08).toFixed(1)}%`,
+    border: `${safeHue} 18% ${Math.max(14, 18 + surfaceBoost * 0.06).toFixed(1)}%`,
+    input: `${safeHue} 18% ${Math.max(13, 17 + surfaceBoost * 0.06).toFixed(1)}%`,
+    sidebarBackground: `${safeHue} 20% 4.2%`,
+    sidebarAccent: `${safeHue} 22% ${Math.max(7, 9 + surfaceBoost * 0.05).toFixed(1)}%`,
+    sidebarBorder: `${safeHue} 18% ${Math.max(13, 16 + surfaceBoost * 0.06).toFixed(1)}%`,
+    baseStart: `${safeHue} 34% 12%`,
+    baseEnd: `${safeHue} 36% 6%`,
+    softStart: `${safeHue} 30% 13%`,
+    softEnd: `${safeHue} 34% 5%`,
+    strongStart: `${safeHue} 38% 15%`,
+    strongEnd: `${safeHue} 42% 6%`,
+  };
+}
+
 export function applyThemeToDocument(theme, custom = {}) {
   if (typeof document === 'undefined' || !theme) return;
 
@@ -288,13 +313,29 @@ export function applyThemeToDocument(theme, custom = {}) {
   const buttonBorderOpacity = (Math.min(0.24 + safeCustom.glow / 90, 0.60)).toFixed(2);
   const textGlowOpacity = (Math.min(0.18 + safeCustom.glow / 60, 0.75)).toFixed(2);
   const gridOpacity = (safeCustom.grid / 100).toFixed(2);
+  const surfaces = getThemeSurfaceTriplets(accentHSL, safeCustom);
 
   root.style.setProperty('--primary', accentHSL);
   root.style.setProperty('--accent', accentHSL);
   root.style.setProperty('--ring', accentHSL);
   root.style.setProperty('--chart-1', accentHSL);
+  root.style.setProperty('--card', surfaces.card);
+  root.style.setProperty('--popover', surfaces.popover);
+  root.style.setProperty('--secondary', surfaces.secondary);
+  root.style.setProperty('--muted', surfaces.muted);
+  root.style.setProperty('--border', surfaces.border);
+  root.style.setProperty('--input', surfaces.input);
   root.style.setProperty('--sidebar-primary', accentHSL);
+  root.style.setProperty('--sidebar-background', surfaces.sidebarBackground);
+  root.style.setProperty('--sidebar-accent', surfaces.sidebarAccent);
+  root.style.setProperty('--sidebar-border', surfaces.sidebarBorder);
   root.style.setProperty('--theme-accent-rgb', accentRgb);
+  root.style.setProperty('--theme-surface-base-start', surfaces.baseStart);
+  root.style.setProperty('--theme-surface-base-end', surfaces.baseEnd);
+  root.style.setProperty('--theme-surface-soft-start', surfaces.softStart);
+  root.style.setProperty('--theme-surface-soft-end', surfaces.softEnd);
+  root.style.setProperty('--theme-surface-strong-start', surfaces.strongStart);
+  root.style.setProperty('--theme-surface-strong-end', surfaces.strongEnd);
   root.style.setProperty('--theme-surface-opacity', surfaceOpacity);
   root.style.setProperty('--theme-surface-strong-opacity', strongSurfaceOpacity);
   root.style.setProperty('--theme-blur', `${safeCustom.blur}px`);

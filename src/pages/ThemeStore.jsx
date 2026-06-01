@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import useUserProfile from '@/hooks/useUserProfile';
+import useUserProfile, { getMinimumXPForLevel } from '@/hooks/useUserProfile';
 import {
   applyThemeToDocument,
   DEFAULT_THEME_CUSTOMIZATION,
@@ -30,6 +30,7 @@ export default function ThemeStore() {
   const totalXP = profile?.total_xp || 0;
   const activeTheme = profile?.active_theme || 'emerald';
   const activeThemeData = THEMES[activeTheme] || THEMES.emerald;
+  const targetXPForMaxThemeLevel = getMinimumXPForLevel(MAX_THEME_LEVEL);
   const unlockedThemes = useMemo(() => {
     const saved = profile?.unlocked_themes || [];
     return Array.from(new Set([...saved, ...getThemeIdsForLevel(level), 'emerald']));
@@ -43,14 +44,20 @@ export default function ThemeStore() {
   }, [activeThemeData, customTheme]);
 
   useEffect(() => {
-    if (!profile || loading || maxLevelGrantedRef.current || (profile.level || 1) >= MAX_THEME_LEVEL) return;
+    const shouldGrantMaxLevel = profile && (
+      (profile.level || 1) < MAX_THEME_LEVEL ||
+      (profile.total_xp || 0) < targetXPForMaxThemeLevel ||
+      (profile.unlocked_themes?.length || 0) < themeList.length
+    );
+
+    if (!shouldGrantMaxLevel || loading || maxLevelGrantedRef.current) return;
 
     maxLevelGrantedRef.current = true;
     grantMaxLevel().catch((error) => {
       console.warn('Unable to grant max theme level:', error);
       maxLevelGrantedRef.current = false;
     });
-  }, [grantMaxLevel, loading, profile]);
+  }, [grantMaxLevel, loading, profile, targetXPForMaxThemeLevel]);
 
   const handleActivate = async (themeId) => {
     if (!profile || themeId === activeTheme) return;

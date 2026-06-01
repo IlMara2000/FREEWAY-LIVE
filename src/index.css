@@ -37,6 +37,12 @@
     --chart-5: 200 85% 55%;
     --radius: 0.75rem;
     --theme-accent-rgb: 0 255 136;
+    --theme-surface-base-start: 155 34% 12%;
+    --theme-surface-base-end: 155 36% 6%;
+    --theme-surface-soft-start: 155 30% 13%;
+    --theme-surface-soft-end: 155 34% 5%;
+    --theme-surface-strong-start: 155 38% 15%;
+    --theme-surface-strong-end: 155 42% 6%;
     --theme-surface-opacity: 0.72;
     --theme-surface-strong-opacity: 0.82;
     --theme-blur: 20px;
@@ -124,10 +130,10 @@ body {
 .glass-panel {
   background:
     radial-gradient(circle at 18% 0%, rgb(var(--theme-accent-rgb) / var(--theme-surface-tint-opacity)), transparent 34%),
-    linear-gradient(165deg, rgb(8 18 28 / var(--theme-surface-opacity)) 0%, rgb(2 8 13 / calc(var(--theme-surface-opacity) - 0.22)) 100%);
+    linear-gradient(165deg, hsl(var(--theme-surface-base-start) / var(--theme-surface-opacity)) 0%, hsl(var(--theme-surface-base-end) / calc(var(--theme-surface-opacity) - 0.22)) 100%);
   backdrop-filter: blur(var(--theme-blur)) saturate(180%);
   -webkit-backdrop-filter: blur(var(--theme-blur)) saturate(180%);
-  border: 1px solid rgb(148 163 184 / var(--theme-surface-border-opacity));
+  border: 1px solid hsl(var(--border) / var(--theme-surface-border-opacity));
   border-top: 1px solid rgb(var(--theme-accent-rgb) / var(--theme-surface-top-opacity));
   box-shadow:
     0 30px 70px -18px rgba(0,0,0,0.86),
@@ -157,18 +163,18 @@ body {
 .glass {
   background:
     radial-gradient(circle at 15% 0%, rgb(var(--theme-accent-rgb) / calc(var(--theme-surface-tint-opacity) - 0.01)), transparent 42%),
-    linear-gradient(165deg, rgb(10 18 26 / calc(var(--theme-surface-opacity) - 0.10)) 0%, rgb(2 7 12 / calc(var(--theme-surface-opacity) - 0.28)) 100%);
+    linear-gradient(165deg, hsl(var(--theme-surface-soft-start) / calc(var(--theme-surface-opacity) - 0.10)) 0%, hsl(var(--theme-surface-soft-end) / calc(var(--theme-surface-opacity) - 0.28)) 100%);
   backdrop-filter: blur(var(--theme-blur)) saturate(160%);
-  border: 1px solid rgb(148 163 184 / calc(var(--theme-surface-border-opacity) - 0.01));
+  border: 1px solid hsl(var(--border) / calc(var(--theme-surface-border-opacity) - 0.01));
   border-top: 1px solid rgb(var(--theme-accent-rgb) / calc(var(--theme-surface-top-opacity) - 0.10));
 }
 
 .glass-strong {
   background:
     radial-gradient(circle at 18% 0%, rgb(var(--theme-accent-rgb) / calc(var(--theme-surface-tint-opacity) + 0.03)), transparent 38%),
-    linear-gradient(165deg, rgb(13 24 34 / var(--theme-surface-strong-opacity)) 0%, rgb(2 7 12 / calc(var(--theme-surface-strong-opacity) - 0.22)) 100%);
+    linear-gradient(165deg, hsl(var(--theme-surface-strong-start) / var(--theme-surface-strong-opacity)) 0%, hsl(var(--theme-surface-strong-end) / calc(var(--theme-surface-strong-opacity) - 0.22)) 100%);
   backdrop-filter: blur(calc(var(--theme-blur) + 10px)) saturate(180%);
-  border: 1px solid rgb(148 163 184 / calc(var(--theme-surface-border-opacity) + 0.02));
+  border: 1px solid hsl(var(--border) / calc(var(--theme-surface-border-opacity) + 0.02));
   border-top: 1px solid rgb(var(--theme-accent-rgb) / calc(var(--theme-surface-top-opacity) + 0.04));
   box-shadow: 0 24px 56px -12px rgba(0,0,0,0.76), inset 0 1px 1px rgba(255,255,255,0.04);
 }
