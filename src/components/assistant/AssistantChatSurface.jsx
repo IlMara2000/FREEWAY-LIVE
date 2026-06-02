@@ -217,10 +217,10 @@ export default function AssistantChatSurface({
             <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-emerald-300/60">
               Chat Bot operativo
             </p>
-            <h1 className={`${compact ? 'text-[1.85rem] sm:text-2xl' : 'text-3xl sm:text-5xl'} font-grotesk font-black leading-none text-white`}>
+            <h1 className={`${compact ? 'text-[1.55rem] sm:text-2xl' : 'text-[1.85rem] sm:text-5xl'} font-grotesk font-black leading-[0.96] text-white`}>
               Cosa ti serve oggi?
             </h1>
-            <p className="mt-1 text-[10px] leading-relaxed text-white/34 sm:text-[11px]">
+            <p className="mt-1 max-w-xl text-[10px] leading-relaxed text-white/34 sm:text-[11px]">
               Quando invii, il testo e un contesto sintetico servono solo a preparare una proposta utile dentro l'app.
             </p>
           </div>
@@ -229,8 +229,8 @@ export default function AssistantChatSurface({
 
       <div
         ref={listRef}
-        className={`relative z-10 min-h-0 space-y-3 overflow-y-auto p-4 sm:p-5 ${
-          expanded ? 'flex-1' : compact ? 'h-[min(31dvh,240px)] sm:h-[min(54dvh,420px)]' : 'h-[min(40dvh,340px)] sm:h-[min(58dvh,560px)]'
+        className={`relative z-10 min-h-0 space-y-3 overflow-y-auto p-3 sm:p-5 ${
+          expanded ? 'flex-1' : compact ? 'h-[min(27dvh,220px)] sm:h-[min(54dvh,420px)]' : 'h-[min(34dvh,300px)] sm:h-[min(58dvh,560px)]'
         }`}
       >
         {messages.map((message, index) => (
@@ -484,7 +484,7 @@ export default function AssistantChatSurface({
               type="button"
               disabled={loading}
               onClick={() => sendMessage(prompt)}
-              className="min-w-0 rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2.5 text-center text-xs font-semibold leading-tight text-white/52 transition-colors hover:border-emerald-300/25 hover:text-emerald-100 disabled:opacity-50"
+              className="min-w-0 rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-center text-[11px] font-semibold leading-tight text-white/52 transition-colors hover:border-emerald-300/25 hover:text-emerald-100 disabled:opacity-50"
             >
               {prompt}
             </button>
@@ -502,12 +502,12 @@ export default function AssistantChatSurface({
             }}
             placeholder="Es: domani devo preparare una proposta, ricordami alle 9 e dividila in task..."
             rows={compact ? 2 : 3}
-            className="min-w-0 resize-none rounded-xl border border-white/10 bg-black/35 px-3 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-emerald-400/55 max-sm:max-h-24"
+            className="min-w-0 resize-none rounded-xl border border-white/10 bg-black/35 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/25 focus:border-emerald-400/55 max-sm:max-h-20"
           />
           <button
             type="submit"
             disabled={!input.trim() || loading}
-            className="btn-cyber grid h-12 w-12 place-items-center rounded-xl disabled:opacity-45 sm:min-h-12 sm:w-14"
+            className="btn-cyber grid h-11 w-11 place-items-center rounded-xl disabled:opacity-45 sm:min-h-12 sm:w-14"
             aria-label="Invia messaggio"
           >
             {loading ? <Sparkles className="h-4 w-4" /> : <Send className="h-4 w-4" />}

@@ -46,7 +46,7 @@ export default function TaskModal({ task, onClose, onStartTomato, onDuplicate, o
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4"
+        className="fixed inset-0 z-50 flex items-end justify-center p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-[calc(4.25rem+env(safe-area-inset-top))] md:items-center md:p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -54,21 +54,21 @@ export default function TaskModal({ task, onClose, onStartTomato, onDuplicate, o
         <motion.div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
         <motion.div
-          className="relative z-10 w-full max-w-md glass-panel p-6 space-y-5"
+          className="relative z-10 w-full max-w-md overflow-y-auto rounded-[1.6rem] glass-panel px-4 pb-4 pt-5 space-y-4 max-h-[min(76dvh,42rem)] sm:max-h-[min(88dvh,48rem)] sm:p-6 sm:space-y-5"
           initial={{ scale: 0.5, opacity: 0, rotate: -10 }}
           animate={{ scale: 1, opacity: 1, rotate: 0 }}
           exit={{ scale: 0.5, opacity: 0, rotate: 10 }}
           transition={{ type: 'spring', stiffness: 280, damping: 22 }}
         >
-          <button onClick={onClose} className="absolute top-4 right-4 text-white/30 hover:text-white transition-colors">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="absolute right-3 top-3 z-10 grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-black/30 text-white/35 transition-colors hover:text-white sm:right-4 sm:top-4">
+            <X className="h-5 w-5" />
           </button>
 
           <div>
             <p className={`font-mono text-[10px] uppercase tracking-widest mb-2 ${priorityColor}`}>
               {task.priority} priority
             </p>
-            <h2 className="font-grotesk font-black text-xl text-white leading-tight">{task.title}</h2>
+            <h2 className="max-w-[calc(100%-3rem)] text-balance font-grotesk font-black text-xl text-white leading-tight sm:text-2xl">{task.title}</h2>
             {task.due_date && (
               <p className="font-mono text-xs text-white/40 mt-1">{task.due_date}</p>
             )}
@@ -79,7 +79,7 @@ export default function TaskModal({ task, onClose, onStartTomato, onDuplicate, o
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {(task.start_time || task.end_time) && (
               <div className="glass rounded-xl p-3">
                 <p className="font-mono text-[10px] text-white/35 uppercase tracking-widest flex items-center gap-1.5">
@@ -114,7 +114,7 @@ export default function TaskModal({ task, onClose, onStartTomato, onDuplicate, o
 
           {task.description && (
             <div className="glass rounded-xl p-4">
-              <p className="text-sm text-white/70 leading-relaxed">{task.description}</p>
+              <p className="text-sm text-white/70 leading-relaxed break-words">{task.description}</p>
             </div>
           )}
 
@@ -150,7 +150,7 @@ export default function TaskModal({ task, onClose, onStartTomato, onDuplicate, o
                   <p className="font-mono text-[10px] text-emerald-400/70 uppercase tracking-widest mb-3 flex items-center gap-1">
                     <Brain className="w-3 h-3" /> Piano ADHD-Friendly
                   </p>
-                  <div className="text-sm text-white/80 leading-relaxed whitespace-pre-line font-lexend">
+                  <div className="text-sm text-white/80 leading-relaxed whitespace-pre-line break-words font-lexend">
                     {slicedContent}
                   </div>
                 </motion.div>
