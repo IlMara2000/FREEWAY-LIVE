@@ -1,32 +1,47 @@
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { AnimatePresence, motion } from 'framer-motion';
-import React, { useEffect, useState } from 'react';
+import ErrorBoundary from '@/components/shared/ErrorBoundary';
 
-import Login from '@/pages/Login';
-import Splash from '@/pages/Splash';
-import Dashboard from '@/pages/Dashboard';
-import CalendarView from '@/pages/CalendarView';
-import TomatoTimer from '@/pages/TomatoTimer';
-import Planner from '@/pages/Planner';
-import BrainDump from '@/pages/BrainDump';
-import ThemeStore from '@/pages/ThemeStore';
-import Account from '@/pages/Account';
-import Alarms from '@/pages/Alarms';
-import Work from '@/pages/Work';
-import School from '@/pages/School';
-import AboutLegal from '@/pages/AboutLegal';
-import Tutorial from '@/components/tutorial/Tutorial';
-import AppLayout from '@/components/layout/AppLayout';
-import PageNotFound from '@/lib/PageNotFound';
+// Lazy loaded pages - caricate solo quando servono
+const Login = lazy(() => import('@/pages/Login'));
+const Splash = lazy(() => import('@/pages/Splash'));
+const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const CalendarView = lazy(() => import('@/pages/CalendarView'));
+const TomatoTimer = lazy(() => import('@/pages/TomatoTimer'));
+const Planner = lazy(() => import('@/pages/Planner'));
+const BrainDump = lazy(() => import('@/pages/BrainDump'));
+const ThemeStore = lazy(() => import('@/pages/ThemeStore'));
+const Account = lazy(() => import('@/pages/Account'));
+const Alarms = lazy(() => import('@/pages/Alarms'));
+const Work = lazy(() => import('@/pages/Work'));
+const School = lazy(() => import('@/pages/School'));
+const AboutLegal = lazy(() => import('@/pages/AboutLegal'));
+const Tutorial = lazy(() => import('@/components/tutorial/Tutorial'));
+const AppLayout = lazy(() => import('@/components/layout/AppLayout'));
+const PageNotFound = lazy(() => import('@/lib/PageNotFound'));
+const PersonalOnboarding = lazy(() => import('@/components/onboarding/PersonalOnboarding'));
+const NotificationConsent = lazy(() => import('@/components/notifications/NotificationConsent'));
+const MobileDesktopPrompt = lazy(() => import('@/components/mobile/MobileDesktopPrompt'));
+
 import useUserProfile from '@/hooks/useUserProfile';
-import PersonalOnboarding, { isInitialOnboardingComplete } from '@/components/onboarding/PersonalOnboarding';
-import NotificationConsent from '@/components/notifications/NotificationConsent';
+import { isInitialOnboardingComplete } from '@/components/onboarding/PersonalOnboarding';
 import useAlarmNotifications from '@/hooks/useAlarmNotifications';
-import MobileDesktopPrompt from '@/components/mobile/MobileDesktopPrompt';
+
+// Loading spinner per lazy loading
+const PageLoading = () => (
+  <div className="fixed inset-0 flex items-center justify-center" style={{ background: '#01030b' }}>
+    <motion.div
+      animate={{ rotate: 360 }}
+      transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
+      className="w-8 h-8 rounded-full border-2 border-white/10 border-t-emerald-400"
+    />
+  </div>
+);
 
 const TUTORIAL_KEY = 'fw_tutorial_done';
 const APP_ENTERED_KEY = 'fw_app_entered';
@@ -50,7 +65,6 @@ const storeAppEntry = () => {
 
 const isMobileBrowserViewport = () => {
   if (typeof window === 'undefined') return false;
-
   const narrow = window.matchMedia?.('(max-width: 767px)').matches ?? window.innerWidth < 768;
   const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches ?? false;
   const touchCapable = navigator.maxTouchPoints > 0;
@@ -163,7 +177,6 @@ const AuthenticatedApp = () => {
 
   const handleOnboardingComplete = async (profilePatch) => {
     if (!profile || savingOnboarding) return;
-
     setSavingOnboarding(true);
 
     try {
@@ -187,27 +200,17 @@ const AuthenticatedApp = () => {
 
   useEffect(() => {
     if (!canShowAccountOverlays) return;
-
     if (!onboardingComplete) {
       setShowTutorial(false);
       return;
     }
-
     if (!localStorage.getItem(TUTORIAL_KEY)) {
       setShowTutorial(true);
     }
   }, [canShowAccountOverlays, onboardingComplete]);
 
   if (isLoadingPublicSettings || isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center" style={{ background: '#01030b' }}>
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
-          className="w-8 h-8 rounded-full border-2 border-white/10 border-t-emerald-400"
-        />
-      </div>
-    );
+    return <PageLoading />;
   }
 
   if (isAuthCallback) {
@@ -228,50 +231,82 @@ const AuthenticatedApp = () => {
             <Splash onEnter={handleEnter} />
           </motion.div>
         ) : !isAuthenticated ? (
-          <Login />
+          <ErrorBoundary fallbackName="Login">
+            <Login />
+          </ErrorBoundary>
         ) : (
-          <Routes location={location}>
-            <Route element={<AppLayout />}>
-              <Route path="/" element={<Dashboard />} />
-              <Route
-                path="/calendar"
-                element={
-                  <CalendarView
-                    onStartTomato={(task) => navigate('/tomato', { state: { taskContext: task || null } })}
-                  />
-                }
-              />
-              <Route
-                path="/tomato"
-                element={
-                  <TomatoTimer
-                    taskContext={location.state?.taskContext || null}
-                    onBack={() => navigate('/calendar')}
-                  />
-                }
-              />
-              <Route path="/planner" element={<Planner />} />
-              <Route path="/school" element={<School />} />
-              <Route path="/work" element={<Work />} />
-              <Route path="/braindump" element={<BrainDump />} />
-              <Route path="/themes" element={<ThemeStore />} />
-              <Route path="/alarms" element={<Alarms />} />
-              <Route path="/account" element={<Account />} />
-              <Route path="/about" element={<AboutLegal />} />
-              <Route path="/splash" element={<Navigate to="/" replace />} />
-              <Route path="*" element={<PageNotFound />} />
-            </Route>
-          </Routes>
+          <ErrorBoundary fallbackName="AppLayout">
+            <Routes location={location}>
+              <Route element={<AppLayout />}>
+                <Route path="/" element={
+                  <ErrorBoundary fallbackName="Dashboard">
+                    <Dashboard />
+                  </ErrorBoundary>
+                } />
+                <Route
+                  path="/calendar"
+                  element={
+                    <ErrorBoundary fallbackName="Calendar">
+                      <CalendarView
+                        onStartTomato={(task) => navigate('/tomato', { state: { taskContext: task || null } })}
+                      />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/tomato"
+                  element={
+                    <ErrorBoundary fallbackName="TomatoTimer">
+                      <TomatoTimer
+                        taskContext={location.state?.taskContext || null}
+                        onBack={() => navigate('/calendar')}
+                      />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route path="/planner" element={
+                  <ErrorBoundary fallbackName="Planner"><Planner /></ErrorBoundary>
+                } />
+                <Route path="/school" element={
+                  <ErrorBoundary fallbackName="School"><School /></ErrorBoundary>
+                } />
+                <Route path="/work" element={
+                  <ErrorBoundary fallbackName="Work"><Work /></ErrorBoundary>
+                } />
+                <Route path="/braindump" element={
+                  <ErrorBoundary fallbackName="BrainDump"><BrainDump /></ErrorBoundary>
+                } />
+                <Route path="/themes" element={
+                  <ErrorBoundary fallbackName="ThemeStore"><ThemeStore /></ErrorBoundary>
+                } />
+                <Route path="/alarms" element={
+                  <ErrorBoundary fallbackName="Alarms"><Alarms /></ErrorBoundary>
+                } />
+                <Route path="/account" element={
+                  <ErrorBoundary fallbackName="Account"><Account /></ErrorBoundary>
+                } />
+                <Route path="/about" element={
+                  <ErrorBoundary fallbackName="AboutLegal"><AboutLegal /></ErrorBoundary>
+                } />
+                <Route path="/splash" element={<Navigate to="/" replace />} />
+                <Route path="*" element={
+                  <ErrorBoundary fallbackName="PageNotFound"><PageNotFound /></ErrorBoundary>
+                } />
+              </Route>
+            </Routes>
+          </ErrorBoundary>
         )}
       </AnimatePresence>
 
       {/* Tutorial overlay */}
       <AnimatePresence>
         {showPersonalOnboarding && (
-          <PersonalOnboarding
-            saving={savingOnboarding}
-            onComplete={handleOnboardingComplete}
-          />
+          <ErrorBoundary fallbackName="PersonalOnboarding">
+            <PersonalOnboarding
+              saving={savingOnboarding}
+              onComplete={handleOnboardingComplete}
+            />
+          </ErrorBoundary>
         )}
       </AnimatePresence>
 
@@ -283,7 +318,9 @@ const AuthenticatedApp = () => {
 
       <AnimatePresence>
         {showTutorial && !showPersonalOnboarding && (
-          <Tutorial onComplete={handleTutorialComplete} />
+          <ErrorBoundary fallbackName="Tutorial">
+            <Tutorial onComplete={handleTutorialComplete} />
+          </ErrorBoundary>
         )}
       </AnimatePresence>
 
@@ -297,7 +334,9 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
-          <AuthenticatedApp />
+          <Suspense fallback={<PageLoading />}>
+            <AuthenticatedApp />
+          </Suspense>
         </Router>
         <Toaster />
       </QueryClientProvider>

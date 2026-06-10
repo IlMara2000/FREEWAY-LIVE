@@ -1,16 +1,17 @@
-import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient';
+/**
+ * Freeway Life - Account Data Client
+ * 
+ * Adapter layer che usa databaseClient (Supabase + localStorage fallback).
+ * Mantiene la stessa API pubblica per backward compatibility con tutti i componenti.
+ * 
+ * Le funzioni list/filter/create/update/delete ora usano il database remoto
+ * con fallback automatico a localStorage se offline.
+ */
 
-const LOCAL_ID_PREFIX = 'local_';
-export const ACCOUNT_DATA_CHANGED_EVENT = 'fw:account-data-changed';
+import { databaseClient, ACCOUNT_DATA_CHANGED_EVENT } from '@/lib/databaseClient';
 
-const ENTITY_CONFIG = {
-  Task: { collection: 'tasks', defaultSort: '-created_date' },
-  FocusSession: { collection: 'focusSessions', defaultSort: '-created_date' },
-  UserProfile: { collection: 'userProfiles', defaultSort: '-updated_date' },
-  Alarm: { collection: 'alarms', defaultSort: 'time' },
-  Note: { collection: 'notes', defaultSort: '-updated_date' },
-  NoteFolder: { collection: 'noteFolders', defaultSort: 'name' },
-};
+// Re-export per backward compatibility
+export { ACCOUNT_DATA_CHANGED_EVENT };
 
 const ENTITY_DEFAULTS = {
   Task: () => ({
@@ -58,227 +59,54 @@ const ENTITY_DEFAULTS = {
   }),
 };
 
-const canUseStorage = () => typeof window !== 'undefined' && Boolean(window.localStorage);
+const createEntityClient = (entityName) => ({
+  /**
+   * Lista tutti i record con ordinamento opzionale
+   */
+  list: async (sort, limit) => {
+    const orderBy = typeof sort === 'string'
+      ? { column: sort.replace(/^-/, ''), ascending: !sort.startsWith('-') }
+      : undefined;
 
-const getCurrentAccountId = async () => {
-  if (!isSupabaseConfigured || !supabase) return 'guest';
+    return databaseClient.list(entityName, { orderBy, limit });
+  },
 
-  try {
-    const { data } = await supabase.auth.getSession();
-    return data?.session?.user?.id || data?.session?.user?.email || 'guest';
-  } catch {
-    return 'guest';
-  }
-};
+  /**
+   * Filtra record per campo/valore
+   */
+  filter: async (filters = {}, sort, limit) => {
+    const orderBy = typeof sort === 'string'
+      ? { column: sort.replace(/^-/, ''), ascending: !sort.startsWith('-') }
+      : undefined;
 
-const readProfileFromAuthMetadata = async (accountId) => {
-  if (!isSupabaseConfigured || !supabase || accountId === 'guest') return null;
+    return databaseClient.list(entityName, { filters, orderBy, limit });
+  },
 
-  try {
-    const { data } = await supabase.auth.getSession();
-    const profile = data?.session?.user?.user_metadata?.freeway_profile;
-    if (!profile || typeof profile !== 'object') return null;
-
-    return {
-      ...profile,
-      id: profile.id || `${LOCAL_ID_PREFIX}UserProfile_auth`,
-      owner_id: accountId,
-    };
-  } catch {
-    return null;
-  }
-};
-
-const syncProfileToAuthMetadata = async (profile) => {
-  if (!isSupabaseConfigured || !supabase || !profile || profile.owner_id === 'guest') return;
-
-  try {
-    const { data } = await supabase.auth.getSession();
-    const metadata = data?.session?.user?.user_metadata || {};
-    await supabase.auth.updateUser({
-      data: {
-        ...metadata,
-        freeway_profile: profile,
-      },
+  /**
+   * Crea un nuovo record con defaults
+   */
+  create: async (data) => {
+    const defaults = ENTITY_DEFAULTS[entityName]?.() || {};
+    return databaseClient.create(entityName, {
+      ...defaults,
+      ...data,
     });
-  } catch (error) {
-    console.warn('Supabase profile metadata sync unavailable:', error);
-  }
-};
+  },
 
-const getStorageKey = (accountId) => `fw_account_data_${accountId || 'guest'}`;
+  /**
+   * Aggiorna un record esistente
+   */
+  update: async (id, data) => {
+    return databaseClient.update(entityName, id, data);
+  },
 
-const createEmptyStore = () => ({
-  version: 1,
-  tasks: [],
-  focusSessions: [],
-  userProfiles: [],
-  alarms: [],
-  notes: [],
-  noteFolders: [],
+  /**
+   * Elimina un record
+   */
+  delete: async (id) => {
+    return databaseClient.remove(entityName, id);
+  },
 });
-
-const readStore = (accountId) => {
-  if (!canUseStorage()) return createEmptyStore();
-
-  try {
-    const stored = window.localStorage.getItem(getStorageKey(accountId));
-    if (!stored) return createEmptyStore();
-    return { ...createEmptyStore(), ...JSON.parse(stored) };
-  } catch {
-    return createEmptyStore();
-  }
-};
-
-const writeStore = (accountId, store) => {
-  if (!canUseStorage()) return;
-
-  try {
-    window.localStorage.setItem(getStorageKey(accountId), JSON.stringify({
-      ...createEmptyStore(),
-      ...store,
-      version: 1,
-    }));
-  } catch (error) {
-    console.warn('Local account storage unavailable:', error);
-  }
-};
-
-const emitAccountDataChanged = (entityName, accountId) => {
-  if (typeof window === 'undefined') return;
-  window.dispatchEvent(new CustomEvent(ACCOUNT_DATA_CHANGED_EVENT, {
-    detail: { entityName, accountId },
-  }));
-};
-
-const createLocalId = (entityName) =>
-  `${LOCAL_ID_PREFIX}${entityName}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-
-const matchesFilter = (record, filters = {}) =>
-  Object.entries(filters).every(([key, value]) => record?.[key] === value);
-
-const compareValues = (left, right) => {
-  if (left === right) return 0;
-  if (left === undefined || left === null) return 1;
-  if (right === undefined || right === null) return -1;
-  return left > right ? 1 : -1;
-};
-
-const sortAndLimit = (records, sort, limit) => {
-  const sortKey = typeof sort === 'string' && sort.trim() ? sort.trim() : null;
-  const sorted = [...records];
-
-  if (sortKey) {
-    const descending = sortKey.startsWith('-');
-    const key = descending ? sortKey.slice(1) : sortKey;
-    sorted.sort((left, right) => {
-      const result = compareValues(left?.[key], right?.[key]);
-      return descending ? -result : result;
-    });
-  }
-
-  return typeof limit === 'number' ? sorted.slice(0, limit) : sorted;
-};
-
-const readLocalRecords = (accountId, entityName) => {
-  const { collection } = ENTITY_CONFIG[entityName];
-  return readStore(accountId)[collection] || [];
-};
-
-const saveLocalRecords = (accountId, entityName, records, { emit = true } = {}) => {
-  const { collection } = ENTITY_CONFIG[entityName];
-  const store = readStore(accountId);
-  writeStore(accountId, { ...store, [collection]: records });
-  if (emit) emitAccountDataChanged(entityName, accountId);
-};
-
-const buildRecord = (entityName, data, accountId, id = createLocalId(entityName)) => {
-  const now = new Date().toISOString();
-  const defaults = ENTITY_DEFAULTS[entityName]?.() || {};
-  return {
-    ...defaults,
-    ...data,
-    id,
-    owner_id: data?.owner_id || accountId,
-    created_date: data?.created_date || now,
-    updated_date: now,
-  };
-};
-
-const upsertLocalRecord = (accountId, entityName, record, replaceId = null) => {
-  const records = readLocalRecords(accountId, entityName);
-  const withoutOldRecord = records.filter((item) => item.id !== record.id && item.id !== replaceId);
-  saveLocalRecords(accountId, entityName, [...withoutOldRecord, record]);
-  return record;
-};
-
-const removeLocalRecord = (accountId, entityName, id) => {
-  const records = readLocalRecords(accountId, entityName);
-  saveLocalRecords(accountId, entityName, records.filter((item) => item.id !== id));
-};
-
-const createEntityClient = (entityName) => {
-  const config = ENTITY_CONFIG[entityName];
-
-  const listLocalFirst = async (filters = {}, sort = config.defaultSort, limit) => {
-    const accountId = await getCurrentAccountId();
-    let localRecords = readLocalRecords(accountId, entityName);
-
-    if (entityName === 'UserProfile' && localRecords.length === 0) {
-      const authProfile = await readProfileFromAuthMetadata(accountId);
-      if (authProfile) {
-        localRecords = [authProfile];
-        saveLocalRecords(accountId, entityName, localRecords, { emit: false });
-      }
-    }
-
-    const filteredRecords = localRecords.filter((record) => matchesFilter(record, filters));
-    return sortAndLimit(filteredRecords, sort, limit);
-  };
-
-  return {
-    list: (sort = config.defaultSort, limit) => listLocalFirst({}, sort, limit),
-
-    filter: (filters = {}, sort = config.defaultSort, limit) =>
-      listLocalFirst(filters, sort, limit),
-
-    create: async (data) => {
-      const accountId = await getCurrentAccountId();
-      const localRecord = upsertLocalRecord(accountId, entityName, buildRecord(entityName, data, accountId));
-
-      if (entityName === 'UserProfile') {
-        syncProfileToAuthMetadata(localRecord);
-      }
-
-      return localRecord;
-    },
-
-    update: async (id, data) => {
-      const accountId = await getCurrentAccountId();
-      const records = readLocalRecords(accountId, entityName);
-      const current = records.find((record) => record.id === id) || {};
-      const localRecord = upsertLocalRecord(accountId, entityName, {
-        ...current,
-        ...data,
-        id,
-        owner_id: current.owner_id || accountId,
-        updated_date: new Date().toISOString(),
-      });
-
-      if (entityName === 'UserProfile') {
-        syncProfileToAuthMetadata(localRecord);
-      }
-
-      return localRecord;
-    },
-
-    delete: async (id) => {
-      const accountId = await getCurrentAccountId();
-      removeLocalRecord(accountId, entityName, id);
-      return { success: true };
-    },
-  };
-};
 
 export const accountData = {
   tasks: createEntityClient('Task'),

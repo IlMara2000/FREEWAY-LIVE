@@ -1,11 +1,16 @@
+/**
+ * Freeway Life - Supabase Auth Client
+ * 
+ * Usato solo per autenticazione. Le CRUD dei dati passano da databaseClient.js
+ * che usa le stesse credenziali ma con fetch timeout e fallback offline.
+ */
+
 import { createClient } from '@supabase/supabase-js';
 
-const FALLBACK_SUPABASE_URL = 'https://rivxgikyzdppnmmrwyfp.supabase.co';
-const FALLBACK_SUPABASE_ANON_KEY = 'sb_publishable_Y2ONra-54r2mJiuKa00l-w_7WLXAdhk';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || FALLBACK_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || FALLBACK_SUPABASE_ANON_KEY;
-
+// Nessun fallback hardcoded - se mancano le env, l'app mostra la schermata di configurazione
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
 export const supabase = isSupabaseConfigured
