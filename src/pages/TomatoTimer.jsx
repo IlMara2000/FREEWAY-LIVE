@@ -418,6 +418,7 @@ export default function TomatoTimer({ taskContext, onBack }) {
   const [showReward, setShowReward] = useState(false);
   const [rewardData, setRewardData] = useState({ amount: 0, levelUp: false, newLevel: 1 });
   const [showBrainDump, setShowBrainDump] = useState(false);
+  const [focusGuardAction, setFocusGuardAction] = useState(null);
   const intervalRef = useRef(null);
   const completionRef = useRef(false);
   const audioRef = useRef(null);
@@ -634,6 +635,19 @@ export default function TomatoTimer({ taskContext, onBack }) {
     return () => clearInterval(intervalRef.current);
   }, [isRunning, endsAt, completeSession]);
 
+  useEffect(() => {
+    if (!isRunning || !focusLock) return undefined;
+
+    const handleBeforeUnload = (event) => {
+      event.preventDefault();
+      event.returnValue = '';
+      return '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [focusLock, isRunning]);
+
   const selectPreset = (i) => {
     if (isRunning) return;
     completionRef.current = false;
@@ -651,12 +665,23 @@ export default function TomatoTimer({ taskContext, onBack }) {
     setTimeLeft(getPresetSeconds(PRESETS[selectedPreset]));
   };
 
+  const requestFocusBreak = (type, action) => {
+    if (isRunning && focusLock) {
+      setFocusGuardAction({ type, action });
+      return;
+    }
+
+    action();
+  };
+
   const toggleRunning = () => {
     if (isRunning) {
-      const remaining = endsAt ? Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)) : timeLeft;
-      setTimeLeft(remaining);
-      setIsRunning(false);
-      setEndsAt(null);
+      requestFocusBreak('pause', () => {
+        const remaining = endsAt ? Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)) : timeLeft;
+        setTimeLeft(remaining);
+        setIsRunning(false);
+        setEndsAt(null);
+      });
       return;
     }
 
@@ -671,6 +696,11 @@ export default function TomatoTimer({ taskContext, onBack }) {
   const activePreset = PRESETS[selectedPreset];
   const statusLabel = isRunning ? 'Hyper focus' : isCompleted ? 'Completata' : 'Pronta';
   const displayProgress = Math.min(Math.max(progress, 0), 100);
+  const confirmFocusBreak = () => {
+    if (!focusGuardAction?.action) return;
+    focusGuardAction.action();
+    setFocusGuardAction(null);
+  };
 
   return (
     <motion.div
@@ -718,7 +748,7 @@ export default function TomatoTimer({ taskContext, onBack }) {
         >
           <button
             type="button"
-            onClick={onBack}
+            onClick={() => requestFocusBreak('leave', () => onBack?.())}
             className="inline-flex h-11 items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 font-mono text-[11px] uppercase tracking-[0.18em] text-white/55 backdrop-blur-xl transition-colors hover:border-cyan-200/25 hover:text-white"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -819,11 +849,10 @@ export default function TomatoTimer({ taskContext, onBack }) {
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   type="button"
-                  onClick={reset}
-                  disabled={isRunning && focusLock}
+                  onClick={() => requestFocusBreak('reset', reset)}
                   aria-label="Reset tomato"
-                  title={isRunning && focusLock ? 'Focus lock attivo' : 'Reset tomato'}
-                  className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-black/35 text-white/55 backdrop-blur-xl transition-colors hover:border-amber-300/35 hover:text-amber-100 disabled:cursor-not-allowed disabled:opacity-30"
+                  title={isRunning && focusLock ? 'Focus lock attivo: chiedi conferma' : 'Reset tomato'}
+                  className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-black/35 text-white/55 backdrop-blur-xl transition-colors hover:border-amber-300/35 hover:text-amber-100"
                 >
                   <RotateCcw className="h-5 w-5" />
                 </motion.button>
@@ -906,7 +935,7 @@ export default function TomatoTimer({ taskContext, onBack }) {
                     <span className="font-mono text-[9px] uppercase tracking-[0.22em]">Focus lock</span>
                   </div>
                   <p className="mt-2 text-xs leading-relaxed text-current/70">
-                    {focusLock ? 'Reset bloccato durante la sessione.' : 'Aggiunge attrito alle uscite facili.'}
+                    {focusLock ? 'Uscite e reset chiedono conferma mentre il focus gira.' : 'Aggiunge attrito alle uscite facili.'}
                   </p>
                 </button>
               </div>
@@ -940,6 +969,66 @@ export default function TomatoTimer({ taskContext, onBack }) {
       </div>
 
       <BrainDumpSheet open={showBrainDump} onClose={() => setShowBrainDump(false)} />
+
+      <AnimatePresence>
+        {focusGuardAction && (
+          <motion.div
+            className="fixed inset-0 z-40 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={() => setFocusGuardAction(null)}
+              aria-label="Chiudi avviso focus"
+            />
+            <motion.div
+              className="relative z-10 w-full max-w-sm rounded-3xl border border-emerald-300/18 bg-[#02050c]/96 p-5 shadow-[0_28px_90px_rgba(0,0,0,0.58)]"
+              initial={{ y: 20, opacity: 0, scale: 0.96 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 16, opacity: 0, scale: 0.96 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+            >
+              <div className="flex items-start gap-3">
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-emerald-300/22 bg-emerald-400/10 text-emerald-200">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-grotesk text-xl font-bold text-white">
+                    Vuoi davvero spezzare il focus?
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed text-white/52">
+                    {focusGuardAction.type === 'leave'
+                      ? 'Stai uscendo dalla sessione mentre il lock e attivo.'
+                      : focusGuardAction.type === 'reset'
+                        ? 'Stai per resettare una sessione ancora aperta.'
+                        : 'Stai per mettere in pausa una sessione che stava girando.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFocusGuardAction(null)}
+                  className="h-11 rounded-xl border border-white/10 bg-white/[0.035] text-sm font-semibold text-white/65 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  Resto dentro
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmFocusBreak}
+                  className="btn-cyber h-11 rounded-xl text-xs"
+                >
+                  Conferma uscita
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <XPReward
         amount={rewardData.amount}

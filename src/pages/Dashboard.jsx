@@ -4,13 +4,16 @@ import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { accountData } from '@/api/accountDataClient';
 import { normalizeList } from '@/lib/normalize-list';
-import useUserProfile from '@/hooks/useUserProfile';
+import useUserProfile, { getXPForCurrentLevel } from '@/hooks/useUserProfile';
 import XPBar from '@/components/shared/XPBar';
 import StatCard from '@/components/shared/StatCard';
 import PageShell from '@/components/shared/PageShell';
 import DayByDayPanel from '@/components/daybyday/DayByDayPanel';
 import AppAssistantChat from '@/components/assistant/AppAssistantChat';
 import OperatingSystemPanel from '@/components/freeway/OperatingSystemPanel';
+import { getThemeIdsForLevel } from '@/lib/themes';
+import { normalizeFreewayOS } from '@/lib/freeway-os';
+import { getTaskLoadSummary } from '@/lib/task-planning';
 import {
   AlarmClock,
   Brain,
@@ -99,28 +102,57 @@ const formatToday = () =>
     month: 'long',
   }).format(new Date());
 
+const getTodayKey = (date = new Date()) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+const timeToValue = (time) => {
+  const [hours, minutes] = String(time || '').split(':').map(Number);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return 9999;
+  return (hours * 60) + minutes;
+};
+
+const getTimerRemainingLabel = (timer) => {
+  if (!timer) return '';
+  if (timer.isRunning && timer.endsAt) {
+    const remaining = Math.max(0, Math.ceil((Number(timer.endsAt) - Date.now()) / 60000));
+    return `${remaining} min rimasti`;
+  }
+  if (timer.timeLeft) {
+    const remaining = Math.max(0, Math.ceil(Number(timer.timeLeft) / 60));
+    return `${remaining} min pronti`;
+  }
+  return 'Timer pronto';
+};
+
 export default function Dashboard() {
   const { profile, loading } = useUserProfile();
   const [assistantOpen, setAssistantOpen] = useState(false);
   const {
-    data: dashboardData = { todayTasks: [], recentSessions: [] },
+    data: dashboardData = { todayTasks: [], recentSessions: [], alarms: [] },
     isLoading: dataLoading,
     error: dashboardError,
   } = useQuery({
     queryKey: ['dashboard'],
     queryFn: async () => {
-      const [tasks, sessions] = await Promise.all([
+      const [tasks, sessions, alarms] = await Promise.all([
         accountData.tasks.filter({ status: 'today' }, '-created_date', 5),
         accountData.focusSessions.list('-created_date', 5),
+        accountData.alarms.list('time', 20),
       ]);
 
       return {
         todayTasks: normalizeList(tasks),
         recentSessions: normalizeList(sessions),
+        alarms: normalizeList(alarms),
       };
     },
   });
-  const { todayTasks, recentSessions } = dashboardData;
+  const { todayTasks, recentSessions, alarms } = dashboardData;
+  const todayKey = getTodayKey();
+  const freewayOS = useMemo(() => normalizeFreewayOS(profile?.freeway_os), [profile?.freeway_os]);
+  const xpState = useMemo(() => getXPForCurrentLevel(profile?.total_xp || 0), [profile?.total_xp]);
+  const unlockedThemes = useMemo(() => getThemeIdsForLevel(profile?.level || 1).length, [profile?.level]);
+  const loadSummary = useMemo(() => getTaskLoadSummary(todayTasks), [todayTasks]);
 
   const stats = useMemo(() => ([
     { icon: Timer, label: 'Focus totale', value: profile?.total_focus_minutes || 0, unit: 'min' },
@@ -130,6 +162,44 @@ export default function Dashboard() {
   ]), [profile]);
 
   const nextTask = todayTasks[0];
+  const todayTimeline = useMemo(() => {
+    const taskItems = todayTasks.map((task) => ({
+      id: `task-${task.id}`,
+      label: task.title,
+      detail: task.description || 'Task pronta.',
+      when: task.start_time || 'Senza ora',
+      timeValue: timeToValue(task.start_time),
+      icon: ListTodo,
+      accent: 'text-primary',
+    }));
+    const alarmItems = alarms
+      .filter((alarm) => !alarm.date || alarm.date === todayKey)
+      .map((alarm) => ({
+        id: `alarm-${alarm.id}`,
+        label: alarm.title || 'Sveglia',
+        detail: alarm.reminder_text || 'Promemoria attivo.',
+        when: alarm.time || 'Senza ora',
+        timeValue: timeToValue(alarm.time),
+        icon: AlarmClock,
+        accent: 'text-cyan-200',
+      }));
+    const tomatoTimer = freewayOS.tomatoTimer;
+    const focusItems = tomatoTimer && (tomatoTimer.isRunning || tomatoTimer.timeLeft || tomatoTimer.taskContext?.title)
+      ? [{
+          id: 'focus-timer',
+          label: tomatoTimer.taskContext?.title || 'Sessione focus',
+          detail: getTimerRemainingLabel(tomatoTimer),
+          when: tomatoTimer.isRunning ? 'In corso' : 'Pronto',
+          timeValue: tomatoTimer.isRunning ? -1 : 9998,
+          icon: Timer,
+          accent: 'text-amber-200',
+        }]
+      : [];
+
+    return [...focusItems, ...alarmItems, ...taskItems]
+      .sort((left, right) => left.timeValue - right.timeValue)
+      .slice(0, 8);
+  }, [alarms, freewayOS.tomatoTimer, todayKey, todayTasks]);
 
   return (
     <PageShell maxWidth="max-w-5xl" contentClassName="space-y-5">
@@ -194,6 +264,22 @@ export default function Dashboard() {
             )}
           </div>
           <XPBar totalXP={profile?.total_xp || 0} level={profile?.level || 1} />
+          <div className="grid gap-2 sm:grid-cols-3">
+            <div className="glass rounded-xl p-3">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-white/35">Prossimo livello</p>
+              <p className="mt-1 font-grotesk text-lg font-bold text-white">
+                {Math.max(0, xpState.needed - xpState.current)} XP
+              </p>
+            </div>
+            <div className="glass rounded-xl p-3">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-white/35">Temi sbloccati</p>
+              <p className="mt-1 font-grotesk text-lg font-bold text-white">{unlockedThemes}</p>
+            </div>
+            <div className="glass rounded-xl p-3">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-white/35">Streak attuale</p>
+              <p className="mt-1 font-grotesk text-lg font-bold text-white">{profile?.streak_days || 0}g</p>
+            </div>
+          </div>
         </motion.div>
 
         <motion.div
@@ -213,6 +299,23 @@ export default function Dashboard() {
               {nextTask?.description || 'Apri il Planner o chiedi al Chat Bot di prepararti una partenza semplice.'}
             </p>
           </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="glass rounded-xl p-3">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-white/35">Carico reale</p>
+              <p className="mt-1 font-grotesk text-lg font-bold text-white">
+                {loadSummary.weightedLoad}/{loadSummary.maxLoad}
+              </p>
+            </div>
+            <div className="glass rounded-xl p-3">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-white/35">Slot pesanti</p>
+              <p className="mt-1 font-grotesk text-lg font-bold text-white">
+                {loadSummary.remainingImportantSlots} liberi
+              </p>
+            </div>
+          </div>
+          <p className="text-xs text-white/42">
+            {loadSummary.message}
+          </p>
           {nextTask ? (
             <Link
               to="/tomato"
@@ -317,11 +420,11 @@ export default function Dashboard() {
         >
           <div className="flex items-center justify-between">
             <h2 className="font-grotesk font-semibold text-foreground flex items-center gap-2">
-              <ListTodo className="w-4 h-4 text-primary" />
-              Task di oggi
+              <CalendarCheck className="w-4 h-4 text-primary" />
+              Timeline di oggi
             </h2>
-            <Link to="/planner" className="text-xs text-primary hover:underline font-medium">
-              Vedi tutti
+            <Link to="/calendar" className="text-xs text-primary hover:underline font-medium">
+              Apri calendar
             </Link>
           </div>
 
@@ -331,22 +434,30 @@ export default function Dashboard() {
                 <div key={item} className="h-12 rounded-xl bg-secondary/45 animate-pulse" />
               ))}
             </div>
-          ) : todayTasks.length === 0 ? (
+          ) : todayTimeline.length === 0 ? (
             <div className="rounded-xl bg-secondary/35 p-4 text-sm text-muted-foreground">
-              Nessun task per oggi. Il Planner e' pronto quando vuoi.
+              Nessun evento utile in timeline. Planner, sveglie e timer sono pronti.
             </div>
           ) : (
             <div className="space-y-2">
-              {todayTasks.map((task) => (
+              {todayTimeline.map((item) => {
+                const ItemIcon = item.icon;
+                return (
                 <div
-                  key={task.id}
+                  key={item.id}
                   className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
                 >
-                  <div className={`w-2 h-2 rounded-full shrink-0 ${priorityClass[task.priority] || priorityClass.low}`} />
-                  <span className="text-sm font-medium text-foreground flex-1 truncate">{task.title}</span>
-                  <span className="text-xs font-mono text-primary">+{task.xp_value || 25} XP</span>
+                  <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-black/20 ${item.accent}`}>
+                    <ItemIcon className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">{item.detail}</p>
+                  </div>
+                  <span className="text-xs font-mono text-primary/80">{item.when}</span>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </motion.div>

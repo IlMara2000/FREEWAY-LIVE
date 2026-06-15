@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -13,6 +13,7 @@ import {
   TASK_STATUS,
 } from '@/lib/task-workflows';
 import { getAntiChaosMessage } from '@/lib/day-by-day';
+import { getTaskLoadSummary, parseQuickTaskInput } from '@/lib/task-planning';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useUserProfile from '@/hooks/useUserProfile';
 import XPReward from '@/components/shared/XPReward';
@@ -76,6 +77,22 @@ export default function Planner() {
     queryFn: () => accountData.tasks.filter({ status: activeTab }, '-created_date', 50),
   });
   const tasks = normalizeList(taskResponse);
+  const quickAdd = useMemo(() => parseQuickTaskInput(newTitle), [newTitle]);
+  const quickAddCandidate = useMemo(() => (
+    quickAdd.title
+      ? {
+          title: quickAdd.title,
+          description: newDescription,
+          priority: quickAdd.priority || newPriority,
+          task_type: quickAdd.task_type || newTaskType,
+          status: activeTab,
+        }
+      : null
+  ), [quickAdd, newDescription, newPriority, newTaskType, activeTab]);
+  const dailyLoad = useMemo(
+    () => getTaskLoadSummary(tasks, activeTab === TASK_STATUS.today ? quickAddCandidate : null),
+    [tasks, activeTab, quickAddCandidate],
+  );
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
@@ -127,14 +144,26 @@ export default function Planner() {
   const handleAdd = (e) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
+    const parsed = parseQuickTaskInput(newTitle);
+    const resolvedPriority = parsed.priority || newPriority;
+    const resolvedTaskType = parsed.task_type || newTaskType;
+    const resolvedStartTime = parsed.start_time || newStartTime;
+    const resolvedEndTime = parsed.end_time || newEndTime;
+    const resolvedRecurrence = parsed.recurrence !== 'none' ? parsed.recurrence : newRecurrence;
+    const resolvedCopies = parsed.copies > 1 ? parsed.copies : newCopies;
+    const resolvedRecurrenceCount = parsed.recurrence !== 'none' ? parsed.recurrenceCount : newRecurrenceCount;
+    const resolvedDueDate = parsed.due_date || (resolvedRecurrence !== 'none' ? getTodayDateKey() : undefined);
+    const resolvedStatus = parsed.due_date && parsed.due_date !== getTodayDateKey()
+      ? TASK_STATUS.scheduled
+      : activeTab;
 
     const warning = activeTab === TASK_STATUS.today
       ? getAntiChaosMessage(tasks, {
-        title: newTitle,
+        title: parsed.title || newTitle,
         description: newDescription,
-        priority: newPriority,
-        status: activeTab,
-        task_type: newTaskType,
+        priority: resolvedPriority,
+        status: resolvedStatus,
+        task_type: resolvedTaskType,
       })
       : '';
 
@@ -145,26 +174,26 @@ export default function Planner() {
 
     setAntiChaosMessage('');
     const basePayload = buildPlannerTaskPayload({
-      title: newTitle.trim(),
+      title: parsed.title || newTitle.trim(),
       description: newDescription.trim() || (
-        newTaskType === 'work'
+        resolvedTaskType === 'work'
           ? 'Turno di lavoro'
-          : newTaskType === 'study'
+          : resolvedTaskType === 'study'
             ? 'Sessione di studio'
             : 'Nessuna descrizione'
       ),
-      priority: newPriority,
-      status: activeTab,
-      due_date: newRecurrence !== 'none' ? getTodayDateKey() : undefined,
-      start_time: newStartTime,
-      end_time: newEndTime,
-      task_type: newTaskType,
+      priority: resolvedPriority,
+      status: resolvedStatus,
+      due_date: resolvedDueDate,
+      start_time: resolvedStartTime,
+      end_time: resolvedEndTime,
+      task_type: resolvedTaskType,
     });
 
     createMutation.mutate(buildTaskSeriesPayloads(basePayload, {
-      copies: newCopies,
-      recurrence: newRecurrence,
-      recurrenceCount: newRecurrenceCount,
+      copies: resolvedCopies,
+      recurrence: resolvedRecurrence,
+      recurrenceCount: resolvedRecurrenceCount,
     }));
   };
 
@@ -242,12 +271,75 @@ export default function Planner() {
             </Button>
           </div>
 
+          <div className="flex flex-wrap items-center gap-2 text-[11px]">
+            <span className="font-mono uppercase tracking-widest text-muted-foreground">
+              Quick add
+            </span>
+            <span className="text-muted-foreground/80">
+              `Report domani 09:00-10:00 p2 ogni settimana #lavoro`
+            </span>
+          </div>
+
+          {quickAdd.chips.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {quickAdd.chips.map((chip) => (
+                <span
+                  key={chip}
+                  className="rounded-full border border-primary/15 bg-primary/8 px-3 py-1 text-[11px] font-semibold text-primary/90"
+                >
+                  {chip}
+                </span>
+              ))}
+            </div>
+          )}
+
           <Input
             value={newDescription}
             onChange={(e) => setNewDescription(e.target.value)}
             placeholder="Descrizione (se vuota la compilo io)..."
             className="h-11 rounded-xl border-white/10 bg-black/25"
           />
+
+          {activeTab === TASK_STATUS.today && (
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-primary/60">
+                    Carico reale
+                  </p>
+                  <p className="mt-1 text-sm text-white/80">
+                    {dailyLoad.weightedLoad}/{dailyLoad.maxLoad} punti, {dailyLoad.importantCount}/3 task pesanti
+                  </p>
+                </div>
+                <span
+                  className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest ${
+                    dailyLoad.tone === 'overload'
+                      ? 'bg-destructive/15 text-destructive'
+                      : dailyLoad.tone === 'limit'
+                        ? 'bg-chart-5/15 text-chart-5'
+                        : 'bg-primary/10 text-primary'
+                  }`}
+                >
+                  {dailyLoad.tone === 'overload' ? 'Taglia' : dailyLoad.tone === 'limit' ? 'Quasi pieno' : 'Gestibile'}
+                </span>
+              </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/8">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    dailyLoad.tone === 'overload'
+                      ? 'bg-destructive'
+                      : dailyLoad.tone === 'limit'
+                        ? 'bg-chart-5'
+                        : 'bg-primary'
+                  }`}
+                  style={{ width: `${dailyLoad.percentage}%` }}
+                />
+              </div>
+              <p className="mt-2 text-sm text-white/48">
+                {dailyLoad.message}
+              </p>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <label className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/25 px-3 py-2">

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, BriefcaseBusiness, Clock, Copy, Plus, Repeat2, X } from 'lucide-react';
@@ -10,6 +10,7 @@ import {
   invalidateTaskViews,
 } from '@/lib/task-workflows';
 import { getAntiChaosMessage } from '@/lib/day-by-day';
+import { parseQuickTaskInput } from '@/lib/task-planning';
 
 const RECURRENCE_OPTIONS = [
   { value: 'none', label: 'No' },
@@ -31,6 +32,7 @@ export default function CreateTaskModal({ date, existingTasksForDate = [], onClo
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const queryClient = useQueryClient();
+  const quickAdd = useMemo(() => parseQuickTaskInput(title), [title]);
 
   useEffect(() => {
     if (!date) return;
@@ -53,13 +55,22 @@ export default function CreateTaskModal({ date, existingTasksForDate = [], onClo
     if (!title.trim() || saving) return;
     setSaving(true);
     setError('');
+    const parsed = parseQuickTaskInput(title);
+    const resolvedPriority = parsed.priority || priority;
+    const resolvedTaskType = parsed.task_type || taskType;
+    const resolvedStartTime = parsed.start_time || startTime;
+    const resolvedEndTime = parsed.end_time || endTime;
+    const resolvedDate = parsed.due_date || date;
+    const resolvedRecurrence = parsed.recurrence !== 'none' ? parsed.recurrence : recurrence;
+    const resolvedCopies = parsed.copies > 1 ? parsed.copies : copies;
+    const resolvedRecurrenceCount = parsed.recurrence !== 'none' ? parsed.recurrenceCount : recurrenceCount;
 
     const warning = getAntiChaosMessage(existingTasksForDate, {
-      title,
+      title: parsed.title || title,
       description,
-      priority,
+      priority: resolvedPriority,
       status: 'today',
-      task_type: taskType,
+      task_type: resolvedTaskType,
     });
 
     if (warning) {
@@ -70,24 +81,24 @@ export default function CreateTaskModal({ date, existingTasksForDate = [], onClo
 
     try {
       const basePayload = buildCalendarTaskPayload({
-        title: title.trim(),
+        title: parsed.title || title.trim(),
         description: description.trim() || (
-          taskType === 'work'
+          resolvedTaskType === 'work'
             ? 'Turno di lavoro'
-            : taskType === 'study'
+            : resolvedTaskType === 'study'
               ? 'Sessione di studio'
               : 'Nessuna descrizione'
         ),
-        priority,
-        date,
-        start_time: startTime,
-        end_time: endTime,
-        task_type: taskType,
+        priority: resolvedPriority,
+        date: resolvedDate,
+        start_time: resolvedStartTime,
+        end_time: resolvedEndTime,
+        task_type: resolvedTaskType,
       });
       const payloads = buildTaskSeriesPayloads(basePayload, {
-        copies,
-        recurrence,
-        recurrenceCount,
+        copies: resolvedCopies,
+        recurrence: resolvedRecurrence,
+        recurrenceCount: resolvedRecurrenceCount,
       });
 
       await Promise.all(payloads.map((payload) => accountData.tasks.create(payload)));
@@ -137,6 +148,24 @@ export default function CreateTaskModal({ date, existingTasksForDate = [], onClo
             className="w-full rounded-xl border border-white/10 bg-white/5 p-3 font-grotesk text-sm text-white outline-none transition-all [color-scheme:dark] placeholder:text-white/25 focus:border-emerald-500/50 sm:p-4"
             onKeyDown={(e) => e.key === 'Enter' && handleSave()}
           />
+
+          <div className="space-y-2">
+            <p className="text-[11px] text-white/42">
+              Quick add: `Fenix domani 09:00-13:00 p2 ogni settimana #lavoro`
+            </p>
+            {quickAdd.chips.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {quickAdd.chips.map((chip) => (
+                  <span
+                    key={chip}
+                    className="rounded-full border border-emerald-300/15 bg-emerald-400/10 px-3 py-1 text-[11px] font-semibold text-emerald-100"
+                  >
+                    {chip}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="space-y-1.5">
