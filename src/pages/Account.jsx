@@ -1,11 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Camera, Check, ImagePlus, LogOut, RotateCcw, Save, ShieldCheck, UserRound } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/AuthContext';
 import useUserProfile from '@/hooks/useUserProfile';
+import useAccountPreference from '@/hooks/useAccountPreference';
 import PageShell from '@/components/shared/PageShell';
+import { readLegacyAvatar, writeLegacyAvatar } from '@/lib/app-preferences';
 
 const readImageAsAvatar = (file) => new Promise((resolve, reject) => {
   const reader = new FileReader();
@@ -34,23 +36,6 @@ const readImageAsAvatar = (file) => new Promise((resolve, reject) => {
 });
 
 const isLocalAvatarData = (value) => typeof value === 'string' && value.startsWith('data:image/');
-const getAvatarStorageKey = (userId) => `fw_account_avatar_${userId || 'guest'}`;
-const getStoredAvatar = (userId) => {
-  try {
-    return localStorage.getItem(getAvatarStorageKey(userId)) || '';
-  } catch {
-    return '';
-  }
-};
-const saveStoredAvatar = (userId, value) => {
-  try {
-    if (value) {
-      localStorage.setItem(getAvatarStorageKey(userId), value);
-    }
-  } catch {
-    // Avatar sync is optional; the account page must stay usable.
-  }
-};
 
 export default function Account() {
   const { user, updateAccount, logout } = useAuth();
@@ -59,7 +44,15 @@ export default function Account() {
   const initialUsername = metadata.username || metadata.name || metadata.full_name || '';
   const remoteAvatar = metadata.avatar_url || metadata.picture || '';
   const safeRemoteAvatar = isLocalAvatarData(remoteAvatar) ? '' : remoteAvatar;
-  const initialAvatar = getStoredAvatar(user?.id) || safeRemoteAvatar;
+  const [storedAvatar, setStoredAvatar] = useAccountPreference({
+    profile,
+    saveProfile,
+    preferenceKey: 'avatarDataUrl',
+    defaultValue: '',
+    readLocal: () => readLegacyAvatar(user?.id),
+    writeLocal: (value) => writeLegacyAvatar(user?.id, value),
+  });
+  const initialAvatar = storedAvatar || safeRemoteAvatar;
   const [username, setUsername] = useState(initialUsername);
   const [avatarUrl, setAvatarUrl] = useState(initialAvatar);
   const [avatarDirty, setAvatarDirty] = useState(false);
@@ -76,13 +69,17 @@ export default function Account() {
       .join('') || 'FWL';
   }, [username, user?.email]);
 
+  useEffect(() => {
+    setAvatarUrl(storedAvatar || safeRemoteAvatar);
+  }, [safeRemoteAvatar, storedAvatar]);
+
   const handleSave = async (event) => {
     event.preventDefault();
     setStatus('saving');
     setMessage('');
 
     if (avatarDirty && isLocalAvatarData(avatarUrl)) {
-      saveStoredAvatar(user?.id, avatarUrl);
+      setStoredAvatar(avatarUrl);
     }
 
     const { error } = await updateAccount({
@@ -138,7 +135,16 @@ export default function Account() {
     try {
       await saveProfile({
         ...profile,
-        initial_onboarding: null,
+        initial_onboarding: {
+          ...(profile.initial_onboarding || {}),
+          version: 0,
+          completedAt: null,
+          answers: null,
+          privacy: {
+            accepted: false,
+            resetAt: new Date().toISOString(),
+          },
+        },
         day_by_day: {
           ...(profile.day_by_day || {}),
           configured: false,

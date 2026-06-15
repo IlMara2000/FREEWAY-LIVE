@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { accountData } from '@/api/accountDataClient';
+import useUserProfile from '@/hooks/useUserProfile';
+import useAccountPreference from '@/hooks/useAccountPreference';
 import { normalizeList } from '@/lib/normalize-list';
 import {
   buildTaskPastePayload,
@@ -22,10 +24,14 @@ import AppAssistantChat from '@/components/assistant/AppAssistantChat';
 import { formatDuration, getTaskDurationHours, getWorkColor } from '@/lib/work-utils';
 import PageShell from '@/components/shared/PageShell';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  DEFAULT_CALENDAR_SETTINGS,
+  readLegacyCalendarSettings,
+  writeLegacyCalendarSettings,
+} from '@/lib/app-preferences';
 
 const MONTHS = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
 const WEEKDAY_FULL = ['Domenica', 'Lunedi', 'Martedi', 'Mercoledi', 'Giovedi', 'Venerdi', 'Sabato'];
-const CALENDAR_SETTINGS_KEY = 'fw_calendar_settings';
 
 const CALENDAR_PRESETS = {
   european: {
@@ -57,19 +63,6 @@ const CALENDAR_VIEWS = [
   { id: 'week', label: 'Settimana' },
   { id: 'day', label: 'Giorno' },
 ];
-
-const readCalendarSettings = () => {
-  if (typeof window === 'undefined') return { preset: 'european', view: 'month' };
-
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(CALENDAR_SETTINGS_KEY) || '{}');
-    const preset = CALENDAR_PRESETS[parsed?.preset] ? parsed.preset : 'european';
-    const view = CALENDAR_VIEWS.some((item) => item.id === parsed?.view) ? parsed.view : 'month';
-    return { preset, view };
-  } catch {
-    return { preset: 'european', view: 'month' };
-  }
-};
 
 const shiftDate = (date, amount, unit = 'day') => {
   const next = new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -104,7 +97,16 @@ const getCalendarPreset = (presetId) => CALENDAR_PRESETS[presetId] || CALENDAR_P
 
 export default function CalendarView({ onStartTomato }) {
   const today = new Date();
-  const [calendarSettings, setCalendarSettings] = useState(() => readCalendarSettings());
+  const { profile, saveProfile } = useUserProfile();
+  const [calendarSettings, setCalendarSettings] = useAccountPreference({
+    profile,
+    saveProfile,
+    preferenceKey: 'calendarSettings',
+    defaultValue: DEFAULT_CALENDAR_SETTINGS,
+    readLocal: readLegacyCalendarSettings,
+    writeLocal: writeLegacyCalendarSettings,
+    persistDelay: 200,
+  });
   const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(new Date(today.getFullYear(), today.getMonth(), today.getDate()));
   const [selectedTask, setSelectedTask] = useState(null);
@@ -189,11 +191,6 @@ export default function CalendarView({ onStartTomato }) {
       window.removeEventListener('storage', syncClipboard);
     };
   }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(CALENDAR_SETTINGS_KEY, JSON.stringify(calendarSettings));
-  }, [calendarSettings]);
 
   const handleDateSelection = (date) => {
     const nextDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());

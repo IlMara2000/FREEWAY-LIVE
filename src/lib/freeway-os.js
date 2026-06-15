@@ -91,6 +91,7 @@ export const FREEWAY_OS_DEFAULTS = {
     rewardAfterFocus: true,
   },
   soundscape: 'off',
+  tomatoTimer: null,
   habits: {},
   routineRuns: {},
   updatedAt: null,
@@ -103,6 +104,9 @@ export const normalizeFreewayOS = (value = {}) => ({
     ...FREEWAY_OS_DEFAULTS.focusShield,
     ...(value?.focusShield || {}),
   },
+  tomatoTimer: value?.tomatoTimer && typeof value.tomatoTimer === 'object'
+    ? value.tomatoTimer
+    : null,
   habits: value?.habits && typeof value.habits === 'object' ? value.habits : {},
   routineRuns: value?.routineRuns && typeof value.routineRuns === 'object' ? value.routineRuns : {},
 });
@@ -190,6 +194,14 @@ export const patchFocusShield = (freewayOS, patch = {}) => {
 export const patchSoundscape = (freewayOS, soundscape) => ({
   ...normalizeFreewayOS(freewayOS),
   soundscape,
+  updatedAt: new Date().toISOString(),
+});
+
+export const patchTomatoTimer = (freewayOS, tomatoTimer) => ({
+  ...normalizeFreewayOS(freewayOS),
+  tomatoTimer: tomatoTimer && typeof tomatoTimer === 'object'
+    ? tomatoTimer
+    : null,
   updatedAt: new Date().toISOString(),
 });
 

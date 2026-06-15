@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import useUserProfile, { getMinimumXPForLevel } from '@/hooks/useUserProfile';
+import useAccountPreference from '@/hooks/useAccountPreference';
 import {
   applyThemeToDocument,
   DEFAULT_THEME_CUSTOMIZATION,
@@ -10,8 +11,8 @@ import {
   readCustomTheme,
   sanitizeCustomTheme,
   THEMES,
-  writeStoredActiveThemeId,
   writeCustomTheme,
+  writeStoredActiveThemeId,
 } from '@/lib/themes';
 import { Check, Eye, Layers3, Lock, Palette, Sparkles, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,9 +22,17 @@ import PageShell from '@/components/shared/PageShell';
 const themeList = getThemeList();
 
 export default function ThemeStore() {
-  const { profile, loading, setActiveTheme, grantMaxLevel } = useUserProfile();
+  const { profile, loading, saveProfile, setActiveTheme, grantMaxLevel } = useUserProfile();
   const [pendingTheme, setPendingTheme] = useState(null);
-  const [customTheme, setCustomTheme] = useState(readCustomTheme);
+  const [customTheme, setCustomTheme] = useAccountPreference({
+    profile,
+    saveProfile,
+    preferenceKey: 'themeCustomization',
+    defaultValue: DEFAULT_THEME_CUSTOMIZATION,
+    readLocal: readCustomTheme,
+    writeLocal: writeCustomTheme,
+    persistDelay: 260,
+  });
   const maxLevelGrantedRef = useRef(false);
 
   const level = profile?.level || 1;

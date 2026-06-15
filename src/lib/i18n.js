@@ -146,12 +146,13 @@ const translations = {
   },
 };
 
-const DEFAULT_LANG = 'it';
+export const DEFAULT_LANG = 'it';
+export const LANGUAGE_STORAGE_KEY = 'fw_language';
 
 let currentLang = DEFAULT_LANG;
 
 try {
-  const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('fw_language') : null;
+  const stored = typeof localStorage !== 'undefined' ? localStorage.getItem(LANGUAGE_STORAGE_KEY) : null;
   if (stored && translations[stored]) currentLang = stored;
 } catch {
   // Browser storage unavailable
@@ -161,7 +162,7 @@ export function setLanguage(lang) {
   if (!translations[lang]) return;
   currentLang = lang;
   try {
-    localStorage.setItem('fw_language', lang);
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
   } catch {
     // persistenza opzionale
   }

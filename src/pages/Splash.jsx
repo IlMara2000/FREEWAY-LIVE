@@ -94,7 +94,7 @@ export default function Splash({ onEnter }) {
     try {
       renderer = new THREE.WebGLRenderer({
         canvas,
-        antialias: true,
+        antialias: !window.matchMedia?.('(max-width: 767px)').matches,
         alpha: false,
         powerPreference: 'high-performance',
       });
@@ -103,9 +103,9 @@ export default function Splash({ onEnter }) {
       return undefined;
     }
     const lowPower = reduceMotion || window.innerWidth < 720 || (navigator.hardwareConcurrency || 8) <= 4;
-    const roadSegments = lowPower ? 72 : 112;
-    const tubeSegments = lowPower ? 72 : 112;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowPower ? 1.25 : 1.75));
+    const roadSegments = lowPower ? 56 : 112;
+    const tubeSegments = lowPower ? 56 : 112;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowPower ? 1 : 1.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.38;
@@ -179,7 +179,7 @@ export default function Splash({ onEnter }) {
       opacity: 0.95,
       blending: THREE.AdditiveBlending,
     });
-    const dashCount = lowPower ? 24 : 48;
+    const dashCount = lowPower ? 18 : 48;
     const laneDashes = new THREE.InstancedMesh(dashGeometry, dashMaterial, dashCount);
     root.add(laneDashes);
 
@@ -190,7 +190,7 @@ export default function Splash({ onEnter }) {
       opacity: 0.88,
       blending: THREE.AdditiveBlending,
     });
-    const vehicleCount = lowPower ? 28 : 64;
+    const vehicleCount = lowPower ? 20 : 64;
     const lightTrails = new THREE.InstancedMesh(vehicleGeometry, vehicleMaterial, vehicleCount);
     root.add(lightTrails);
 
@@ -205,7 +205,7 @@ export default function Splash({ onEnter }) {
     ];
     [3.35, 4.15, 5.05].forEach((radius, index) => {
       const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(radius, 0.018 + index * 0.006, 8, lowPower ? 72 : 112),
+        new THREE.TorusGeometry(radius, 0.018 + index * 0.006, 8, lowPower ? 56 : 112),
         ringMaterials[index]
       );
       ring.rotation.set(index * 0.14, index * 0.22, 0);
@@ -235,7 +235,7 @@ export default function Splash({ onEnter }) {
 
     const starsGeometry = new THREE.BufferGeometry();
     const starPositions = [];
-    const starCount = lowPower ? 220 : 520;
+    const starCount = lowPower ? 140 : 520;
     for (let i = 0; i < starCount; i += 1) {
       starPositions.push(
         THREE.MathUtils.randFloatSpread(32),

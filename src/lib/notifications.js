@@ -1,4 +1,4 @@
-const NOTIFICATION_STATE_KEY = 'fw_notification_consent_v1';
+export const NOTIFICATION_STATE_KEY = 'fw_notification_consent_v1';
 
 export const getNotificationConsentState = () => {
   if (typeof window === 'undefined') return 'unsupported';

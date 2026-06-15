@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import useUserProfile from '@/hooks/useUserProfile';
 import { accountData } from '@/api/accountDataClient';
 import { invalidateFocusViews } from '@/lib/task-workflows';
-import { FREEWAY_OS_SOUNDS, normalizeFreewayOS, patchFocusShield, patchSoundscape } from '@/lib/freeway-os';
+import { FREEWAY_OS_SOUNDS, normalizeFreewayOS, patchFocusShield, patchSoundscape, patchTomatoTimer } from '@/lib/freeway-os';
 import XPReward from '@/components/shared/XPReward';
 import BrainDumpSheet from '@/components/tomato/BrainDumpSheet';
 import { Brain, ChevronLeft, Gauge, Pause, Play, RotateCcw, ShieldCheck, Sparkles, Volume2, VolumeX, Zap } from 'lucide-react';
@@ -46,34 +46,54 @@ const getDefaultTimerState = (taskContext = null) => ({
   taskContext,
 });
 
+const normalizeTimerState = (value, taskContext = null) => {
+  const selectedPreset = Number.isInteger(Number(value?.selectedPreset)) && PRESETS[Number(value.selectedPreset)]
+    ? Number(value.selectedPreset)
+    : 1;
+  const totalSeconds = getPresetSeconds(PRESETS[selectedPreset]);
+  const endsAt = Number.isFinite(Number(value?.endsAt)) ? Number(value.endsAt) : null;
+  const isRunning = Boolean(value?.isRunning);
+  const isCompleted = Boolean(value?.isCompleted);
+  const baseTimeLeft = isRunning && endsAt
+    ? Math.max(0, Math.ceil((endsAt - Date.now()) / 1000))
+    : Math.min(Math.max(Number(value?.timeLeft) || totalSeconds, 0), totalSeconds);
+
+  return {
+    selectedPreset,
+    timeLeft: isCompleted ? 0 : baseTimeLeft,
+    isRunning: isRunning && !isCompleted,
+    isCompleted,
+    endsAt,
+    taskContext: value?.taskContext || taskContext,
+    updatedAt: Number(value?.updatedAt) || 0,
+  };
+};
+
 const readStoredTimerState = (accountId, taskContext = null) => {
   if (typeof window === 'undefined') return getDefaultTimerState(taskContext);
 
   try {
     const stored = JSON.parse(window.localStorage.getItem(getTomatoStorageKey(accountId)));
     if (!stored) return getDefaultTimerState(taskContext);
-
-    const storedPreset = Number(stored.selectedPreset);
-    const selectedPreset = Number.isInteger(storedPreset) && PRESETS[storedPreset] ? storedPreset : 1;
-    const totalSeconds = getPresetSeconds(PRESETS[selectedPreset]);
-    const endsAt = Number.isFinite(stored.endsAt) ? stored.endsAt : null;
-    const isRunning = Boolean(stored.isRunning);
-    const isCompleted = Boolean(stored.isCompleted);
-    const timeLeft = isRunning && endsAt
-      ? Math.max(0, Math.ceil((endsAt - Date.now()) / 1000))
-      : Math.min(Math.max(Number(stored.timeLeft) || totalSeconds, 0), totalSeconds);
-
-    return {
-      selectedPreset,
-      timeLeft: isCompleted ? 0 : timeLeft,
-      isRunning: isRunning && !isCompleted,
-      isCompleted,
-      endsAt,
-      taskContext: stored.taskContext || taskContext,
-    };
+    return normalizeTimerState(stored, taskContext);
   } catch {
     return getDefaultTimerState(taskContext);
   }
+};
+
+const readProfileTimerState = (freewayOS, taskContext = null) => {
+  const remoteState = normalizeFreewayOS(freewayOS).tomatoTimer;
+  if (!remoteState) return null;
+  return normalizeTimerState(remoteState, taskContext);
+};
+
+const pickLatestTimerState = (localState, remoteState, taskContext = null) => {
+  if (!remoteState) return localState || getDefaultTimerState(taskContext);
+  if (!localState) return remoteState;
+
+  return (remoteState.updatedAt || 0) >= (localState.updatedAt || 0)
+    ? remoteState
+    : localState;
 };
 
 const writeStoredTimerState = (accountId, state) => {
@@ -145,7 +165,7 @@ function FocusDriveScene({ progress, isRunning, isCompleted }) {
     try {
       renderer = new THREE.WebGLRenderer({
         canvas,
-        antialias: true,
+        antialias: !window.matchMedia?.('(max-width: 767px)').matches,
         alpha: true,
         powerPreference: 'high-performance',
       });
@@ -155,7 +175,8 @@ function FocusDriveScene({ progress, isRunning, isCompleted }) {
     }
 
     const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    const lowPower = reduceMotion || window.innerWidth < 720 || (navigator.hardwareConcurrency || 8) <= 4;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowPower ? 1 : 1.5));
     renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -181,7 +202,8 @@ function FocusDriveScene({ progress, isRunning, isCompleted }) {
     scene.add(cyanLight, emeraldLight, amberLight);
 
     const tunnelRings = [];
-    for (let index = 0; index < 18; index += 1) {
+    const ringCount = lowPower ? 12 : 18;
+    for (let index = 0; index < ringCount; index += 1) {
       const material = new THREE.MeshBasicMaterial({
         color: index % 3 === 0 ? 0xf59e0b : index % 2 === 0 ? 0x22d3ee : 0x34d399,
         transparent: true,
@@ -190,7 +212,7 @@ function FocusDriveScene({ progress, isRunning, isCompleted }) {
         blending: THREE.AdditiveBlending,
         depthWrite: false,
       });
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(2.35 + index * 0.035, 0.012, 8, 96), material);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(2.35 + index * 0.035, 0.012, 8, lowPower ? 64 : 96), material);
       ring.position.z = -2 - index * 1.55;
       ring.userData.baseZ = ring.position.z;
       ring.userData.phase = index * 0.42;
@@ -205,7 +227,7 @@ function FocusDriveScene({ progress, isRunning, isCompleted }) {
       opacity: 0.58,
       blending: THREE.AdditiveBlending,
     });
-    const dashCount = 72;
+    const dashCount = lowPower ? 44 : 72;
     const dashes = new THREE.InstancedMesh(dashGeometry, dashMaterial, dashCount);
     tunnel.add(dashes);
 
@@ -216,7 +238,7 @@ function FocusDriveScene({ progress, isRunning, isCompleted }) {
       opacity: 0.56,
       blending: THREE.AdditiveBlending,
     });
-    const trailCount = 42;
+    const trailCount = lowPower ? 24 : 42;
     const trails = new THREE.InstancedMesh(trailGeometry, trailMaterial, trailCount);
     tunnel.add(trails);
 
@@ -238,7 +260,7 @@ function FocusDriveScene({ progress, isRunning, isCompleted }) {
       new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.34, wireframe: true }),
     ];
     const orbitRings = [1.52, 1.83, 2.12].map((radius, index) => {
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.014 + index * 0.004, 8, 128), orbitMaterials[index]);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.014 + index * 0.004, 8, lowPower ? 84 : 128), orbitMaterials[index]);
       ring.rotation.set(index * 0.72, index * 0.38, index * 0.18);
       core.add(ring);
       return ring;
@@ -246,7 +268,8 @@ function FocusDriveScene({ progress, isRunning, isCompleted }) {
 
     const particlesGeometry = new THREE.BufferGeometry();
     const particles = [];
-    for (let index = 0; index < 620; index += 1) {
+    const particleCount = lowPower ? 280 : 620;
+    for (let index = 0; index < particleCount; index += 1) {
       particles.push(
         THREE.MathUtils.randFloatSpread(18),
         THREE.MathUtils.randFloat(-3.8, 6.8),
@@ -398,9 +421,11 @@ export default function TomatoTimer({ taskContext, onBack }) {
   const intervalRef = useRef(null);
   const completionRef = useRef(false);
   const audioRef = useRef(null);
+  const lastRemoteTimerStateRef = useRef('');
 
   const totalSeconds = getPresetSeconds(PRESETS[selectedPreset]);
   const progress = ((totalSeconds - timeLeft) / totalSeconds) * 100;
+  const pausedTimeLeft = isRunning ? null : timeLeft;
 
   const formatTime = (s) =>
     `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
@@ -513,7 +538,11 @@ export default function TomatoTimer({ taskContext, onBack }) {
   }, [selectedPreset, addXP, addFocusMinutes, timerTaskContext, queryClient]);
 
   useEffect(() => {
-    const storedState = readStoredTimerState(accountId, taskContext);
+    const storedState = pickLatestTimerState(
+      readStoredTimerState(accountId, taskContext),
+      readProfileTimerState(profile?.freeway_os, taskContext),
+      taskContext,
+    );
     completionRef.current = false;
     setSelectedPreset(storedState.selectedPreset);
     setTimeLeft(storedState.timeLeft);
@@ -521,7 +550,7 @@ export default function TomatoTimer({ taskContext, onBack }) {
     setIsCompleted(storedState.isCompleted);
     setEndsAt(storedState.endsAt);
     setTimerTaskContext(storedState.taskContext);
-  }, [accountId]);
+  }, [accountId, profile?.freeway_os, taskContext]);
 
   useEffect(() => {
     setFocusLock(Boolean(freewayOS.focusShield.enabled));
@@ -546,6 +575,41 @@ export default function TomatoTimer({ taskContext, onBack }) {
       taskContext: timerTaskContext,
     });
   }, [accountId, selectedPreset, timeLeft, isRunning, isCompleted, endsAt, timerTaskContext]);
+
+  useEffect(() => {
+    if (!profile || !saveProfile) return;
+
+    const remoteTimerState = {
+      selectedPreset,
+      isRunning,
+      isCompleted,
+      endsAt,
+      timeLeft: pausedTimeLeft,
+      taskContext: timerTaskContext,
+    };
+    const serialized = JSON.stringify(remoteTimerState);
+
+    if (lastRemoteTimerStateRef.current === serialized) return;
+    lastRemoteTimerStateRef.current = serialized;
+
+    persistFreewayOS(patchTomatoTimer(freewayOS, {
+      ...remoteTimerState,
+      updatedAt: Date.now(),
+    })).catch((error) => {
+      console.warn('Tomato timer sync unavailable:', error);
+    });
+  }, [
+    endsAt,
+    freewayOS,
+    isCompleted,
+    isRunning,
+    pausedTimeLeft,
+    persistFreewayOS,
+    profile,
+    saveProfile,
+    selectedPreset,
+    timerTaskContext,
+  ]);
 
   useEffect(() => {
     if (!isRunning) return undefined;

@@ -46,7 +46,7 @@ export default function TaskModal({ task, onClose, onStartTomato, onDuplicate, o
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 flex items-end justify-center p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-[calc(4.25rem+env(safe-area-inset-top))] md:items-center md:p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-[calc(4rem+env(safe-area-inset-top))] md:p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -54,7 +54,7 @@ export default function TaskModal({ task, onClose, onStartTomato, onDuplicate, o
         <motion.div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
         <motion.div
-          className="relative z-10 w-full max-w-md overflow-y-auto rounded-[1.6rem] glass-panel px-4 pb-4 pt-5 space-y-4 max-h-[min(76dvh,42rem)] sm:max-h-[min(88dvh,48rem)] sm:p-6 sm:space-y-5"
+          className="relative z-10 w-full max-w-md overflow-y-auto overscroll-contain rounded-[1.6rem] glass-panel px-4 pb-4 pt-5 space-y-4 max-h-[min(72dvh,40rem)] sm:max-h-[min(88dvh,48rem)] sm:p-6 sm:space-y-5"
           initial={{ scale: 0.5, opacity: 0, rotate: -10 }}
           animate={{ scale: 1, opacity: 1, rotate: 0 }}
           exit={{ scale: 0.5, opacity: 0, rotate: 10 }}

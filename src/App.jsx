@@ -38,7 +38,7 @@ const PageLoading = () => (
     <motion.div
       animate={{ rotate: 360 }}
       transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
-      className="w-8 h-8 rounded-full border-2 border-white/10 border-t-emerald-400"
+      className="h-8 w-8 rounded-full border-2 border-white/10 border-t-current text-primary"
     />
   </div>
 );
@@ -117,9 +117,9 @@ const AuthCallback = () => {
       <motion.div
         animate={{ rotate: 360 }}
         transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
-        className="w-8 h-8 rounded-full border-2 border-white/10 border-t-emerald-400"
+        className="h-8 w-8 rounded-full border-2 border-white/10 border-t-current text-primary"
       />
-      <p className="font-mono text-[11px] uppercase tracking-[0.24em] text-emerald-400/70">
+      <p className="font-mono text-[11px] uppercase tracking-[0.24em] text-primary/70">
         accesso in corso
       </p>
     </div>
@@ -183,6 +183,14 @@ const AuthenticatedApp = () => {
       await saveProfile({
         ...profile,
         ...profilePatch,
+        initial_onboarding: {
+          ...(profile.initial_onboarding || {}),
+          ...(profilePatch.initial_onboarding || {}),
+          app_preferences: {
+            ...((profile.initial_onboarding || {}).app_preferences || {}),
+            ...((profilePatch.initial_onboarding || {}).app_preferences || {}),
+          },
+        },
         day_by_day: {
           ...(profile.day_by_day || {}),
           ...(profilePatch.day_by_day || {}),

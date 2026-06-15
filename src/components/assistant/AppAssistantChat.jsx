@@ -17,7 +17,7 @@ export default function AppAssistantChat({ open, onClose, profile, sourceMemo = 
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[90] flex items-end justify-center px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-[calc(4.5rem+env(safe-area-inset-top))] sm:items-center sm:p-6"
+          className="fixed inset-0 z-[90] flex items-start justify-center px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-[calc(4.25rem+env(safe-area-inset-top))] sm:items-center sm:p-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -33,7 +33,7 @@ export default function AppAssistantChat({ open, onClose, profile, sourceMemo = 
             className={`relative z-10 w-full overflow-hidden rounded-[1.4rem] transition-[max-width,height,max-height] duration-300 ${
               expanded
                 ? 'h-[calc(100dvh_-_5.5rem_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom))] max-w-6xl sm:h-[min(92dvh,860px)]'
-                : 'h-[min(74dvh,42rem)] max-w-2xl sm:h-auto sm:max-h-[min(86dvh,48rem)]'
+                : 'h-[min(62dvh,34rem)] max-h-[calc(100dvh_-_5.75rem_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom))] max-w-2xl sm:h-auto sm:max-h-[min(86dvh,48rem)]'
             }`}
             initial={{ y: 34, opacity: 0, scale: 0.96, rotateX: -7 }}
             animate={{ y: 0, opacity: 1, scale: 1, rotateX: 0 }}
@@ -44,7 +44,7 @@ export default function AppAssistantChat({ open, onClose, profile, sourceMemo = 
             <button
               type="button"
               onClick={() => setExpanded((value) => !value)}
-              className="absolute right-12 top-2.5 z-20 hidden h-9 w-9 place-items-center rounded-xl border border-white/10 bg-black/55 text-white/55 transition-colors hover:border-emerald-300/35 hover:text-emerald-100 sm:grid"
+              className="absolute right-12 top-2.5 z-20 grid h-9 w-9 place-items-center rounded-xl border border-white/10 bg-black/55 text-white/55 transition-colors hover:border-emerald-300/35 hover:text-emerald-100 sm:right-14 sm:top-3 sm:h-10 sm:w-10"
               aria-label={expanded ? 'Riduci chat' : 'Ingrandisci chat'}
               title={expanded ? 'Riduci chat' : 'Ingrandisci chat'}
             >
@@ -62,7 +62,7 @@ export default function AppAssistantChat({ open, onClose, profile, sourceMemo = 
               profile={profile}
               compact={!expanded}
               expanded={expanded}
-              className={expanded ? 'h-full' : ''}
+              className={`h-full ${expanded ? '' : 'min-h-0'}`}
               sourceMemo={sourceMemo}
               initialPrompt={sourceMemo ? `Analizza questo memo e aiutami a programmarlo: ${sourceMemo.title}` : ''}
             />

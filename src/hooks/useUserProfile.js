@@ -3,6 +3,7 @@ import { ACCOUNT_DATA_CHANGED_EVENT, accountData } from '@/api/accountDataClient
 import { useAuth } from '@/lib/AuthContext';
 import { normalizeList } from '@/lib/normalize-list';
 import { applyThemeToDocument, getThemeIdsForLevel, MAX_THEME_LEVEL, THEMES, writeStoredActiveThemeId, readCustomTheme } from '@/lib/themes';
+import { getAppPreferences } from '@/lib/app-preferences';
 
 // XP thresholds per level
 const LEVEL_THRESHOLDS = [0, 100, 300, 600, 1000, 1500, 2200, 3000, 4000, 5500, 7500, 10000];
@@ -17,6 +18,32 @@ const createDefaultProfile = () => ({
   streak_days: 0,
   last_active_date: new Date().toISOString().split('T')[0],
 });
+
+const mergeProfilePayload = (baseProfile, nextProfile) => {
+  const base = baseProfile || createDefaultProfile();
+  const next = nextProfile || {};
+
+  return {
+    ...base,
+    ...next,
+    day_by_day: {
+      ...(base.day_by_day || {}),
+      ...(next.day_by_day || {}),
+    },
+    freeway_os: {
+      ...(base.freeway_os || {}),
+      ...(next.freeway_os || {}),
+    },
+    initial_onboarding: {
+      ...(base.initial_onboarding || {}),
+      ...(next.initial_onboarding || {}),
+      app_preferences: {
+        ...((base.initial_onboarding || {}).app_preferences || {}),
+        ...((next.initial_onboarding || {}).app_preferences || {}),
+      },
+    },
+  };
+};
 
 export function getLevelFromXP(xp) {
   for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
@@ -108,16 +135,24 @@ export default function useUserProfile() {
       const profiles = normalizeList(await accountData.userProfiles.list());
       if (profiles.length > 0) {
         const nextProfile = normalizeProfile(profiles[0]);
+        const nextPreferences = getAppPreferences(nextProfile);
         setProfile(nextProfile);
         writeStoredActiveThemeId(nextProfile.active_theme || 'emerald');
-        applyThemeToDocument(THEMES[nextProfile.active_theme] || THEMES.emerald, readCustomTheme());
+        applyThemeToDocument(
+          THEMES[nextProfile.active_theme] || THEMES.emerald,
+          nextPreferences.themeCustomization || readCustomTheme(),
+        );
         return nextProfile;
       }
 
       const newProfile = normalizeProfile(await accountData.userProfiles.create(createDefaultProfile()));
+      const newPreferences = getAppPreferences(newProfile);
       setProfile(newProfile);
       writeStoredActiveThemeId(newProfile.active_theme || 'emerald');
-      applyThemeToDocument(THEMES[newProfile.active_theme] || THEMES.emerald, readCustomTheme());
+      applyThemeToDocument(
+        THEMES[newProfile.active_theme] || THEMES.emerald,
+        newPreferences.themeCustomization || readCustomTheme(),
+      );
       return newProfile;
     } catch (error) {
       console.warn('User profile unavailable:', error);
@@ -138,7 +173,7 @@ export default function useUserProfile() {
 
     const handleAccountDataChanged = (event) => {
       const detail = event.detail || {};
-      if (detail.entityName === 'UserProfile' && detail.accountId === accountId) {
+      if (detail.entityName === 'UserProfile') {
         loadProfile({ silent: true });
       }
     };
@@ -154,10 +189,18 @@ export default function useUserProfile() {
   }, [normalizeProfile]);
 
   const saveProfile = useCallback(async (nextProfile) => {
-    const normalized = normalizeProfile(nextProfile);
+    const latestProfile = profileRef.current?.id
+      ? await getLatestProfile().catch(() => profileRef.current)
+      : profileRef.current;
+    const mergedProfile = mergeProfilePayload(latestProfile, nextProfile);
+    const normalized = normalizeProfile(mergedProfile);
+    const nextPreferences = getAppPreferences(normalized);
     setProfile(normalized);
     writeStoredActiveThemeId(normalized.active_theme || 'emerald');
-    applyThemeToDocument(THEMES[normalized.active_theme] || THEMES.emerald, readCustomTheme());
+    applyThemeToDocument(
+      THEMES[normalized.active_theme] || THEMES.emerald,
+      nextPreferences.themeCustomization || readCustomTheme(),
+    );
 
     try {
       const saved = normalized.id

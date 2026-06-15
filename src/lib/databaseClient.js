@@ -42,6 +42,7 @@ export const supabase = isSupabaseConfigured
   : null;
 
 export const ACCOUNT_DATA_CHANGED_EVENT = 'fw:account-data-changed';
+const MIGRATION_VERSION = 'v2';
 
 // --------------------- Types & Constants ---------------------
 
@@ -74,6 +75,7 @@ const buildRecord = (table, data) => ({
 // --------------------- LocalStorage Fallback ---------------------
 
 const getFallbackKey = (entityName) => `fw_fallback_${entityName}`;
+const getMigrationMarkerKey = (ownerId) => `fw_migration_complete_${ownerId}_${MIGRATION_VERSION}`;
 
 const fallbackRead = (entityName) => {
   if (typeof window === 'undefined') return [];
@@ -330,11 +332,12 @@ function filterRecords(records, filters) {
 }
 
 /**
- * Data migration utility: copies all localStorage data to Supabase
+ * Data migration utility: copies legacy local data to the authenticated account.
  */
-export async function migrateLocalStorageToSupabase() {
+export async function migrateLocalDataToAccount() {
   const client = getClient();
   if (!client) return { migrated: false, reason: 'Supabase not configured' };
+  if (typeof window === 'undefined') return { migrated: false, reason: 'No browser storage available' };
 
   const session = await client.auth.getSession();
   if (!session?.data?.session?.user?.id) {
@@ -342,43 +345,116 @@ export async function migrateLocalStorageToSupabase() {
   }
 
   const ownerId = session.data.session.user.id;
-  const migrations = [];
-  const entityKeys = [
-    { key: 'fw_account_data_guest', entities: ['tasks', 'focusSessions', 'userProfiles', 'alarms', 'notes', 'noteFolders'] },
-  ];
+  const markerKey = getMigrationMarkerKey(ownerId);
 
-  const storedKey = `fw_account_data_${ownerId}`;
   try {
-    const stored = localStorage.getItem(storedKey);
-    if (!stored) return { migrated: false, reason: 'No localStorage data found' };
+    if (localStorage.getItem(markerKey) === '1') {
+      return { migrated: false, reason: 'Already migrated' };
+    }
 
-    const data = JSON.parse(stored);
-    const tables = {
-      tasks: 'Task',
-      focusSessions: 'FocusSession',
-      userProfiles: 'UserProfile',
-      alarms: 'Alarm',
-      notes: 'Note',
-      noteFolders: 'NoteFolder',
+    const entityMap = {
+      Task: 'tasks',
+      FocusSession: 'focusSessions',
+      Alarm: 'alarms',
+      Note: 'notes',
+      NoteFolder: 'noteFolders',
     };
+    const localBuckets = Object.keys(entityMap).reduce((acc, entityName) => {
+      acc[entityName] = [];
+      return acc;
+    }, {});
 
-    for (const [localKey, entityName] of Object.entries(tables)) {
-      const records = data[localKey] || [];
+    Object.keys(entityMap).forEach((entityName) => {
+      localBuckets[entityName].push(...fallbackRead(entityName));
+    });
+
+    [`fw_account_data_${ownerId}`, 'fw_account_data_guest'].forEach((storageKey) => {
+      try {
+        const raw = localStorage.getItem(storageKey);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        Object.entries(entityMap).forEach(([entityName, legacyKey]) => {
+          if (Array.isArray(parsed?.[legacyKey])) {
+            localBuckets[entityName].push(...parsed[legacyKey]);
+          }
+        });
+      } catch {
+        // Ignore malformed legacy payloads.
+      }
+    });
+
+    if (!Object.values(localBuckets).some((records) => records.length > 0)) {
+      localStorage.setItem(markerKey, '1');
+      return { migrated: false, reason: 'No local data found' };
+    }
+
+    const remoteIdsByEntity = {};
+    await Promise.all(Object.keys(entityMap).map(async (entityName) => {
+      const { data, error } = await client
+        .from(ENTITY_COLLECTIONS[entityName].table)
+        .select('id')
+        .eq('owner_id', ownerId)
+        .limit(5000);
+
+      if (error) {
+        throw error;
+      }
+
+      remoteIdsByEntity[entityName] = new Set((data || []).map((record) => record.id).filter(Boolean));
+    }));
+
+    const migrations = [];
+
+    for (const entityName of Object.keys(entityMap)) {
+      const seenLocalKeys = new Set();
+      const records = localBuckets[entityName];
       for (const record of records) {
+        if (!record || typeof record !== 'object') continue;
+
+        const localIdentity = record.id || JSON.stringify(record);
+        if (seenLocalKeys.has(localIdentity)) continue;
+        seenLocalKeys.add(localIdentity);
+
+        if (record.id && remoteIdsByEntity[entityName]?.has(record.id)) {
+          migrations.push({ entity: entityName, id: record.id, status: 'skipped' });
+          continue;
+        }
+
         try {
-          const { id, owner_id, created_date, updated_date, ...cleanData } = record;
-          await databaseClient.create(entityName, cleanData);
-          migrations.push({ entity: entityName, id, status: 'migrated' });
+          const { owner_id, savedAt, ...payload } = record;
+          const table = ENTITY_COLLECTIONS[entityName].table;
+          const remoteRecord = buildRecord(table, {
+            ...payload,
+            owner_id: ownerId,
+          });
+
+          const query = remoteRecord.id
+            ? client.from(table).upsert(remoteRecord, { onConflict: 'id' }).select('id').single()
+            : client.from(table).insert(remoteRecord).select('id').single();
+
+          const { data, error } = await query;
+          if (error) throw error;
+          if (data?.id) remoteIdsByEntity[entityName]?.add(data.id);
+          migrations.push({ entity: entityName, id: record.id, status: 'migrated' });
         } catch (err) {
           migrations.push({ entity: entityName, id: record.id, status: 'failed', error: err.message });
         }
       }
     }
 
-    // Mark migration as complete
-    localStorage.setItem('fw_migration_complete', 'true');
-    return { migrated: true, count: migrations.filter((m) => m.status === 'migrated').length };
+    const failedCount = migrations.filter((migration) => migration.status === 'failed').length;
+    if (failedCount === 0) {
+      localStorage.setItem(markerKey, '1');
+    }
+
+    return {
+      migrated: migrations.some((migration) => migration.status === 'migrated'),
+      count: migrations.filter((migration) => migration.status === 'migrated').length,
+      failedCount,
+    };
   } catch (err) {
     return { migrated: false, reason: err.message };
   }
 }
+
+export const migrateLocalStorageToSupabase = migrateLocalDataToAccount;

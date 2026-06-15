@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -12,6 +12,8 @@ import {
   WalletCards,
 } from 'lucide-react';
 import { accountData } from '@/api/accountDataClient';
+import useUserProfile from '@/hooks/useUserProfile';
+import useAccountPreference from '@/hooks/useAccountPreference';
 import { normalizeList } from '@/lib/normalize-list';
 import PageShell from '@/components/shared/PageShell';
 import { Button } from '@/components/ui/button';
@@ -31,8 +33,11 @@ import {
   getTaskDurationHours,
   getWorkColor,
 } from '@/lib/work-utils';
-
-const WORK_PROFILE_KEY = 'fw_work_profile_v2';
+import {
+  DEFAULT_WORK_PROFILE,
+  readLegacyWorkProfile,
+  writeLegacyWorkProfile,
+} from '@/lib/app-preferences';
 
 const WORKER_TYPES = [
   { value: 'employee', label: 'Dipendente' },
@@ -46,34 +51,6 @@ const PAY_MODES = [
   { value: 'monthly', label: 'Mensile' },
   { value: 'daily', label: 'Giornaliera' },
 ];
-
-const DEFAULT_PROFILE = {
-  workerType: 'employee',
-  payMode: 'hourly',
-  label: '',
-  hourlyRate: '10',
-  monthlySalary: '1600',
-  dailyRate: '80',
-  weeklyHours: '40',
-  workDaysPerWeek: '5',
-  paidMonths: '12',
-  overtimeMultiplier: '1.25',
-  taxReservePct: '0',
-  monthlyTarget: '0',
-};
-
-const canUseStorage = () => typeof window !== 'undefined' && Boolean(window.localStorage);
-
-const readProfile = () => {
-  if (!canUseStorage()) return DEFAULT_PROFILE;
-
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(WORK_PROFILE_KEY) || '{}');
-    return { ...DEFAULT_PROFILE, ...parsed };
-  } catch {
-    return DEFAULT_PROFILE;
-  }
-};
 
 const toNumber = (value, fallback = 0) => {
   const numeric = Number(value);
@@ -125,17 +102,21 @@ const buildWorkerCopy = (profile) => {
 };
 
 export default function Work() {
-  const [profile, setProfile] = useState(readProfile);
+  const { profile: userProfile, saveProfile } = useUserProfile();
+  const [profile, setProfile] = useAccountPreference({
+    profile: userProfile,
+    saveProfile,
+    preferenceKey: 'workProfile',
+    defaultValue: DEFAULT_WORK_PROFILE,
+    readLocal: readLegacyWorkProfile,
+    writeLocal: writeLegacyWorkProfile,
+    persistDelay: 280,
+  });
 
   const { data: taskResponse = [], isLoading } = useQuery({
     queryKey: ['work-tasks'],
     queryFn: () => accountData.tasks.list('-due_date', 300),
   });
-
-  useEffect(() => {
-    if (!canUseStorage()) return;
-    window.localStorage.setItem(WORK_PROFILE_KEY, JSON.stringify(profile));
-  }, [profile]);
 
   const workTasks = normalizeList(taskResponse)
     .filter((task) => task.task_type === 'work')
@@ -172,7 +153,7 @@ export default function Work() {
     setProfile((current) => ({ ...current, [key]: value }));
   };
 
-  const resetProfile = () => setProfile(DEFAULT_PROFILE);
+  const resetProfile = () => setProfile(DEFAULT_WORK_PROFILE);
 
   const statCards = [
     { icon: BriefcaseBusiness, label: 'Turni', value: workTasks.length },

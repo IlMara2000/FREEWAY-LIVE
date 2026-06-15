@@ -1,12 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useOutlet } from 'react-router-dom';
 import { Timer, ListTodo, MessageCircle, Palette, Brain, CalendarDays, LogOut, AlarmClock, BriefcaseBusiness, Menu, Settings, X, LayoutDashboard, BookOpen } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/lib/AuthContext';
 import FreewayLogo from '@/components/brand/FreewayLogo';
 import useUserProfile from '@/hooks/useUserProfile';
-import AppAssistantChat from '@/components/assistant/AppAssistantChat';
-import { applyThemeToDocument, CUSTOM_THEME_KEY, readCustomTheme, readStoredActiveThemeId, THEMES } from '@/lib/themes';
+import { applyThemeToDocument, CUSTOM_THEME_KEY, readStoredActiveThemeId, THEMES } from '@/lib/themes';
+import {
+  applyProfilePreferencesToClient,
+  buildProfileWithAppPreferences,
+  collectLegacyPreferencePatch,
+  getAppPreferences,
+} from '@/lib/app-preferences';
+import { migrateLocalDataToAccount } from '@/lib/databaseClient';
+
+const AppAssistantChat = lazy(() => import('@/components/assistant/AppAssistantChat'));
 
 const NAV_ITEMS = [
   { path: '/', icon: LayoutDashboard, label: 'Hub' },
@@ -40,17 +48,19 @@ const drawerVariants = {
 export default function AppLayout() {
   const location = useLocation();
   const outlet = useOutlet();
-  const { logout } = useAuth();
-  const { profile } = useUserProfile();
+  const { logout, user } = useAuth();
+  const { profile, saveProfile } = useUserProfile();
   const [menuOpen, setMenuOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const migrationStartedRef = useRef(false);
 
   const closeMenu = () => setMenuOpen(false);
 
   useEffect(() => {
     const activeThemeId = profile?.active_theme || readStoredActiveThemeId();
     const theme = THEMES[activeThemeId] || THEMES.emerald;
-    const applyCurrentTheme = () => applyThemeToDocument(theme, readCustomTheme());
+    const preferences = applyProfilePreferencesToClient(profile, user?.id);
+    const applyCurrentTheme = () => applyThemeToDocument(theme, getAppPreferences(profile).themeCustomization || preferences.themeCustomization);
 
     applyCurrentTheme();
 
@@ -62,7 +72,36 @@ export default function AppLayout() {
 
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
-  }, [profile?.active_theme]);
+  }, [profile, user?.id]);
+
+  useEffect(() => {
+    if (!profile || !saveProfile) return;
+
+    const localThemeId = readStoredActiveThemeId();
+    const legacyPatch = collectLegacyPreferencePatch(profile, user?.id);
+    const shouldSyncThemeId = localThemeId && localThemeId !== 'emerald' && localThemeId !== profile.active_theme;
+
+    if (!shouldSyncThemeId && Object.keys(legacyPatch).length === 0) return;
+
+    const nextProfile = buildProfileWithAppPreferences(
+      shouldSyncThemeId ? { ...profile, active_theme: localThemeId } : profile,
+      legacyPatch,
+    );
+
+    saveProfile(nextProfile).catch((error) => {
+      console.warn('Preference sync unavailable:', error);
+    });
+  }, [profile, saveProfile, user?.id]);
+
+  useEffect(() => {
+    if (!user?.id || !profile || migrationStartedRef.current) return;
+
+    migrationStartedRef.current = true;
+    migrateLocalDataToAccount().catch((error) => {
+      console.warn('Local account migration unavailable:', error);
+      migrationStartedRef.current = false;
+    });
+  }, [profile, user?.id]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -72,7 +111,7 @@ export default function AppLayout() {
         className={`fixed left-[calc(1rem+env(safe-area-inset-left))] top-[calc(1rem+env(safe-area-inset-top))] z-[80] grid h-12 w-12 place-items-center overflow-hidden rounded-[1rem] border backdrop-blur-xl transition-colors sm:h-14 sm:w-14 ${
           menuOpen
             ? 'border-red-200/45 bg-red-500/90 text-white shadow-[0_14px_34px_rgba(239,68,68,0.24)]'
-            : 'border-emerald-200/20 bg-[#02050c]/78 text-primary shadow-[0_14px_32px_rgba(0,0,0,0.42)] hover:border-primary/42 hover:bg-primary/10'
+            : 'border-primary/20 bg-[#02050c]/78 text-primary shadow-[0_14px_32px_rgba(0,0,0,0.42)] hover:border-primary/42 hover:bg-primary/10'
         }`}
         aria-label={menuOpen ? 'Chiudi menu' : 'Apri menu'}
         animate={{
@@ -86,12 +125,14 @@ export default function AppLayout() {
       >
         <motion.span
           className={`absolute inset-1 rounded-[0.85rem] border ${
-            menuOpen ? 'border-white/25 bg-white/10' : 'border-emerald-200/10 bg-white/[0.035]'
+            menuOpen ? 'border-white/25 bg-white/10' : 'border-primary/10 bg-white/[0.035]'
           }`}
           animate={{ rotate: menuOpen ? 360 : 0 }}
           transition={menuOpen ? { duration: 5, repeat: Infinity, ease: 'linear' } : { duration: 0.3 }}
         />
-        <span className={`absolute -inset-4 rounded-full ${menuOpen ? 'bg-red-200/12' : 'bg-emerald-200/7'} blur-lg`} />
+        <span
+          className={`absolute -inset-4 rounded-full ${menuOpen ? 'bg-red-200/12' : 'bg-primary/10'} blur-lg`}
+        />
         <motion.span
           className="relative z-10"
           animate={{ rotateZ: menuOpen ? [0, 90, 0] : 0 }}
@@ -133,7 +174,7 @@ export default function AppLayout() {
                 <Link
                   to="/account"
                   onClick={closeMenu}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-300/20 bg-emerald-400/[0.08] text-emerald-200 transition-colors hover:border-primary/45 hover:bg-primary/15 hover:text-primary"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary transition-colors hover:border-primary/45 hover:bg-primary/15 hover:text-primary"
                   aria-label="Impostazioni profilo"
                   title="Profilo"
                 >
@@ -213,11 +254,15 @@ export default function AppLayout() {
         )}
       </AnimatePresence>
 
-      <AppAssistantChat
-        open={assistantOpen}
-        onClose={() => setAssistantOpen(false)}
-        profile={profile}
-      />
+      {assistantOpen && (
+        <Suspense fallback={null}>
+          <AppAssistantChat
+            open={assistantOpen}
+            onClose={() => setAssistantOpen(false)}
+            profile={profile}
+          />
+        </Suspense>
+      )}
 
       <main className="flex-1 overflow-hidden">
         <AnimatePresence mode="wait" initial={false}>

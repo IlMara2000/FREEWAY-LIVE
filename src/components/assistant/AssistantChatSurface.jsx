@@ -217,12 +217,9 @@ export default function AssistantChatSurface({
             <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-emerald-300/60">
               Chat Bot operativo
             </p>
-            <h1 className={`${compact ? 'text-[1.55rem] sm:text-2xl' : 'text-[1.85rem] sm:text-5xl'} font-grotesk font-black leading-[0.96] text-white`}>
+            <h1 className={`${compact ? 'text-[1.35rem] sm:text-2xl' : 'text-[1.65rem] sm:text-5xl'} font-grotesk font-black leading-[0.96] text-white`}>
               Cosa ti serve oggi?
             </h1>
-            <p className="mt-1 max-w-xl text-[10px] leading-relaxed text-white/34 sm:text-[11px]">
-              Quando invii, il testo e un contesto sintetico servono solo a preparare una proposta utile dentro l'app.
-            </p>
           </div>
         </div>
       </header>
@@ -230,7 +227,7 @@ export default function AssistantChatSurface({
       <div
         ref={listRef}
         className={`relative z-10 min-h-0 space-y-3 overflow-y-auto p-3 sm:p-5 ${
-          expanded ? 'flex-1' : compact ? 'h-[min(27dvh,220px)] sm:h-[min(54dvh,420px)]' : 'h-[min(34dvh,300px)] sm:h-[min(58dvh,560px)]'
+          expanded ? 'flex-1' : compact ? 'h-[min(18dvh,140px)] sm:h-[min(54dvh,420px)]' : 'h-[min(26dvh,220px)] sm:h-[min(58dvh,560px)]'
         }`}
       >
         {messages.map((message, index) => (
@@ -477,7 +474,7 @@ export default function AssistantChatSurface({
           </p>
         )}
 
-        <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className="mb-2.5 grid grid-cols-1 gap-2 sm:grid-cols-3">
           {QUICK_PROMPTS.map((prompt) => (
             <button
               key={prompt}

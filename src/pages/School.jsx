@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -11,6 +11,8 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { accountData } from '@/api/accountDataClient';
+import useUserProfile from '@/hooks/useUserProfile';
+import useAccountPreference from '@/hooks/useAccountPreference';
 import { normalizeList } from '@/lib/normalize-list';
 import PageShell from '@/components/shared/PageShell';
 import { Button } from '@/components/ui/button';
@@ -29,8 +31,11 @@ import {
   getTaskDurationHours,
   getWorkColor,
 } from '@/lib/work-utils';
-
-const SCHOOL_PROFILE_KEY = 'fw_school_profile_v1';
+import {
+  DEFAULT_SCHOOL_PROFILE,
+  readLegacySchoolProfile,
+  writeLegacySchoolProfile,
+} from '@/lib/app-preferences';
 
 const STUDENT_TYPES = [
   { value: 'primary', label: 'Elementari' },
@@ -46,32 +51,6 @@ const STUDY_MODES = [
   { value: 'tests', label: 'Verifiche' },
   { value: 'exams', label: 'Esami' },
 ];
-
-const DEFAULT_PROFILE = {
-  studentType: 'middle',
-  studyMode: 'mixed',
-  classLabel: '',
-  weeklyStudyHours: '8',
-  studyDaysPerWeek: '5',
-  sessionMinutes: '50',
-  revisionMultiplier: '2',
-  targetGrade: '8',
-  monthlyTargetHours: '0',
-  testLeadDays: '3',
-};
-
-const canUseStorage = () => typeof window !== 'undefined' && Boolean(window.localStorage);
-
-const readProfile = () => {
-  if (!canUseStorage()) return DEFAULT_PROFILE;
-
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(SCHOOL_PROFILE_KEY) || '{}');
-    return { ...DEFAULT_PROFILE, ...parsed };
-  } catch {
-    return DEFAULT_PROFILE;
-  }
-};
 
 const toNumber = (value, fallback = 0) => {
   const numeric = Number(value);
@@ -117,17 +96,21 @@ const buildStudentCopy = (profile) => {
 };
 
 export default function School() {
-  const [profile, setProfile] = useState(readProfile);
+  const { profile: userProfile, saveProfile } = useUserProfile();
+  const [profile, setProfile] = useAccountPreference({
+    profile: userProfile,
+    saveProfile,
+    preferenceKey: 'schoolProfile',
+    defaultValue: DEFAULT_SCHOOL_PROFILE,
+    readLocal: readLegacySchoolProfile,
+    writeLocal: writeLegacySchoolProfile,
+    persistDelay: 280,
+  });
 
   const { data: taskResponse = [], isLoading } = useQuery({
     queryKey: ['school-tasks'],
     queryFn: () => accountData.tasks.list('-due_date', 300),
   });
-
-  useEffect(() => {
-    if (!canUseStorage()) return;
-    window.localStorage.setItem(SCHOOL_PROFILE_KEY, JSON.stringify(profile));
-  }, [profile]);
 
   const schoolTasks = normalizeList(taskResponse)
     .filter((task) => task.task_type === 'study')
@@ -177,7 +160,7 @@ export default function School() {
     }));
   };
 
-  const resetProfile = () => setProfile(DEFAULT_PROFILE);
+  const resetProfile = () => setProfile(DEFAULT_SCHOOL_PROFILE);
 
   const statCards = [
     { icon: BookOpen, label: 'Sessioni', value: schoolTasks.length },

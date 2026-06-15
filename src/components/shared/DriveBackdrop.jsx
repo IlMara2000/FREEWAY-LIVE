@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 
 const disposeThreeObject = (object) => {
@@ -23,7 +23,7 @@ function AmbientDriveScene({ tone = 'emerald' }) {
     try {
       renderer = new THREE.WebGLRenderer({
         canvas,
-        antialias: true,
+        antialias: !window.matchMedia?.('(max-width: 767px)').matches,
         alpha: true,
         powerPreference: 'high-performance',
       });
@@ -34,7 +34,7 @@ function AmbientDriveScene({ tone = 'emerald' }) {
 
     const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     const lowPower = reduceMotion || window.innerWidth < 720 || (navigator.hardwareConcurrency || 8) <= 4;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowPower ? 1.2 : 1.6));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowPower ? 1 : 1.35));
     renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -59,7 +59,7 @@ function AmbientDriveScene({ tone = 'emerald' }) {
     scene.add(cyanLight, emeraldLight, amberLight);
 
     const tunnelRings = [];
-    const ringCount = lowPower ? 8 : 14;
+    const ringCount = lowPower ? 6 : 14;
     for (let index = 0; index < ringCount; index += 1) {
       const material = new THREE.MeshBasicMaterial({
         color: index % 3 === 0 ? 0xf59e0b : index % 2 === 0 ? 0x22d3ee : 0x34d399,
@@ -69,7 +69,7 @@ function AmbientDriveScene({ tone = 'emerald' }) {
         blending: THREE.AdditiveBlending,
         depthWrite: false,
       });
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(2.55 + index * 0.04, 0.012, 6, lowPower ? 56 : 84), material);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(2.55 + index * 0.04, 0.012, 6, lowPower ? 44 : 84), material);
       ring.position.z = -2.5 - index * 1.7;
       ring.userData.baseZ = ring.position.z;
       ring.userData.phase = index * 0.37;
@@ -84,7 +84,7 @@ function AmbientDriveScene({ tone = 'emerald' }) {
       opacity: 0.42,
       blending: THREE.AdditiveBlending,
     });
-    const dashCount = lowPower ? 26 : 54;
+    const dashCount = lowPower ? 18 : 54;
     const dashes = new THREE.InstancedMesh(dashGeometry, dashMaterial, dashCount);
     tunnel.add(dashes);
 
@@ -95,13 +95,13 @@ function AmbientDriveScene({ tone = 'emerald' }) {
       opacity: 0.38,
       blending: THREE.AdditiveBlending,
     });
-    const trailCount = lowPower ? 14 : 28;
+    const trailCount = lowPower ? 10 : 28;
     const trails = new THREE.InstancedMesh(trailGeometry, trailMaterial, trailCount);
     tunnel.add(trails);
 
     const particlesGeometry = new THREE.BufferGeometry();
     const particles = [];
-    const particleCount = lowPower ? 160 : 360;
+    const particleCount = lowPower ? 96 : 360;
     for (let index = 0; index < particleCount; index += 1) {
       particles.push(
         THREE.MathUtils.randFloatSpread(19),
@@ -214,15 +214,42 @@ function AmbientDriveScene({ tone = 'emerald' }) {
 }
 
 export default function DriveBackdrop({ tone = 'emerald' }) {
+  const [showScene, setShowScene] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const syncMode = () => {
+      const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      const lowPower = reduceMotion || window.innerWidth < 720 || (navigator.hardwareConcurrency || 8) <= 4;
+      setShowScene(!lowPower);
+    };
+
+    syncMode();
+    window.addEventListener('resize', syncMode);
+    return () => window.removeEventListener('resize', syncMode);
+  }, []);
+
   return (
     <>
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-1/2 top-[46%] h-[72vh] w-[72vw] min-w-[320px] -translate-x-1/2 rounded-t-[45%] bg-gradient-to-t from-emerald-300/10 via-cyan-300/7 to-transparent blur-2xl" />
-        <div className="absolute -left-[15%] top-[18%] h-[36vh] w-[34vw] rounded-full bg-emerald-400/[0.055] blur-3xl" />
-        <div className="absolute -right-[10%] top-[8%] h-[40vh] w-[32vw] rounded-full bg-cyan-300/[0.05] blur-3xl" />
+        <div
+          className="absolute left-1/2 top-[46%] h-[72vh] w-[72vw] min-w-[320px] -translate-x-1/2 rounded-t-[45%] blur-2xl"
+          style={{
+            background: 'linear-gradient(to top, rgb(var(--theme-accent-rgb) / 0.12), rgb(var(--theme-accent-rgb) / 0.05), transparent)',
+          }}
+        />
+        <div
+          className="absolute -left-[15%] top-[18%] h-[36vh] w-[34vw] rounded-full blur-3xl"
+          style={{ background: 'rgb(var(--theme-accent-rgb) / 0.06)' }}
+        />
+        <div
+          className="absolute -right-[10%] top-[8%] h-[40vh] w-[32vw] rounded-full blur-3xl"
+          style={{ background: 'rgb(var(--theme-accent-rgb) / 0.045)' }}
+        />
       </div>
 
-      <AmbientDriveScene tone={tone} />
+      {showScene ? <AmbientDriveScene tone={tone} /> : null}
 
       <div
         className="pointer-events-none absolute inset-0"

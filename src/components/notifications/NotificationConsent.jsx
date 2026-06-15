@@ -1,30 +1,41 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, X } from 'lucide-react';
+import useUserProfile from '@/hooks/useUserProfile';
+import useAccountPreference from '@/hooks/useAccountPreference';
+import { writeLegacyNotificationState } from '@/lib/app-preferences';
 import {
   getNotificationConsentState,
-  markNotificationConsentSeen,
   requestNotificationConsent,
 } from '@/lib/notifications';
 
 export default function NotificationConsent() {
+  const { profile, saveProfile } = useUserProfile();
+  const [consentState, setConsentState] = useAccountPreference({
+    profile,
+    saveProfile,
+    preferenceKey: 'notificationConsentState',
+    defaultValue: 'new',
+    readLocal: getNotificationConsentState,
+    writeLocal: writeLegacyNotificationState,
+  });
   const [visible, setVisible] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const state = getNotificationConsentState();
-    setVisible(state === 'new');
-  }, []);
+    setVisible(consentState === 'new');
+  }, [consentState]);
 
   const closeAsAsked = () => {
-    markNotificationConsentSeen('asked');
+    setConsentState('asked');
     setVisible(false);
   };
 
   const askPermission = async () => {
     if (saving) return;
     setSaving(true);
-    await requestNotificationConsent();
+    const permission = await requestNotificationConsent();
+    setConsentState(permission === 'granted' ? 'granted' : 'denied');
     setSaving(false);
     setVisible(false);
   };
