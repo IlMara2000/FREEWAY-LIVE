@@ -7,6 +7,8 @@
 
 import React from 'react';
 
+const isDev = import.meta.env.DEV;
+
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -51,7 +53,7 @@ export default class ErrorBoundary extends React.Component {
               <p className="mt-1 text-sm text-muted-foreground">
                 {this.props.message || 'Questa sezione ha avuto un errore. Puoi riprovare o ricaricare la pagina.'}
               </p>
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {isDev && this.state.error && (
                 <pre className="mt-3 rounded-xl bg-black/40 p-3 text-xs font-mono text-destructive overflow-auto max-h-32">
                   {this.state.error.message}
                 </pre>

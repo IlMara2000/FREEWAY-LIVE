@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useOutlet } from 'react-router-dom';
 import { Timer, ListTodo, MessageCircle, Palette, Brain, CalendarDays, LogOut, AlarmClock, BriefcaseBusiness, Menu, Settings, X, LayoutDashboard, BookOpen } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -52,7 +52,8 @@ export default function AppLayout() {
   const { profile, saveProfile } = useUserProfile();
   const [menuOpen, setMenuOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
-  const migrationStartedRef = useRef(false);
+  const migrationInFlightRef = useRef(false);
+  const hasProfile = Boolean(profile);
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -93,15 +94,33 @@ export default function AppLayout() {
     });
   }, [profile, saveProfile, user?.id]);
 
-  useEffect(() => {
-    if (!user?.id || !profile || migrationStartedRef.current) return;
+  const runAccountMigration = useCallback(async () => {
+    if (!user?.id || !hasProfile || migrationInFlightRef.current) return;
 
-    migrationStartedRef.current = true;
-    migrateLocalDataToAccount().catch((error) => {
+    migrationInFlightRef.current = true;
+    try {
+      await migrateLocalDataToAccount();
+    } catch (error) {
       console.warn('Local account migration unavailable:', error);
-      migrationStartedRef.current = false;
-    });
-  }, [profile, user?.id]);
+    } finally {
+      migrationInFlightRef.current = false;
+    }
+  }, [hasProfile, user?.id]);
+
+  useEffect(() => {
+    runAccountMigration();
+  }, [hasProfile, profile?.id, runAccountMigration, user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return undefined;
+
+    const handleOnline = () => {
+      runAccountMigration();
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [runAccountMigration, user?.id]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
