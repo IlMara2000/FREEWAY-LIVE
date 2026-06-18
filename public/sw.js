@@ -1,10 +1,11 @@
-const CACHE_NAME = 'freeway-life-v10';
+const CACHE_NAME = 'freeway-life-v11';
 const STATIC_ASSETS = [
   '/site.webmanifest',
   '/favicon.svg',
   '/web-app-manifest-192x192.png',
   '/web-app-manifest-512x512.png',
 ];
+const STATIC_ASSET_PATHS = new Set(STATIC_ASSETS);
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -38,34 +39,7 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
-
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put('/', clone));
-          return response;
-        })
-        .catch(() => caches.match('/') || Response.error())
-    );
-    return;
-  }
-
-  if (url.pathname.startsWith('/assets/') || ['script', 'style', 'worker'].includes(request.destination)) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        })
-        .catch(() => caches.match(request) || Response.error())
-    );
-    return;
-  }
+  if (!STATIC_ASSET_PATHS.has(url.pathname)) return;
 
   event.respondWith(
     caches.match(request).then((cached) => {
@@ -77,6 +51,6 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       });
-    })
+    }),
   );
 });

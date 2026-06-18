@@ -95,26 +95,52 @@ const buildRecord = (table, data) => ({
 
 // --------------------- LocalStorage Fallback ---------------------
 
-const getFallbackKey = (entityName) => `fw_fallback_${entityName}`;
+const getFallbackKey = (entityName, ownerId = 'guest') => `fw_fallback_${entityName}_${ownerId || 'guest'}`;
 const getMigrationMarkerKey = (ownerId) => `fw_migration_complete_${ownerId}_${MIGRATION_VERSION}`;
 const getLegacyAccountStorageKeys = (ownerId) => [`fw_account_data_${ownerId}`, 'fw_account_data_guest'];
+const getFallbackStorageKeys = (entityName, ownerId) => {
+  const keys = [
+    getFallbackKey(entityName, ownerId),
+    getFallbackKey(entityName, 'guest'),
+    `fw_fallback_${entityName}`,
+  ];
 
-const fallbackRead = (entityName) => {
-  if (typeof window === 'undefined') return [];
-  try {
-    return JSON.parse(localStorage.getItem(getFallbackKey(entityName)) || '[]');
-  } catch {
-    return [];
-  }
+  return Array.from(new Set(keys.filter(Boolean)));
 };
 
-const fallbackClear = (entityName) => {
+const fallbackRead = (entityName, ownerId = 'guest') => {
+  if (typeof window === 'undefined') return [];
+
+  const records = [];
+  const seen = new Set();
+
+  getFallbackStorageKeys(entityName, ownerId).forEach((storageKey) => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      if (!Array.isArray(parsed)) return;
+      parsed.forEach((record) => {
+        const identity = record?.id || JSON.stringify(record);
+        if (seen.has(identity)) return;
+        seen.add(identity);
+        records.push(record);
+      });
+    } catch {
+      // Ignore malformed fallback buckets.
+    }
+  });
+
+  return records;
+};
+
+const fallbackClear = (entityName, ownerId = 'guest') => {
   if (typeof window === 'undefined') return;
-  try {
-    localStorage.removeItem(getFallbackKey(entityName));
-  } catch {
-    // offline fallback
-  }
+  getFallbackStorageKeys(entityName, ownerId).forEach((storageKey) => {
+    try {
+      localStorage.removeItem(storageKey);
+    } catch {
+      // offline fallback
+    }
+  });
 };
 
 const collectLocalBuckets = (ownerId) => {
@@ -133,7 +159,7 @@ const collectLocalBuckets = (ownerId) => {
   }, {});
 
   Object.keys(entityMap).forEach((entityName) => {
-    localBuckets[entityName].push(...fallbackRead(entityName));
+    localBuckets[entityName].push(...fallbackRead(entityName, ownerId));
   });
 
   getLegacyAccountStorageKeys(ownerId).forEach((storageKey) => {
@@ -154,10 +180,10 @@ const collectLocalBuckets = (ownerId) => {
   return localBuckets;
 };
 
-const fallbackWrite = (entityName, records) => {
+const fallbackWrite = (entityName, records, ownerId = 'guest') => {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(getFallbackKey(entityName), JSON.stringify(records));
+    localStorage.setItem(getFallbackKey(entityName, ownerId), JSON.stringify(records));
   } catch {
     // offline fallback
   }
@@ -209,7 +235,7 @@ export const databaseClient = {
 
     if (error) {
       console.warn(`Supabase query error for ${entityName}:`, error.message);
-      const records = fallbackRead(entityName);
+      const records = fallbackRead(entityName, ownerId);
       return filterRecords(records, filters).slice(0, limit || 999);
     }
 
@@ -253,10 +279,10 @@ export const databaseClient = {
 
     if (error) {
       // Fallback to localStorage
-      const records = fallbackRead(entityName);
+      const records = fallbackRead(entityName, ownerId);
       const localRecord = { ...record, id: record.id || `local_${Date.now()}` };
       records.push(localRecord);
-      fallbackWrite(entityName, records);
+      fallbackWrite(entityName, records, ownerId);
       emitDataChanged(entityName);
       return localRecord;
     }
@@ -282,6 +308,8 @@ export const databaseClient = {
     }
 
     const config = ENTITY_COLLECTIONS[entityName];
+    const session = await client.auth.getSession();
+    const ownerId = session?.data?.session?.user?.id || 'guest';
 
     const { data: result, error } = await client
       .from(config.table)
@@ -292,11 +320,11 @@ export const databaseClient = {
 
     if (error) {
       // Update fallback
-      const records = fallbackRead(entityName);
+      const records = fallbackRead(entityName, ownerId);
       const index = records.findIndex((r) => r.id === id);
       if (index >= 0) {
         records[index] = { ...records[index], ...data, updated_date: nowISO() };
-        fallbackWrite(entityName, records);
+        fallbackWrite(entityName, records, ownerId);
         emitDataChanged(entityName);
         return records[index];
       }
@@ -320,6 +348,8 @@ export const databaseClient = {
     }
 
     const config = ENTITY_COLLECTIONS[entityName];
+    const session = await client.auth.getSession();
+    const ownerId = session?.data?.session?.user?.id || 'guest';
 
     const { error } = await client
       .from(config.table)
@@ -328,8 +358,8 @@ export const databaseClient = {
 
     if (error) {
       // Remove from fallback
-      const records = fallbackRead(entityName);
-      fallbackWrite(entityName, records.filter((r) => r.id !== id));
+      const records = fallbackRead(entityName, ownerId);
+      fallbackWrite(entityName, records.filter((r) => r.id !== id), ownerId);
     }
 
     emitDataChanged(entityName);
@@ -384,7 +414,7 @@ export const databaseClient = {
         unlocked_themes: ['emerald'],
       };
       profiles.push(newLocal);
-      fallbackWrite('UserProfile', profiles);
+      fallbackWrite('UserProfile', profiles, ownerId);
       return newLocal;
     }
 

@@ -7,6 +7,14 @@
  */
 
 const UPDATE_EVENT = 'fw:sw-update-available';
+const UPDATE_APPLY_TIMEOUT_MS = 5000;
+
+const notifyUpdate = (registration) => {
+  if (!registration?.waiting) return;
+  window.dispatchEvent(new CustomEvent(UPDATE_EVENT, {
+    detail: { registration },
+  }));
+};
 
 export const registerServiceWorker = () => {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
@@ -32,11 +40,7 @@ export const registerServiceWorker = () => {
         });
 
         // If there's a waiting worker, notify the user
-        if (registration.waiting) {
-          window.dispatchEvent(new CustomEvent(UPDATE_EVENT, {
-            detail: { registration },
-          }));
-        }
+        notifyUpdate(registration);
 
         // Listen for new service workers
         registration.addEventListener('updatefound', () => {
@@ -45,10 +49,7 @@ export const registerServiceWorker = () => {
 
           worker.addEventListener('statechange', () => {
             if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-              // Nuova versione disponibile - non ricaricare forzatamente
-              window.dispatchEvent(new CustomEvent(UPDATE_EVENT, {
-                detail: { registration },
-              }));
+              notifyUpdate(registration);
             }
           });
         });
@@ -75,18 +76,39 @@ export const registerServiceWorker = () => {
 export const applyServiceWorkerUpdate = async (registration) => {
   if (!registration || !registration.waiting) return;
 
-  registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+  const waitingWorker = registration.waiting;
 
-  // Wait for the new service worker to activate
-  await new Promise((resolve) => {
-    const onStateChange = () => {
-      if (navigator.serviceWorker.controller) {
-        navigator.serviceWorker.removeEventListener('controllerchange', onStateChange);
-        resolve();
-      }
+  const activation = new Promise((resolve) => {
+    let resolved = false;
+    const finish = (status) => {
+      if (resolved) return;
+      resolved = true;
+      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+      waitingWorker.removeEventListener('statechange', onWorkerStateChange);
+      resolve(status);
     };
-    navigator.serviceWorker.addEventListener('controllerchange', onStateChange);
+
+    const onControllerChange = () => finish('controllerchange');
+    const onWorkerStateChange = () => {
+      if (waitingWorker.state === 'activated') finish('activated');
+      if (waitingWorker.state === 'redundant') finish('redundant');
+    };
+
+    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+    waitingWorker.addEventListener('statechange', onWorkerStateChange);
   });
+
+  waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+
+  const outcome = await Promise.race([
+    activation,
+    new Promise((resolve) => window.setTimeout(() => resolve('timeout'), UPDATE_APPLY_TIMEOUT_MS)),
+  ]);
+
+  if (outcome === 'timeout' || outcome === 'redundant') {
+    const registrations = await navigator.serviceWorker.getRegistrations().catch(() => []);
+    await Promise.all(registrations.map((entry) => entry.unregister().catch(() => false)));
+  }
 
   window.location.reload();
 };
