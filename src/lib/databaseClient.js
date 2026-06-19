@@ -37,6 +37,9 @@ const toNumeric = (value, fallback = 0) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 };
+const isUUID = (value) =>
+  typeof value === 'string'
+  && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 const pickLatestDate = (...values) =>
   values
     .filter((value) => typeof value === 'string' && value.trim())
@@ -507,27 +510,34 @@ export async function migrateLocalDataToAccount() {
         if (seenLocalKeys.has(localIdentity)) continue;
         seenLocalKeys.add(localIdentity);
 
-        if (record.id && remoteIdsByEntity[entityName]?.has(record.id)) {
+        if (isUUID(record.id) && remoteIdsByEntity[entityName]?.has(record.id)) {
           migrations.push({ entity: entityName, id: record.id, status: 'skipped' });
           continue;
         }
 
         try {
-          const { owner_id, savedAt, ...payload } = record;
+          const {
+            owner_id,
+            savedAt,
+            id: localRecordId,
+            ...payload
+          } = record;
+          const remoteRecordId = isUUID(localRecordId) ? localRecordId : undefined;
           const table = ENTITY_COLLECTIONS[entityName].table;
           const remoteRecord = buildRecord(table, {
             ...payload,
+            ...(remoteRecordId ? { id: remoteRecordId } : {}),
             owner_id: ownerId,
           });
 
-          const query = remoteRecord.id
+          const query = remoteRecordId
             ? client.from(table).upsert(remoteRecord, { onConflict: 'id' }).select('id').single()
             : client.from(table).insert(remoteRecord).select('id').single();
 
           const { data, error } = await query;
           if (error) throw error;
           if (data?.id) remoteIdsByEntity[entityName]?.add(data.id);
-          migrations.push({ entity: entityName, id: record.id, status: 'migrated' });
+          migrations.push({ entity: entityName, id: localRecordId || data?.id, status: 'migrated' });
         } catch (err) {
           migrations.push({ entity: entityName, id: record.id, status: 'failed', error: err.message });
         }

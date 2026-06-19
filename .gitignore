@@ -31,4 +31,5 @@ dist-ssr
 .env
 .vite
 .vercel
+supabase/.temp
 .env*.local
