@@ -19,6 +19,7 @@ import {
   Brain,
   BriefcaseBusiness,
   BookOpen,
+  CalendarCheck,
   CalendarDays,
   ChevronRight,
   Flame,
