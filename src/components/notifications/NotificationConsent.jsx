@@ -1,13 +1,31 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, X } from 'lucide-react';
+import { Bell, CheckCircle2, X } from 'lucide-react';
 import useUserProfile from '@/hooks/useUserProfile';
 import useAccountPreference from '@/hooks/useAccountPreference';
 import { writeLegacyNotificationState } from '@/lib/app-preferences';
 import {
+  enablePushNotifications,
   getNotificationConsentState,
-  requestNotificationConsent,
+  getPushSupportState,
 } from '@/lib/notifications';
+
+const getActivationErrorMessage = (error) => {
+  switch (error?.code) {
+    case 'ios_install_required':
+      return 'Su iPhone/iPad: condividi il sito, aggiungilo alla Home Screen, poi apri Freeway Life dall icona e riprova.';
+    case 'server_config_missing':
+    case 'web_push_env_missing':
+    case 'supabase_server_env_missing':
+      return 'Notifiche non ancora configurate sul server. Riprova dopo l aggiornamento.';
+    case 'permission_denied':
+      return 'Permesso negato. Devi riabilitarlo dalle impostazioni notifiche del browser/sistema.';
+    case 'permission_default':
+      return 'Procedura interrotta. Puoi riprovare da Account > Notifiche.';
+    default:
+      return error?.message || 'Attivazione notifiche non riuscita.';
+  }
+};
 
 export default function NotificationConsent() {
   const { profile, saveProfile } = useUserProfile();
@@ -19,25 +37,41 @@ export default function NotificationConsent() {
     readLocal: getNotificationConsentState,
     writeLocal: writeLegacyNotificationState,
   });
-  const [visible, setVisible] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    setVisible(consentState === 'new');
-  }, [consentState]);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [keepVisibleAfterAttempt, setKeepVisibleAfterAttempt] = useState(false);
+  const support = getPushSupportState();
+  const canAutoPrompt = support.supported || support.code === 'ios_install_required';
+  const visible = (consentState === 'new' && canAutoPrompt) || keepVisibleAfterAttempt;
 
   const closeAsAsked = () => {
     setConsentState('asked');
-    setVisible(false);
+    setKeepVisibleAfterAttempt(false);
+    setErrorMessage('');
+    setSuccessMessage('');
   };
 
   const askPermission = async () => {
     if (saving) return;
     setSaving(true);
-    const permission = await requestNotificationConsent();
-    setConsentState(permission === 'granted' ? 'granted' : 'denied');
-    setSaving(false);
-    setVisible(false);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    try {
+      await enablePushNotifications({ sendTest: true });
+      setKeepVisibleAfterAttempt(false);
+      setConsentState('granted');
+      setSuccessMessage('Notifiche attive. Ti ho inviato una notifica di test.');
+    } catch (error) {
+      const nextState = error?.code === 'permission_denied' ? 'denied' : 'asked';
+      setKeepVisibleAfterAttempt(true);
+      setConsentState(nextState);
+      writeLegacyNotificationState(nextState);
+      setErrorMessage(getActivationErrorMessage(error));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -66,12 +100,31 @@ export default function NotificationConsent() {
               <Bell className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <h2 className="font-grotesk text-lg font-black text-white">Notifiche utili, non rumore.</h2>
+              <h2 className="font-grotesk text-lg font-black text-white">Attiva le notifiche sul telefono</h2>
               <p className="mt-1 text-sm leading-relaxed text-white/55">
-                Freeway puo ricordarti sveglie, memo e promemoria. Decidi tu: puoi negare e continuare a usare l app.
+                Servono per sveglie e promemoria anche quando Freeway Life non e aperta. Se chiudi ora, non te lo richiedo:
+                potrai riattivarle da Account &gt; Notifiche.
               </p>
+              {!support.supported && (
+                <p className="mt-2 rounded-xl border border-amber-300/20 bg-amber-400/10 p-2 text-xs leading-relaxed text-amber-100/80">
+                  {support.message}
+                </p>
+              )}
             </div>
           </div>
+
+          {errorMessage && (
+            <p className="mt-3 rounded-xl border border-red-400/25 bg-red-500/10 p-3 text-xs leading-relaxed text-red-100">
+              {errorMessage}
+            </p>
+          )}
+
+          {successMessage && (
+            <p className="mt-3 flex items-center gap-2 rounded-xl border border-emerald-400/25 bg-emerald-500/10 p-3 text-xs text-emerald-100">
+              <CheckCircle2 className="h-4 w-4" />
+              {successMessage}
+            </p>
+          )}
 
           <div className="mt-4 grid grid-cols-2 gap-2">
             <button
@@ -87,7 +140,7 @@ export default function NotificationConsent() {
               disabled={saving}
               className="btn-cyber h-11 rounded-xl text-xs disabled:opacity-50"
             >
-              {saving ? 'APERTURA...' : 'ATTIVA'}
+              {saving ? 'ATTIVO...' : 'ATTIVA'}
             </button>
           </div>
         </motion.section>

@@ -3,15 +3,16 @@ import { accountData } from '@/api/accountDataClient';
 import { normalizeList } from '@/lib/normalize-list';
 import { showLocalNotification } from '@/lib/notifications';
 
-const getToday = () => new Date().toISOString().split('T')[0];
+const getLocalDateKey = (date = new Date()) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 const getMinuteKey = (date = new Date()) =>
-  `${date.toISOString().split('T')[0]}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  `${getLocalDateKey(date)}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 
 const isAlarmDue = (alarm, now = new Date()) => {
   if (!alarm?.enabled || !alarm?.time) return false;
   const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   if (alarm.time !== currentTime) return false;
-  if (alarm.date && alarm.date !== getToday()) return false;
+  if (alarm.date && alarm.date !== getLocalDateKey(now)) return false;
   return true;
 };
 
@@ -30,7 +31,7 @@ export default function useAlarmNotifications(enabled = true) {
         alarms
           .filter((alarm) => isAlarmDue(alarm) && alarm.last_notified_key !== minuteKey)
           .map(async (alarm) => {
-            showLocalNotification({
+            await showLocalNotification({
               title: alarm.title || 'Sveglia Freeway',
               body: alarm.reminder_text || 'Promemoria attivo.',
               tag: `freeway-alarm-${alarm.id}-${minuteKey}`,

@@ -8,6 +8,7 @@ import useUserProfile from '@/hooks/useUserProfile';
 import useAccountPreference from '@/hooks/useAccountPreference';
 import PageShell from '@/components/shared/PageShell';
 import { readLegacyAvatar, writeLegacyAvatar } from '@/lib/app-preferences';
+import NotificationSettingsPanel from '@/components/notifications/NotificationSettingsPanel';
 
 const readImageAsAvatar = (file) => new Promise((resolve, reject) => {
   const reader = new FileReader();
@@ -256,6 +257,8 @@ export default function Account() {
           </Button>
         </div>
       </form>
+
+      <NotificationSettingsPanel profile={profile} saveProfile={saveProfile} />
 
       <section className="glass-panel p-5 space-y-4">
         <div className="flex items-start gap-3">

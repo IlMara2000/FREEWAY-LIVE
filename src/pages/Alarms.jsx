@@ -6,6 +6,7 @@ import { AlarmClock, Bell, Plus, Trash2 } from 'lucide-react';
 import { accountData } from '@/api/accountDataClient';
 import { normalizeList } from '@/lib/normalize-list';
 import PageShell from '@/components/shared/PageShell';
+import { getClientTimezone } from '@/lib/timezone';
 
 export default function Alarms() {
   const queryClient = useQueryClient();
@@ -33,6 +34,7 @@ export default function Alarms() {
       repeat: date ? 'none' : 'daily',
       reminder_text: reminder.trim(),
       enabled: true,
+      timezone: getClientTimezone(),
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['alarms'] });

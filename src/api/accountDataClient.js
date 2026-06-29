@@ -9,6 +9,7 @@
  */
 
 import { databaseClient, ACCOUNT_DATA_CHANGED_EVENT } from '@/lib/databaseClient';
+import { getClientTimezone } from '@/lib/timezone';
 
 // Re-export per backward compatibility
 export { ACCOUNT_DATA_CHANGED_EVENT };
@@ -43,6 +44,7 @@ const ENTITY_DEFAULTS = {
     linked_task_id: '',
     reminder_text: '',
     last_notified_key: '',
+    timezone: getClientTimezone(),
   }),
   Note: () => ({
     title: 'Nuova nota',

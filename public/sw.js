@@ -1,4 +1,4 @@
-const CACHE_NAME = 'freeway-life-v11';
+const CACHE_NAME = 'freeway-life-v12';
 const STATIC_ASSETS = [
   '/site.webmanifest',
   '/favicon.svg',
@@ -52,5 +52,80 @@ self.addEventListener('fetch', (event) => {
         return response;
       });
     }),
+  );
+});
+
+const DEFAULT_NOTIFICATION = {
+  title: 'Freeway Life',
+  body: 'Hai un nuovo promemoria.',
+  url: '/',
+};
+
+const parsePushPayload = (event) => {
+  if (!event.data) return DEFAULT_NOTIFICATION;
+
+  try {
+    return {
+      ...DEFAULT_NOTIFICATION,
+      ...event.data.json(),
+    };
+  } catch {
+    return {
+      ...DEFAULT_NOTIFICATION,
+      body: event.data.text() || DEFAULT_NOTIFICATION.body,
+    };
+  }
+};
+
+self.addEventListener('push', (event) => {
+  const payload = parsePushPayload(event);
+  const title = payload.title || DEFAULT_NOTIFICATION.title;
+
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: payload.body || DEFAULT_NOTIFICATION.body,
+      icon: payload.icon || '/web-app-manifest-192x192.png',
+      badge: payload.badge || '/favicon.svg',
+      tag: payload.tag || 'freeway-life-notification',
+      renotify: Boolean(payload.tag),
+      data: {
+        url: payload.url || DEFAULT_NOTIFICATION.url,
+        alarmId: payload.alarmId || null,
+        minuteKey: payload.minuteKey || null,
+      },
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const rawUrl = event.notification?.data?.url || '/';
+  const targetUrl = new URL(rawUrl, self.location.origin).href;
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        const matchingClient = clientList.find((client) => {
+          try {
+            return new URL(client.url).origin === self.location.origin;
+          } catch {
+            return false;
+          }
+        });
+
+        if (matchingClient) {
+          if ('navigate' in matchingClient) {
+            return matchingClient.navigate(targetUrl).then((client) => client?.focus?.());
+          }
+          return matchingClient.focus?.();
+        }
+
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(targetUrl);
+        }
+
+        return undefined;
+      })
   );
 });
