@@ -21,12 +21,12 @@ export default function PageShell({
       initial="initial"
       animate="animate"
       exit="exit"
-      className={`relative min-h-screen overflow-hidden bg-[#02050c] ${className}`}
+      className={`relative min-h-dvh overflow-x-hidden bg-[#02050c] ${className}`}
     >
       <DriveBackdrop tone={tone} />
 
-      <div className="relative z-20 min-h-screen w-full px-4 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-[calc(5rem+env(safe-area-inset-top))] md:px-8 md:pb-12 md:pt-8">
-        <div className={`mx-auto w-full ${maxWidth} ${contentClassName}`}>
+      <div className="relative z-20 min-h-dvh w-full px-3.5 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-[calc(4.65rem+env(safe-area-inset-top))] sm:px-5 md:px-8 md:pb-12 md:pt-8">
+        <div className={`app-content mx-auto w-full ${maxWidth} ${contentClassName}`}>
           {children}
         </div>
       </div>

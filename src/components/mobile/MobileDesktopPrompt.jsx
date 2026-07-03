@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Monitor, Smartphone } from 'lucide-react';
+import { BellRing, Smartphone } from 'lucide-react';
 
-const DISPLAY_MS = 3500;
+const DISPLAY_MS = 4200;
 
 export default function MobileDesktopPrompt({ onDone }) {
   useEffect(() => {
@@ -22,7 +22,7 @@ export default function MobileDesktopPrompt({ onDone }) {
       transition={{ duration: 0.22 }}
       role="button"
       tabIndex={0}
-      aria-label="Chiudi consiglio desktop"
+      aria-label="Chiudi consiglio mobile"
       aria-live="polite"
       onClick={() => onDone?.()}
       onKeyDown={(event) => {
@@ -45,19 +45,20 @@ export default function MobileDesktopPrompt({ onDone }) {
         <div className="relative z-10">
           <div className="mx-auto grid h-20 w-20 place-items-center rounded-3xl border border-emerald-300/25 bg-emerald-400/10 text-emerald-100 shadow-[0_0_44px_rgba(16,185,129,0.2)]">
             <div className="relative">
-              <Monitor className="h-9 w-9" />
-              <Smartphone className="absolute -bottom-2 -right-3 h-5 w-5 rounded-md bg-[#02050c] text-cyan-200" />
+              <Smartphone className="h-9 w-9" />
+              <BellRing className="absolute -bottom-2 -right-3 h-5 w-5 rounded-md bg-[#02050c] text-cyan-200" />
             </div>
           </div>
 
           <p className="mt-5 font-mono text-[10px] uppercase tracking-[0.24em] text-emerald-300/62">
-            Esperienza consigliata
+            Modalita mobile
           </p>
           <h2 className="mt-2 font-grotesk text-2xl font-black leading-tight text-white">
-            Da PC rende meglio.
+            Usala come app.
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-white/58">
-            Puoi entrare anche da telefono. Per task, calendario e chat, da PC e piu comoda.
+            Aggiungila alla schermata Home e abilita le notifiche quando il browser lo permette:
+            sveglie e promemoria restano a portata.
           </p>
 
           <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/10">

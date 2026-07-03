@@ -203,38 +203,38 @@ export default function Dashboard() {
   }, [alarms, freewayOS.tomatoTimer, todayKey, todayTasks]);
 
   return (
-    <PageShell maxWidth="max-w-5xl" contentClassName="space-y-5">
+    <PageShell maxWidth="max-w-5xl" contentClassName="space-y-4 sm:space-y-5">
       <motion.header
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between"
+        className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-end md:justify-between"
       >
         <div className="space-y-2">
           <p className="font-mono text-[11px] text-primary/70 uppercase tracking-widest">
             {formatToday()}
           </p>
           <div>
-            <h1 className="text-3xl md:text-5xl font-grotesk font-bold text-foreground">
+            <h1 className="font-grotesk text-[2rem] font-bold leading-none text-foreground sm:text-4xl md:text-5xl">
               Space <span className="text-primary text-glow">Hub</span>
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="mt-1 max-w-[32rem] text-sm leading-relaxed text-muted-foreground">
               Il punto di partenza: chiedi, pianifica, lavora, scarica la testa.
             </p>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           <button
             type="button"
             onClick={() => setAssistantOpen(true)}
-            className="btn-cyber h-11 rounded-xl px-4 inline-flex items-center justify-center gap-2 text-xs"
+            className="btn-cyber inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-4 text-xs sm:w-auto"
           >
             <MessageCircle className="w-4 h-4" />
             Chat Bot
           </button>
           <Link
             to="/themes"
-            className="glass h-11 rounded-xl px-4 inline-flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors"
+            className="glass inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm text-muted-foreground transition-colors hover:bg-primary/5 hover:text-primary sm:w-auto"
           >
             <Palette className="w-4 h-4" />
             Temi
@@ -247,7 +247,7 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08 }}
-          className="glass-panel p-5 md:p-6 space-y-5"
+          className="glass-panel space-y-4 p-4 md:space-y-5 md:p-6"
         >
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -265,20 +265,20 @@ export default function Dashboard() {
             )}
           </div>
           <XPBar totalXP={profile?.total_xp || 0} level={profile?.level || 1} />
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-3 gap-2">
             <div className="glass rounded-xl p-3">
-              <p className="font-mono text-[10px] uppercase tracking-widest text-white/35">Prossimo livello</p>
-              <p className="mt-1 font-grotesk text-lg font-bold text-white">
+              <p className="font-mono text-[9px] uppercase tracking-widest text-white/35 sm:text-[10px]">Prossimo livello</p>
+              <p className="mt-1 font-grotesk text-base font-bold text-white sm:text-lg">
                 {Math.max(0, xpState.needed - xpState.current)} XP
               </p>
             </div>
             <div className="glass rounded-xl p-3">
-              <p className="font-mono text-[10px] uppercase tracking-widest text-white/35">Temi sbloccati</p>
-              <p className="mt-1 font-grotesk text-lg font-bold text-white">{unlockedThemes}</p>
+              <p className="font-mono text-[9px] uppercase tracking-widest text-white/35 sm:text-[10px]">Temi sbloccati</p>
+              <p className="mt-1 font-grotesk text-base font-bold text-white sm:text-lg">{unlockedThemes}</p>
             </div>
             <div className="glass rounded-xl p-3">
-              <p className="font-mono text-[10px] uppercase tracking-widest text-white/35">Streak attuale</p>
-              <p className="mt-1 font-grotesk text-lg font-bold text-white">{profile?.streak_days || 0}g</p>
+              <p className="font-mono text-[9px] uppercase tracking-widest text-white/35 sm:text-[10px]">Streak attuale</p>
+              <p className="mt-1 font-grotesk text-base font-bold text-white sm:text-lg">{profile?.streak_days || 0}g</p>
             </div>
           </div>
         </motion.div>
@@ -287,7 +287,7 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12 }}
-          className="glass-panel p-5 md:p-6 flex flex-col justify-between gap-4"
+          className="glass-panel flex flex-col justify-between gap-4 p-4 md:p-6"
         >
           <div className="space-y-1">
             <p className="font-mono text-[10px] text-primary/60 uppercase tracking-widest">
@@ -342,7 +342,7 @@ export default function Dashboard() {
 
       <OperatingSystemPanel />
 
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <section className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
         {stats.map((stat, index) => (
           <StatCard key={stat.label} {...stat} delay={0.14 + index * 0.04} />
         ))}
@@ -359,20 +359,20 @@ export default function Dashboard() {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
           {actionCards.map((action, index) => {
             const CardIcon = action.icon;
             const cardContent = (
               <>
                 <div className="flex items-center justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:glow-emerald transition-all">
-                    <CardIcon className="w-5 h-5 text-primary" />
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 transition-all group-hover:glow-emerald sm:h-10 sm:w-10">
+                    <CardIcon className="h-[1.125rem] w-[1.125rem] text-primary sm:h-5 sm:w-5" />
                   </div>
                   <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
                 <div>
-                  <h3 className="font-grotesk font-semibold text-foreground">{action.title}</h3>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{action.description}</p>
+                  <h3 className="font-grotesk text-sm font-semibold text-foreground sm:text-base">{action.title}</h3>
+                  <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-muted-foreground sm:text-xs sm:leading-relaxed">{action.description}</p>
                 </div>
               </>
             );
@@ -388,14 +388,14 @@ export default function Dashboard() {
                   <button
                     type="button"
                     onClick={() => setAssistantOpen(true)}
-                    className="glass w-full rounded-2xl p-4 min-h-[132px] flex flex-col justify-between text-left hover:bg-primary/5 hover:border-primary/20 transition-colors group"
+                    className="glass flex min-h-[112px] w-full flex-col justify-between rounded-2xl p-3 text-left transition-colors hover:border-primary/20 hover:bg-primary/5 sm:min-h-[132px] sm:p-4 group"
                   >
                     {cardContent}
                   </button>
                 ) : (
                   <Link
                     to={action.to}
-                    className="glass rounded-2xl p-4 min-h-[132px] flex flex-col justify-between hover:bg-primary/5 hover:border-primary/20 transition-colors group"
+                    className="glass flex min-h-[112px] flex-col justify-between rounded-2xl p-3 transition-colors hover:border-primary/20 hover:bg-primary/5 sm:min-h-[132px] sm:p-4 group"
                   >
                     {cardContent}
                   </Link>

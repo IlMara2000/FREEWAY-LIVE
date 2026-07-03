@@ -108,8 +108,40 @@
     @apply border-border outline-ring/50;
   }
 
+  html {
+    min-height: 100%;
+    background: var(--background-raw);
+    color-scheme: dark;
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
     @apply bg-background text-foreground font-lexend;
+    min-height: 100%;
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+  }
+
+  #root {
+    min-height: 100dvh;
+    isolation: isolate;
+  }
+
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  input,
+  textarea,
+  select {
+    font-size: 16px;
   }
 }
 
@@ -230,3 +262,39 @@ body {
 }
 .spiral-exit  { animation: spiral-out 0.45s cubic-bezier(0.4,0,0.6,1) forwards; }
 .spiral-enter { animation: spiral-in  0.45s cubic-bezier(0.4,0,0.6,1) forwards; }
+
+@media (max-width: 767px) {
+  body {
+    background-image:
+      linear-gradient(rgb(255 255 255 / calc(var(--theme-grid-opacity) * 0.6)) 1px, transparent 1px),
+      radial-gradient(circle at 10% 10%, rgb(var(--theme-accent-rgb) / calc(var(--theme-glow-mid-opacity) * 0.78)), transparent 46%),
+      radial-gradient(circle at 92% 24%, rgb(var(--theme-accent-rgb) / calc(var(--theme-glow-soft-opacity) * 0.72)), transparent 42%),
+      radial-gradient(circle at 50% 110%, rgb(var(--theme-accent-rgb) / calc(var(--theme-glow-soft-opacity) * 0.68)), transparent 48%) !important;
+    background-size: 100% 5px, 100% 100%, 100% 100%, 100% 100% !important;
+  }
+
+  .app-content {
+    max-width: min(100%, 430px);
+  }
+
+  .glass-panel {
+    border-radius: 1.25rem;
+    box-shadow:
+      0 20px 54px -22px rgba(0,0,0,0.9),
+      inset 0 1px 1px rgba(255,255,255,0.045);
+  }
+
+  .btn-cyber {
+    min-height: 2.75rem;
+    letter-spacing: 0.055em;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .btn-cyber:hover {
+    background: rgb(var(--theme-accent-rgb) / var(--theme-button-fill-opacity));
+    color: #fff;
+    transform: none;
+    box-shadow: none;
+  }
+}

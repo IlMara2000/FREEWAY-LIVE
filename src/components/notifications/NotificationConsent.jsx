@@ -78,7 +78,7 @@ export default function NotificationConsent() {
     <AnimatePresence>
       {visible && (
         <motion.section
-          className="fixed inset-x-3 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-[95] mx-auto max-w-md rounded-[1.35rem] border border-emerald-300/25 bg-[#02050c]/95 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.72)] backdrop-blur-2xl"
+          className="fixed inset-x-3 bottom-[calc(6.35rem+env(safe-area-inset-bottom))] z-[95] mx-auto max-h-[calc(100dvh-7.5rem)] max-w-md overflow-y-auto rounded-[1.35rem] border border-emerald-300/25 bg-[#02050c]/95 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.72)] backdrop-blur-2xl md:bottom-[calc(1rem+env(safe-area-inset-bottom))] md:max-h-[calc(100dvh-2rem)]"
           initial={{ opacity: 0, y: 26, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 26, scale: 0.96 }}
