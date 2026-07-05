@@ -18,7 +18,7 @@ const AppAssistantChat = lazy(() => import('@/components/assistant/AppAssistantC
 
 const NAV_ITEMS = [
   { path: '/', icon: LayoutDashboard, label: 'Hub' },
-  { action: 'assistant', icon: MessageCircle, label: 'Chat Bot' },
+  { action: 'assistant', icon: MessageCircle, label: 'Assistente LLM' },
   { path: '/calendar', icon: CalendarDays, label: 'Calendar' },
   { path: '/planner', icon: ListTodo, label: 'Planner' },
   { path: '/tomato', icon: Timer, label: 'Timer' },

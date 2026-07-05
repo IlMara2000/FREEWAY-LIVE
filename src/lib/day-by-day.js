@@ -323,7 +323,9 @@ export const inferTaskArea = (task = {}) => {
 };
 
 export const getAntiChaosMessage = (tasks = [], nextTask = {}) => {
-  const activeTasks = tasks.filter((task) => task?.status !== 'done');
+  if (nextTask?.task_type === 'work') return '';
+
+  const activeTasks = tasks.filter((task) => task?.status !== 'done' && task?.task_type !== 'work');
   const importantTasks = activeTasks.filter(isImportantTask);
   const nextIsImportant = isImportantTask(nextTask);
 

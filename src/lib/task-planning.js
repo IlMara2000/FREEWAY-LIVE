@@ -227,8 +227,8 @@ export const parseQuickTaskInput = (rawInput, { baseDate = new Date() } = {}) =>
 const getTaskLoadValue = (task = {}) => LOAD_WEIGHTS[task.priority] || LOAD_WEIGHTS.medium;
 
 export const getTaskLoadSummary = (tasks = [], candidate = null) => {
-  const activeTasks = tasks.filter((task) => task?.status !== 'done');
-  const nextTask = candidate?.title ? candidate : null;
+  const activeTasks = tasks.filter((task) => task?.status !== 'done' && task?.task_type !== 'work');
+  const nextTask = candidate?.title && candidate?.task_type !== 'work' ? candidate : null;
   const combined = nextTask ? [...activeTasks, nextTask] : activeTasks;
   const weightedLoad = combined.reduce((sum, task) => sum + getTaskLoadValue(task), 0);
   const maxLoad = 10;

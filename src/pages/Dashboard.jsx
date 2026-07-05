@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { accountData } from '@/api/accountDataClient';
 import { normalizeList } from '@/lib/normalize-list';
@@ -27,6 +27,7 @@ import {
   ListTodo,
   MessageCircle,
   Palette,
+  PlayCircle,
   Target,
   Timer,
   Zap,
@@ -36,8 +37,8 @@ const actionCards = [
   {
     action: 'assistant',
     icon: MessageCircle,
-    title: 'Chat Bot',
-    description: 'Scrivi cosa ti serve. Prepara task, eventi, memo o sveglie.',
+    title: 'Assistente LLM',
+    description: 'Domande libere, chiarimenti e azioni app quando servono.',
   },
   {
     to: '/calendar',
@@ -128,6 +129,7 @@ const getTimerRemainingLabel = (timer) => {
 export default function Dashboard() {
   const { profile, loading } = useUserProfile();
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const [showSystemPanels, setShowSystemPanels] = useState(false);
   const {
     data: dashboardData = { todayTasks: [], recentSessions: [], alarms: [] },
     isLoading: dataLoading,
@@ -161,6 +163,10 @@ export default function Dashboard() {
     { icon: Flame, label: 'Streak', value: profile?.streak_days || 0, unit: 'giorni' },
     { icon: Zap, label: 'XP totali', value: profile?.total_xp || 0 },
   ]), [profile]);
+
+  const openTutorial = () => {
+    window.dispatchEvent(new Event('fw:open-app-tutorial'));
+  };
 
   const nextTask = todayTasks[0];
   const todayTimeline = useMemo(() => {
@@ -223,18 +229,26 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
           <button
             type="button"
             onClick={() => setAssistantOpen(true)}
             className="btn-cyber inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-4 text-xs sm:w-auto"
           >
             <MessageCircle className="w-4 h-4" />
-            Chat Bot
+            LLM
+          </button>
+          <button
+            type="button"
+            onClick={openTutorial}
+            className="glass inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-3 text-sm text-muted-foreground transition-colors hover:bg-primary/5 hover:text-primary sm:w-auto sm:px-4"
+          >
+            <PlayCircle className="w-4 h-4" />
+            Tutorial
           </button>
           <Link
             to="/themes"
-            className="glass inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm text-muted-foreground transition-colors hover:bg-primary/5 hover:text-primary sm:w-auto"
+            className="glass inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-3 text-sm text-muted-foreground transition-colors hover:bg-primary/5 hover:text-primary sm:w-auto sm:px-4"
           >
             <Palette className="w-4 h-4" />
             Temi
@@ -297,7 +311,7 @@ export default function Dashboard() {
               {nextTask?.title || 'Scegli un task e parti leggero'}
             </h2>
             <p className="text-sm text-muted-foreground">
-              {nextTask?.description || 'Apri il Planner o chiedi al Chat Bot di prepararti una partenza semplice.'}
+              {nextTask?.description || 'Apri il Planner o chiedi all’assistente LLM di prepararti una partenza semplice.'}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -338,9 +352,42 @@ export default function Dashboard() {
         </motion.div>
       </section>
 
-      <DayByDayPanel />
+      <section className="glass-panel p-4 md:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-primary/60">
+              Strumenti avanzati
+            </p>
+            <h2 className="mt-1 font-grotesk text-xl font-bold text-white">
+              Routine e Freeway OS
+            </h2>
+            <p className="mt-1 text-sm leading-relaxed text-white/48">
+              Se vuoi solo partire, usa i pulsanti sotto. Apri questa sezione quando vuoi calibrare routine, abitudini e focus shield.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowSystemPanels((value) => !value)}
+            className="glass inline-flex h-11 shrink-0 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white/65 transition-colors hover:text-primary"
+          >
+            {showSystemPanels ? 'Nascondi' : 'Apri strumenti'}
+          </button>
+        </div>
+      </section>
 
-      <OperatingSystemPanel />
+      <AnimatePresence initial={false}>
+        {showSystemPanels && (
+          <motion.div
+            className="space-y-4 sm:space-y-5"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+          >
+            <DayByDayPanel />
+            <OperatingSystemPanel />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <section className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
         {stats.map((stat, index) => (

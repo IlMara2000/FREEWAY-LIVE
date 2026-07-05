@@ -44,8 +44,29 @@ const PageLoading = () => (
 );
 
 const TUTORIAL_KEY = 'fw_tutorial_done';
+const OPEN_TUTORIAL_EVENT = 'fw:open-app-tutorial';
 const APP_ENTERED_KEY = 'fw_app_entered';
 const MOBILE_DESKTOP_PROMPT_KEY = 'fw_mobile_desktop_prompt_seen';
+
+const getTutorialStorageKey = (userId) => (
+  userId ? `${TUTORIAL_KEY}:${userId}` : TUTORIAL_KEY
+);
+
+const hasCompletedTutorial = (userId) => {
+  try {
+    return localStorage.getItem(getTutorialStorageKey(userId)) === '1';
+  } catch {
+    return false;
+  }
+};
+
+const storeCompletedTutorial = (userId) => {
+  try {
+    localStorage.setItem(getTutorialStorageKey(userId), '1');
+  } catch {
+    // If storage is blocked, closing the overlay still lets the user continue.
+  }
+};
 
 const hasStoredAppEntry = () => {
   try {
@@ -127,7 +148,7 @@ const AuthCallback = () => {
 };
 
 const AuthenticatedApp = () => {
-  const { isAuthenticated, isLoadingAuth, isLoadingPublicSettings } = useAuth();
+  const { isAuthenticated, isLoadingAuth, isLoadingPublicSettings, user } = useAuth();
   const { profile, loading: profileLoading, saveProfile } = useUserProfile();
   const [showTutorial, setShowTutorial] = useState(false);
   const [savingOnboarding, setSavingOnboarding] = useState(false);
@@ -171,7 +192,7 @@ const AuthenticatedApp = () => {
   }, [navigate, urlEntered]);
 
   const handleTutorialComplete = () => {
-    localStorage.setItem(TUTORIAL_KEY, '1');
+    storeCompletedTutorial(user?.id);
     setShowTutorial(false);
   };
 
@@ -198,7 +219,7 @@ const AuthenticatedApp = () => {
         },
       });
 
-      if (!localStorage.getItem(TUTORIAL_KEY)) {
+      if (!hasCompletedTutorial(user?.id)) {
         setShowTutorial(true);
       }
     } finally {
@@ -212,10 +233,21 @@ const AuthenticatedApp = () => {
       setShowTutorial(false);
       return;
     }
-    if (!localStorage.getItem(TUTORIAL_KEY)) {
+    if (!hasCompletedTutorial(user?.id)) {
       setShowTutorial(true);
     }
-  }, [canShowAccountOverlays, onboardingComplete]);
+  }, [canShowAccountOverlays, onboardingComplete, user?.id]);
+
+  useEffect(() => {
+    const openTutorial = () => {
+      if (isAuthenticated && !shouldShowSplash && !showPersonalOnboarding) {
+        setShowTutorial(true);
+      }
+    };
+
+    window.addEventListener(OPEN_TUTORIAL_EVENT, openTutorial);
+    return () => window.removeEventListener(OPEN_TUTORIAL_EVENT, openTutorial);
+  }, [isAuthenticated, shouldShowSplash, showPersonalOnboarding]);
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return <PageLoading />;

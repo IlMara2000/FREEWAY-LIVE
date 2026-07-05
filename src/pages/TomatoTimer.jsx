@@ -934,9 +934,11 @@ export default function TomatoTimer({ taskContext, onBack }) {
                     <ShieldCheck className="h-4 w-4" />
                     <span className="font-mono text-[9px] uppercase tracking-[0.22em]">Focus lock</span>
                   </div>
-                  <p className="mt-2 text-xs leading-relaxed text-current/70">
-                    {focusLock ? 'Uscite e reset chiedono conferma mentre il focus gira.' : 'Aggiunge attrito alle uscite facili.'}
-                  </p>
+                  {focusLock && (
+                    <p className="mt-2 text-xs leading-relaxed text-current/70">
+                      Uscite e reset chiedono conferma mentre il focus gira.
+                    </p>
+                  )}
                 </button>
               </div>
 

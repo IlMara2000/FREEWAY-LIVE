@@ -41,7 +41,7 @@ const STUDENT_TYPES = [
   { value: 'primary', label: 'Elementari' },
   { value: 'middle', label: 'Medie' },
   { value: 'high', label: 'Superiori' },
-  { value: 'university', label: 'Universita' },
+  { value: 'university', label: 'Università' },
   { value: 'mixed', label: 'Percorso misto' },
 ];
 
@@ -175,11 +175,18 @@ export default function School() {
         <div className="glass-panel p-5 md:p-6">
           <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-emerald-400/60">Report studio</p>
           <h1 className="font-grotesk text-3xl font-black leading-none text-white md:text-5xl text-glow">
-            Scuola
+            Scuola / Università
           </h1>
           <p className="mt-3 max-w-2xl text-sm text-white/48">
-            Una copia semplice di Lavoro, ma dedicata a compiti, verifiche ed esami. I task segnati come studio diventano tempo, carico e ripasso stimato.
+            Una sezione per scuola, università, corsi, esami, appelli, verifiche e compiti. I task segnati come studio diventano tempo, carico e ripasso stimato.
           </p>
+          <div className="mt-4 rounded-2xl border border-emerald-300/12 bg-emerald-400/[0.045] p-3">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-emerald-300/65">Come funziona nell'app</p>
+            <p className="mt-1 max-w-3xl text-sm leading-relaxed text-white/58">
+              Configuri il tuo livello o percorso, poi in Planner o Calendario imposti le attività come “Studio”.
+              Freeway raggruppa compiti, esami e sessioni per mese, stima ore, ripasso e distanza dal voto target.
+            </p>
+          </div>
         </div>
 
         <div className="glass-panel space-y-3 p-5">
@@ -259,11 +266,11 @@ export default function School() {
 
           <div className="grid gap-3 md:grid-cols-2">
             <label className="space-y-2 md:col-span-2">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-white/42">Classe / materia / percorso</span>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-white/42">Classe / materia / corso universitario</span>
               <Input
                 value={profile.classLabel}
                 onChange={(event) => updateProfile('classLabel', event.target.value)}
-                placeholder="Es. 2B, matematica, sessione estiva..."
+                placeholder="Es. Analisi 1, tesi, sessione estiva..."
                 className="h-11 rounded-xl border-white/10 bg-black/20"
               />
             </label>

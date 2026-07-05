@@ -9,14 +9,14 @@ import { applyAssistantActions, getActionLabel, normalizeAssistantActions } from
 const STARTER_MESSAGES = [
   {
     role: 'assistant',
-    content: 'Dimmi cosa devi sistemare. Posso preparare task, eventi, memo e sveglie dentro Freeway. Tu controlli la proposta prima di applicarla.',
+    content: 'Dimmi pure cosa ti serve. Posso rispondere a quesiti semplici, ragionare con te, chiarire una richiesta confusa e, quando serve, preparare task, eventi, memo o sveglie dentro Freeway.',
   },
 ];
 
 const QUICK_PROMPTS = [
-  'Programma 3 task leggeri',
-  'Trasforma caos in calendario',
-  'Crea una sveglia utile',
+  'Fammi una domanda libera',
+  'Aiutami a capire cosa fare',
+  'Trasforma caos in piano',
 ];
 
 const ACTION_TYPES = [
@@ -127,7 +127,7 @@ export default function AssistantChatSurface({
         },
       ]);
     } catch (err) {
-      setError(err?.message || 'Chat Bot non disponibile. Riprova tra poco.');
+      setError(err?.message || 'Assistente LLM non disponibile. Riprova tra poco.');
       setMessages(nextMessages);
     } finally {
       setLoading(false);
@@ -215,7 +215,7 @@ export default function AssistantChatSurface({
           </motion.div>
           <div className="min-w-0">
             <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-emerald-300/60">
-              Chat Bot operativo
+              LLM operativo
             </p>
             <h1 className={`${compact ? 'text-[1.35rem] sm:text-2xl' : 'text-[1.65rem] sm:text-5xl'} font-grotesk font-black leading-[0.96] text-white`}>
               Cosa ti serve oggi?

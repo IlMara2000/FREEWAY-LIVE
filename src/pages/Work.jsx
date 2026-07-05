@@ -173,6 +173,13 @@ export default function Work() {
           <p className="mt-3 max-w-2xl text-sm text-white/48">
             Imposti una volta il tuo contratto o la tua attivita. Poi i turni segnati come lavoro diventano ore, stime e margine reale senza dover rifare i conti ogni volta.
           </p>
+          <div className="mt-4 rounded-2xl border border-emerald-300/12 bg-emerald-400/[0.045] p-3">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-emerald-300/65">Come funziona nell'app</p>
+            <p className="mt-1 max-w-3xl text-sm leading-relaxed text-white/58">
+              Configuri contratto, paga e buffer tasse. Poi in Planner o Calendario crei turni come “Lavoro” con data e orari:
+              questa pagina li trasforma in ore, lordo/netto stimato, media mensile e distanza dal target.
+            </p>
+          </div>
         </div>
 
         <div className="glass-panel space-y-3 p-5">

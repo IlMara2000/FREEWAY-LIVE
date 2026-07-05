@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -20,7 +20,7 @@ import XPReward from '@/components/shared/XPReward';
 import TaskDescriptionAssistant from '@/components/tasks/TaskDescriptionAssistant';
 import TaskModal from '@/components/calendar/TaskModal';
 import PageShell from '@/components/shared/PageShell';
-import { AlertTriangle, Plus, Check, Trash2, BriefcaseBusiness, Clock, Copy, Repeat2, StickyNote, BookOpen } from 'lucide-react';
+import { AlertTriangle, Plus, Check, Trash2, BriefcaseBusiness, Clock, Copy, Repeat2, StickyNote, BookOpen, CalendarDays, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -52,11 +52,104 @@ const RECURRENCE_OPTIONS = [
   { value: 'monthly', label: 'Mensile' },
 ];
 
+const parseDateKey = (dateKey) => {
+  const [year, month, day] = String(dateKey || '').split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+};
+
+const formatDateLabel = (dateKey) => {
+  const date = parseDateKey(dateKey);
+  if (!date) return '';
+  return new Intl.DateTimeFormat('it-IT', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+  }).format(date);
+};
+
+const getTaskDateLabel = (task) => {
+  if (task?.due_date) return formatDateLabel(task.due_date);
+  if (task?.status === TASK_STATUS.today) return 'oggi';
+  return '';
+};
+
+const timeToMinutes = (time) => {
+  const [hours, minutes] = String(time || '').split(':').map(Number);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+  return (hours * 60) + minutes;
+};
+
+const getShiftMinutes = (task) => {
+  const start = timeToMinutes(task?.start_time);
+  const end = timeToMinutes(task?.end_time);
+  if (start === null || end === null) return 0;
+  return Math.max(0, end >= start ? end - start : (24 * 60) - start + end);
+};
+
+const formatShiftDuration = (minutes) => {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (!hours) return `${rest}m`;
+  return rest ? `${hours}h ${String(rest).padStart(2, '0')}m` : `${hours}h`;
+};
+
+const getWeekStart = (date) => {
+  const next = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const day = next.getDay() || 7;
+  next.setDate(next.getDate() - day + 1);
+  return next;
+};
+
+const formatDateKey = (date) => [
+  date.getFullYear(),
+  String(date.getMonth() + 1).padStart(2, '0'),
+  String(date.getDate()).padStart(2, '0'),
+].join('-');
+
+const formatWeekRange = (weekStart) => {
+  const end = new Date(weekStart);
+  end.setDate(end.getDate() + 6);
+  const formatter = new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: 'short' });
+  return `${formatter.format(weekStart)} - ${formatter.format(end)}`;
+};
+
+const getWorkWeekGroups = (workTasks = []) => {
+  const groups = new Map();
+
+  workTasks.forEach((task) => {
+    const date = parseDateKey(task.due_date) || new Date(task.created_date || Date.now());
+    const weekStart = getWeekStart(date);
+    const weekKey = formatDateKey(weekStart);
+    const current = groups.get(weekKey) || {
+      weekKey,
+      label: formatWeekRange(weekStart),
+      totalMinutes: 0,
+      shifts: [],
+    };
+
+    current.totalMinutes += getShiftMinutes(task);
+    current.shifts.push(task);
+    groups.set(weekKey, current);
+  });
+
+  return Array.from(groups.values())
+    .map((group) => ({
+      ...group,
+      shifts: group.shifts.sort((left, right) => (
+        (left.due_date || '').localeCompare(right.due_date || '') ||
+        (left.start_time || '').localeCompare(right.start_time || '')
+      )),
+    }))
+    .sort((left, right) => right.weekKey.localeCompare(left.weekKey));
+};
+
 export default function Planner() {
   const [activeTab, setActiveTab] = useState('today');
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [newPriority, setNewPriority] = useState('medium');
+  const [newDueDate, setNewDueDate] = useState(getTodayDateKey());
   const [newStartTime, setNewStartTime] = useState('09:00');
   const [newEndTime, setNewEndTime] = useState('17:00');
   const [newTaskType, setNewTaskType] = useState('task');
@@ -68,6 +161,7 @@ export default function Planner() {
   const [rewardData, setRewardData] = useState({ amount: 0, levelUp: false, newLevel: 1 });
   const [pendingCompleteTask, setPendingCompleteTask] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [openWorkWeeks, setOpenWorkWeeks] = useState(() => new Set());
   const { profile, addXP, incrementTasksCompleted } = useUserProfile();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -76,7 +170,21 @@ export default function Planner() {
     queryKey: ['tasks', activeTab],
     queryFn: () => accountData.tasks.filter({ status: activeTab }, '-created_date', 50),
   });
+  const { data: workTaskResponse = [], isLoading: isLoadingWorkTasks } = useQuery({
+    queryKey: ['planner-work-shifts'],
+    queryFn: () => accountData.tasks.list('-due_date', 300),
+  });
   const tasks = normalizeList(taskResponse);
+  const plannerTasks = useMemo(() => tasks.filter((task) => task.task_type !== 'work'), [tasks]);
+  const workShifts = useMemo(() => (
+    normalizeList(workTaskResponse)
+      .filter((task) => task.task_type === 'work')
+      .sort((left, right) => (
+        (right.due_date || '').localeCompare(left.due_date || '') ||
+        (left.start_time || '').localeCompare(right.start_time || '')
+      ))
+  ), [workTaskResponse]);
+  const workWeekGroups = useMemo(() => getWorkWeekGroups(workShifts), [workShifts]);
   const quickAdd = useMemo(() => parseQuickTaskInput(newTitle), [newTitle]);
   const quickAddCandidate = useMemo(() => (
     quickAdd.title
@@ -89,10 +197,16 @@ export default function Planner() {
         }
       : null
   ), [quickAdd, newDescription, newPriority, newTaskType, activeTab]);
+  const loadCandidate = quickAddCandidate?.task_type === 'work' ? null : quickAddCandidate;
   const dailyLoad = useMemo(
-    () => getTaskLoadSummary(tasks, activeTab === TASK_STATUS.today ? quickAddCandidate : null),
-    [tasks, activeTab, quickAddCandidate],
+    () => getTaskLoadSummary(plannerTasks, activeTab === TASK_STATUS.today ? loadCandidate : null),
+    [plannerTasks, activeTab, loadCandidate],
   );
+
+  useEffect(() => {
+    if (!workWeekGroups.length || openWorkWeeks.size > 0) return;
+    setOpenWorkWeeks(new Set([workWeekGroups[0].weekKey]));
+  }, [openWorkWeeks.size, workWeekGroups]);
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
@@ -152,13 +266,13 @@ export default function Planner() {
     const resolvedRecurrence = parsed.recurrence !== 'none' ? parsed.recurrence : newRecurrence;
     const resolvedCopies = parsed.copies > 1 ? parsed.copies : newCopies;
     const resolvedRecurrenceCount = parsed.recurrence !== 'none' ? parsed.recurrenceCount : newRecurrenceCount;
-    const resolvedDueDate = parsed.due_date || (resolvedRecurrence !== 'none' ? getTodayDateKey() : undefined);
-    const resolvedStatus = parsed.due_date && parsed.due_date !== getTodayDateKey()
+    const resolvedDueDate = parsed.due_date || newDueDate || (resolvedRecurrence !== 'none' ? getTodayDateKey() : undefined);
+    const resolvedStatus = resolvedDueDate && resolvedDueDate !== getTodayDateKey()
       ? TASK_STATUS.scheduled
       : activeTab;
 
-    const warning = activeTab === TASK_STATUS.today
-      ? getAntiChaosMessage(tasks, {
+    const warning = activeTab === TASK_STATUS.today && resolvedTaskType !== 'work'
+      ? getAntiChaosMessage(plannerTasks, {
         title: parsed.title || newTitle,
         description: newDescription,
         priority: resolvedPriority,
@@ -216,6 +330,18 @@ export default function Planner() {
     const noteId = task?.linked_note_ids?.[0];
     if (!noteId) return;
     navigate(`/braindump?note=${encodeURIComponent(noteId)}`);
+  };
+
+  const toggleWorkWeek = (weekKey) => {
+    setOpenWorkWeeks((current) => {
+      const next = new Set(current);
+      if (next.has(weekKey)) {
+        next.delete(weekKey);
+      } else {
+        next.add(weekKey);
+      }
+      return next;
+    });
   };
 
   return (
@@ -310,6 +436,9 @@ export default function Planner() {
                   <p className="mt-1 text-sm text-white/80">
                     {dailyLoad.weightedLoad}/{dailyLoad.maxLoad} punti, {dailyLoad.importantCount}/3 task pesanti
                   </p>
+                  <p className="mt-1 text-xs text-white/42">
+                    I turni di lavoro non entrano nel carico: sono ore lavorate, non task mentali.
+                  </p>
                 </div>
                 <span
                   className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest ${
@@ -341,7 +470,23 @@ export default function Planner() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+            <label className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/25 px-3 py-2">
+              <CalendarDays className="w-4 h-4 text-muted-foreground" />
+              <span className="sr-only">Data task o turno</span>
+              <div className="min-w-0 flex-1">
+                <span className="block font-mono text-[9px] uppercase tracking-widest text-muted-foreground/70">
+                  Data
+                </span>
+                <input
+                  type="date"
+                  value={newDueDate}
+                  onChange={(event) => setNewDueDate(event.target.value)}
+                  className="min-w-0 w-full bg-transparent font-mono text-sm text-foreground outline-none"
+                  aria-label="Data task o turno"
+                />
+              </div>
+            </label>
             <label className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/25 px-3 py-2">
               <Clock className="w-4 h-4 text-muted-foreground" />
               <input
@@ -459,18 +604,112 @@ export default function Planner() {
         </div>
       )}
 
+      <section className="glass-panel space-y-3 p-4 md:p-5">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-widest text-emerald-400/60">
+              Turni di lavoro
+            </p>
+            <h2 className="mt-1 font-grotesk text-xl font-bold text-white">
+              Settimane compatte
+            </h2>
+            <p className="mt-1 text-sm leading-relaxed text-white/48">
+              I turni sono separati dai task: non pesano sul carico e qui li vedi per settimana, con data e orari.
+            </p>
+          </div>
+          <span className="rounded-full border border-emerald-300/16 bg-emerald-400/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-emerald-200/70">
+            {workShifts.length} turni
+          </span>
+        </div>
+
+        {isLoadingWorkTasks ? (
+          <div className="h-16 rounded-2xl bg-white/[0.035] animate-pulse" />
+        ) : workWeekGroups.length === 0 ? (
+          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-white/45">
+            Nessun turno registrato. Aggiungine uno come tipo “Lavoro” usando data, ora inizio e ora fine.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {workWeekGroups.map((group) => {
+              const isOpen = openWorkWeeks.has(group.weekKey);
+
+              return (
+                <div key={group.weekKey} className="overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+                  <button
+                    type="button"
+                    onClick={() => toggleWorkWeek(group.weekKey)}
+                    className="flex w-full items-center justify-between gap-3 p-3 text-left transition-colors hover:bg-white/[0.035]"
+                  >
+                    <span className="min-w-0">
+                      <span className="block font-grotesk text-sm font-bold text-white">
+                        Settimana {group.label}
+                      </span>
+                      <span className="mt-1 block text-xs text-white/42">
+                        {group.shifts.length} turni · {formatShiftDuration(group.totalMinutes)}
+                      </span>
+                    </span>
+                    <ChevronDown className={`h-4 w-4 shrink-0 text-white/45 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="border-t border-white/8"
+                      >
+                        <div className="space-y-2 p-3">
+                          {group.shifts.map((shift) => (
+                            <button
+                              key={shift.id}
+                              type="button"
+                              onClick={() => setSelectedTask(shift)}
+                              className="grid w-full gap-2 rounded-xl border border-white/8 bg-white/[0.03] p-3 text-left transition-colors hover:border-emerald-300/20 hover:bg-emerald-400/[0.045] sm:grid-cols-[120px_1fr_auto] sm:items-center"
+                            >
+                              <span className="font-mono text-[10px] uppercase tracking-widest text-emerald-300/65">
+                                {formatDateLabel(shift.due_date) || 'Senza data'}
+                              </span>
+                              <span className="min-w-0">
+                                <span className="block truncate text-sm font-semibold text-white/82">{shift.title}</span>
+                                {shift.description && (
+                                  <span className="mt-1 block truncate text-xs text-white/38">{shift.description}</span>
+                                )}
+                              </span>
+                              <span className="font-mono text-xs text-white/58">
+                                {shift.start_time || '--:--'} - {shift.end_time || '--:--'}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
       <div className="space-y-2">
         {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
           </div>
-        ) : tasks.length === 0 ? (
+        ) : plannerTasks.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground text-sm">
             {activeTab === 'done' ? 'Nessun task completato ancora' : 'Nessun task qui. Aggiungine uno!'}
           </div>
         ) : (
           <AnimatePresence mode="popLayout">
-            {tasks.map((task) => (
+            {plannerTasks.map((task) => {
+              const dateLabel = getTaskDateLabel(task);
+              const timeLabel = task.start_time || task.end_time
+                ? `${task.start_time || '--:--'} - ${task.end_time || '--:--'}`
+                : '';
+
+              return (
               <motion.div
                 key={task.id}
                 layout
@@ -489,10 +728,9 @@ export default function Planner() {
                     }`}>
                       {task.title}
                     </p>
-                    {(task.start_time || task.end_time || task.task_type === 'work' || task.task_type === 'study') && (
+                    {(dateLabel || timeLabel || task.task_type === 'study') && (
                       <p className="text-[10px] font-mono text-muted-foreground truncate mt-1">
-                        {task.start_time || '--:--'} - {task.end_time || '--:--'}
-                        {task.task_type === 'work' ? ' - Lavoro' : task.task_type === 'study' ? ' - Studio' : ''}
+                        {[dateLabel, timeLabel, task.task_type === 'study' ? 'Studio' : ''].filter(Boolean).join(' - ')}
                       </p>
                     )}
                     <TaskDescriptionAssistant
@@ -571,7 +809,8 @@ export default function Planner() {
                   </div>
                 </div>
               </motion.div>
-            ))}
+              );
+            })}
           </AnimatePresence>
         )}
       </div>
