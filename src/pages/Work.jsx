@@ -176,7 +176,7 @@ export default function Work() {
           <div className="mt-4 rounded-2xl border border-emerald-300/12 bg-emerald-400/[0.045] p-3">
             <p className="font-mono text-[10px] uppercase tracking-widest text-emerald-300/65">Come funziona nell'app</p>
             <p className="mt-1 max-w-3xl text-sm leading-relaxed text-white/58">
-              Configuri contratto, paga e buffer tasse. Poi in Planner o Calendario crei turni come “Lavoro” con data e orari:
+              Configuri contratto, paga e buffer tasse. Poi in Piano o Calendario crei turni come “Lavoro” con data e orari:
               questa pagina li trasforma in ore, lordo/netto stimato, media mensile e distanza dal target.
             </p>
           </div>

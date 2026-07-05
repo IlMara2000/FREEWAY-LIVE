@@ -880,13 +880,13 @@ export default function CalendarView({ onStartTomato }) {
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="font-mono text-[10px] uppercase tracking-widest text-emerald-400/60">Memo</p>
-            <h2 className="font-grotesk text-xl font-bold text-white">Pensieri dal Brain Dump</h2>
+            <h2 className="font-grotesk text-xl font-bold text-white">Pensieri da Sfogo</h2>
           </div>
           <StickyNote className="h-5 w-5 text-emerald-300/70" />
         </div>
         {memoTasks.length === 0 ? (
           <p className="rounded-2xl border border-white/8 bg-white/[0.035] p-4 text-sm text-white/42">
-            Nessun memo. Scrivine uno nel Brain Dump e poi mandalo alla chat.
+            Nessun memo. Scrivine uno in Sfogo e poi mandalo alla chat.
           </p>
         ) : (
           <div className="grid gap-2 md:grid-cols-2">

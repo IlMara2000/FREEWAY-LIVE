@@ -52,7 +52,7 @@ const buildContext = ({ profile, location }) => {
   const answers = onboarding?.answers || {};
 
   return {
-    page: location.pathname === '/' ? 'Hub' : location.pathname,
+    page: location.pathname === '/' ? 'Home' : location.pathname,
     today: getTodayIso(),
     onboardingDone: Boolean(onboarding?.privacy?.accepted),
     dayByDayConfigured: Boolean(dayByDay.configured),
@@ -127,7 +127,7 @@ export default function AssistantChatSurface({
         },
       ]);
     } catch (err) {
-      setError(err?.message || 'Assistente LLM non disponibile. Riprova tra poco.');
+      setError(err?.message || 'FreeW.A.I. non disponibile. Riprova tra poco.');
       setMessages(nextMessages);
     } finally {
       setLoading(false);
@@ -215,7 +215,7 @@ export default function AssistantChatSurface({
           </motion.div>
           <div className="min-w-0">
             <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-emerald-300/60">
-              LLM operativo
+              FreeW.A.I. operativo
             </p>
             <h1 className={`${compact ? 'text-[1.35rem] sm:text-2xl' : 'text-[1.65rem] sm:text-5xl'} font-grotesk font-black leading-[0.96] text-white`}>
               Cosa ti serve oggi?

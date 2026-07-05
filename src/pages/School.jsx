@@ -183,7 +183,7 @@ export default function School() {
           <div className="mt-4 rounded-2xl border border-emerald-300/12 bg-emerald-400/[0.045] p-3">
             <p className="font-mono text-[10px] uppercase tracking-widest text-emerald-300/65">Come funziona nell'app</p>
             <p className="mt-1 max-w-3xl text-sm leading-relaxed text-white/58">
-              Configuri il tuo livello o percorso, poi in Planner o Calendario imposti le attività come “Studio”.
+              Configuri il tuo livello o percorso, poi in Piano o Calendario imposti le attività come “Studio”.
               Freeway raggruppa compiti, esami e sessioni per mese, stima ore, ripasso e distanza dal voto target.
             </p>
           </div>

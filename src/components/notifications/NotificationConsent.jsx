@@ -16,8 +16,10 @@ const getActivationErrorMessage = (error) => {
       return 'Su iPhone/iPad: condividi il sito, aggiungilo alla Home Screen, poi apri Freeway Life dall icona e riprova.';
     case 'server_config_missing':
     case 'web_push_env_missing':
-    case 'supabase_server_env_missing':
+    case 'supabase_anon_env_missing':
       return 'Notifiche non ancora configurate sul server. Riprova dopo l aggiornamento.';
+    case 'supabase_server_env_missing':
+      return 'Supabase non è configurato nelle funzioni server. Riprova dopo l aggiornamento.';
     case 'permission_denied':
       return 'Permesso negato. Devi riabilitarlo dalle impostazioni notifiche del browser/sistema.';
     case 'permission_default':

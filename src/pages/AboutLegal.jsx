@@ -20,12 +20,12 @@ const INFO_BLOCKS = [
   {
     icon: CalendarDays,
     title: 'Come funziona',
-    text: 'Hub, Calendar, Planner, Timer, Dump, Lavoro, Sveglie e Temi lavorano come un unico spazio operativo. Scrivi, organizzi, programmi, completi e misuri senza dover saltare tra mille app.',
+    text: 'Home, Calendario, Piano, Timer, Sfogo, Lavoro, Sveglie e Temi lavorano come un unico spazio operativo. Scrivi, organizzi, programmi, completi e misuri senza dover saltare tra mille app.',
   },
   {
     icon: Bot,
-    title: 'Chat Bot',
-    text: "La chat puo aiutarti a trasformare un bisogno in proposte concrete dentro l'app: task, eventi, memo e sveglie. Prima vedi la proposta, poi decidi se modificarla o applicarla.",
+    title: 'FreeW.A.I.',
+    text: "FreeW.A.I. puo aiutarti a trasformare un bisogno in proposte concrete dentro l'app: task, eventi, memo e sveglie. Prima vedi la proposta, poi decidi se modificarla o applicarla.",
   },
   {
     icon: HeartHandshake,
@@ -67,7 +67,7 @@ export default function AboutLegal() {
             to="/"
             className="btn-cyber inline-flex h-11 items-center justify-center rounded-xl px-5 text-xs"
           >
-            Torna alla Hub
+            Torna alla Home
           </Link>
         </div>
       </section>

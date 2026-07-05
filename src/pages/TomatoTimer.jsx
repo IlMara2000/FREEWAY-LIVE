@@ -885,7 +885,7 @@ export default function TomatoTimer({ taskContext, onBack }) {
                   whileTap={{ scale: 0.9 }}
                   type="button"
                   onClick={() => setShowBrainDump(true)}
-                  aria-label="Apri Brain Dump"
+                  aria-label="Apri Sfogo"
                   className="flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-200/15 bg-black/35 text-cyan-200 backdrop-blur-xl transition-colors hover:border-cyan-200/40 hover:bg-cyan-200/10"
                 >
                   <Brain className="h-5 w-5" />

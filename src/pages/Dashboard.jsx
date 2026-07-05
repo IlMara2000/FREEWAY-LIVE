@@ -37,19 +37,19 @@ const actionCards = [
   {
     action: 'assistant',
     icon: MessageCircle,
-    title: 'Assistente LLM',
+    title: 'FreeW.A.I.',
     description: 'Domande libere, chiarimenti e azioni app quando servono.',
   },
   {
     to: '/calendar',
     icon: CalendarDays,
-    title: 'Calendar',
+    title: 'Calendario',
     description: 'Giorni, appuntamenti e memo.',
   },
   {
     to: '/planner',
     icon: ListTodo,
-    title: 'Planner',
+    title: 'Piano',
     description: 'Task, priorita e giornata.',
   },
   {
@@ -61,7 +61,7 @@ const actionCards = [
   {
     to: '/braindump',
     icon: Brain,
-    title: 'Brain Dump',
+    title: 'Sfogo',
     description: 'Svuota la testa e crea memo.',
   },
   {
@@ -113,6 +113,12 @@ const timeToValue = (time) => {
   return (hours * 60) + minutes;
 };
 
+const isTaskForTodayTimeline = (task, todayKey) => {
+  if (!task) return false;
+  if (task.due_date) return task.due_date === todayKey;
+  return task.status === 'today' && task.task_type !== 'work';
+};
+
 const getTimerRemainingLabel = (timer) => {
   if (!timer) return '';
   if (timer.isRunning && timer.endsAt) {
@@ -138,7 +144,7 @@ export default function Dashboard() {
     queryKey: ['dashboard'],
     queryFn: async () => {
       const [tasks, sessions, alarms] = await Promise.all([
-        accountData.tasks.filter({ status: 'today' }, '-created_date', 5),
+        accountData.tasks.filter({ status: 'today' }, '-created_date', 80),
         accountData.focusSessions.list('-created_date', 5),
         accountData.alarms.list('time', 20),
       ]);
@@ -155,7 +161,11 @@ export default function Dashboard() {
   const freewayOS = useMemo(() => normalizeFreewayOS(profile?.freeway_os), [profile?.freeway_os]);
   const xpState = useMemo(() => getXPForCurrentLevel(profile?.total_xp || 0), [profile?.total_xp]);
   const unlockedThemes = useMemo(() => getThemeIdsForLevel(profile?.level || 1).length, [profile?.level]);
-  const loadSummary = useMemo(() => getTaskLoadSummary(todayTasks), [todayTasks]);
+  const todayOnlyTasks = useMemo(
+    () => todayTasks.filter((task) => isTaskForTodayTimeline(task, todayKey)),
+    [todayKey, todayTasks],
+  );
+  const loadSummary = useMemo(() => getTaskLoadSummary(todayOnlyTasks), [todayOnlyTasks]);
 
   const stats = useMemo(() => ([
     { icon: Timer, label: 'Focus totale', value: profile?.total_focus_minutes || 0, unit: 'min' },
@@ -168,9 +178,9 @@ export default function Dashboard() {
     window.dispatchEvent(new Event('fw:open-app-tutorial'));
   };
 
-  const nextTask = todayTasks[0];
+  const nextTask = todayOnlyTasks[0];
   const todayTimeline = useMemo(() => {
-    const taskItems = todayTasks.map((task) => ({
+    const taskItems = todayOnlyTasks.map((task) => ({
       id: `task-${task.id}`,
       label: task.title,
       detail: task.description || 'Task pronta.',
@@ -206,7 +216,7 @@ export default function Dashboard() {
     return [...focusItems, ...alarmItems, ...taskItems]
       .sort((left, right) => left.timeValue - right.timeValue)
       .slice(0, 8);
-  }, [alarms, freewayOS.tomatoTimer, todayKey, todayTasks]);
+  }, [alarms, freewayOS.tomatoTimer, todayKey, todayOnlyTasks]);
 
   return (
     <PageShell maxWidth="max-w-5xl" contentClassName="space-y-4 sm:space-y-5">
@@ -221,7 +231,7 @@ export default function Dashboard() {
           </p>
           <div>
             <h1 className="font-grotesk text-[2rem] font-bold leading-none text-foreground sm:text-4xl md:text-5xl">
-              Space <span className="text-primary text-glow">Hub</span>
+              Home
             </h1>
             <p className="mt-1 max-w-[32rem] text-sm leading-relaxed text-muted-foreground">
               Il punto di partenza: chiedi, pianifica, lavora, scarica la testa.
@@ -236,7 +246,7 @@ export default function Dashboard() {
             className="btn-cyber inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-4 text-xs sm:w-auto"
           >
             <MessageCircle className="w-4 h-4" />
-            LLM
+            FreeW.A.I.
           </button>
           <button
             type="button"
@@ -311,7 +321,7 @@ export default function Dashboard() {
               {nextTask?.title || 'Scegli un task e parti leggero'}
             </h2>
             <p className="text-sm text-muted-foreground">
-              {nextTask?.description || 'Apri il Planner o chiedi all’assistente LLM di prepararti una partenza semplice.'}
+              {nextTask?.description || 'Apri il Piano o chiedi a FreeW.A.I. di prepararti una partenza semplice.'}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -472,7 +482,7 @@ export default function Dashboard() {
               Timeline di oggi
             </h2>
             <Link to="/calendar" className="text-xs text-primary hover:underline font-medium">
-              Apri calendar
+                  Apri calendario
             </Link>
           </div>
 
@@ -484,7 +494,7 @@ export default function Dashboard() {
             </div>
           ) : todayTimeline.length === 0 ? (
             <div className="rounded-xl bg-secondary/35 p-4 text-sm text-muted-foreground">
-              Nessun evento utile in timeline. Planner, sveglie e timer sono pronti.
+              Nessun evento utile in timeline. Piano, sveglie e timer sono pronti.
             </div>
           ) : (
             <div className="space-y-2">

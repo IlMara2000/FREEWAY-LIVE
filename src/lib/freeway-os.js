@@ -69,7 +69,7 @@ export const FREEWAY_OS_ROUTINES = [
     description: 'Quando hai troppe schede aperte in testa.',
     xp: 18,
     steps: [
-      { title: 'Svuota 5 pensieri nel Brain Dump', minutes: 5, area: 'mente' },
+      { title: 'Svuota 5 pensieri in Sfogo', minutes: 5, area: 'mente' },
       { title: 'Riordina un punto visibile', minutes: 4, area: 'mente' },
       { title: 'Scegli una sola prossima azione', minutes: 2, area: 'focus' },
     ],

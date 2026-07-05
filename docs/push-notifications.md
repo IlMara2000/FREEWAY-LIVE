@@ -15,7 +15,7 @@ Apply:
 supabase/migrations/20260625120000_add_push_subscriptions.sql
 ```
 
-The table has RLS enabled. Users can only manage their own subscriptions; server functions use `SUPABASE_SERVICE_ROLE_KEY`.
+The table has RLS enabled. Users can only manage their own subscriptions. The user-triggered test endpoint can use the user's JWT plus RLS; the global due-alarm cron still needs `SUPABASE_SERVICE_ROLE_KEY`.
 
 ## Required environment variables
 
@@ -37,6 +37,7 @@ CRON_SECRET=
 ```
 
 `VITE_WEB_PUSH_PUBLIC_KEY` and `WEB_PUSH_PUBLIC_KEY` should be the same public VAPID key.
+`SUPABASE_SERVICE_ROLE_KEY` is required for the global alarm cron, not for the per-user activation test.
 
 ## Scheduling
 

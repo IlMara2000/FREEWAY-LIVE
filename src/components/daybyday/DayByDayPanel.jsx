@@ -268,7 +268,7 @@ export default function DayByDayPanel() {
             to="/planner"
             className="glass inline-flex h-10 items-center justify-center gap-2 rounded-xl px-3 text-xs font-semibold text-white/65 hover:text-emerald-300"
           >
-            Planner
+            Piano
             <ChevronRight className="h-4 w-4" />
           </Link>
         </div>

@@ -38,6 +38,47 @@ export const getSupabaseAdmin = () => {
   });
 };
 
+export const getSupabaseForUserRequest = (req) => {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl) {
+    const error = new Error('Supabase server non configurato.');
+    error.statusCode = 503;
+    error.code = 'supabase_server_env_missing';
+    throw error;
+  }
+
+  if (serviceRoleKey) {
+    return createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+  }
+
+  if (!anonKey) {
+    const error = new Error('Supabase anon key server mancante.');
+    error.statusCode = 503;
+    error.code = 'supabase_anon_env_missing';
+    throw error;
+  }
+
+  return createClient(supabaseUrl, anonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+    global: {
+      headers: {
+        Authorization: req.headers.authorization || '',
+      },
+    },
+  });
+};
+
 export const configureWebPush = () => {
   const publicKey = process.env.WEB_PUSH_PUBLIC_KEY || process.env.VITE_WEB_PUSH_PUBLIC_KEY;
   const privateKey = process.env.WEB_PUSH_PRIVATE_KEY;

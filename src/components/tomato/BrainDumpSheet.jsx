@@ -18,13 +18,13 @@ export default function BrainDumpSheet({ open, onClose }) {
     setError('');
 
     try {
-      await accountData.tasks.create(buildBrainDumpPayload(text, 'Memo rapido nato dal Tomato. Puoi riprenderlo nel calendario o nel Brain Dump.'));
+      await accountData.tasks.create(buildBrainDumpPayload(text, 'Memo rapido nato dal Tomato. Puoi riprenderlo nel calendario o in Sfogo.'));
       invalidateTaskViews(queryClient);
       setText('');
       setSaved(true);
       window.setTimeout(() => setSaved(false), 1500);
     } catch (sendError) {
-      setError(sendError?.message || 'Non riesco a salvare il brain dump.');
+      setError(sendError?.message || 'Non riesco a salvare lo sfogo.');
     } finally {
       setSaving(false);
     }
@@ -51,7 +51,7 @@ export default function BrainDumpSheet({ open, onClose }) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Brain className="w-5 h-5 text-emerald-400" />
-                <h3 className="font-grotesk font-bold text-white">Brain Dump</h3>
+                <h3 className="font-grotesk font-bold text-white">Sfogo</h3>
               </div>
               <button onClick={onClose} className="text-white/30 hover:text-white"><X className="w-5 h-5" /></button>
             </div>

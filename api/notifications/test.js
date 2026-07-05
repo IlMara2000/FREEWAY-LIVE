@@ -2,7 +2,7 @@ import {
   asWebPushSubscription,
   configureWebPush,
   disableFailedSubscription,
-  getSupabaseAdmin,
+  getSupabaseForUserRequest,
   json,
   markSubscriptionTested,
   readJsonBody,
@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const supabase = getSupabaseAdmin();
+    const supabase = getSupabaseForUserRequest(req);
     const push = configureWebPush();
     const user = await verifyUserFromAuthorization(supabase, req);
     const body = await readJsonBody(req);

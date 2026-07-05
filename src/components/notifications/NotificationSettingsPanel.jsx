@@ -27,8 +27,10 @@ const getErrorMessage = (error) => {
       return 'Su iPhone/iPad devi installare Freeway Life nella Home Screen e aprirla dall icona prima di attivare le notifiche.';
     case 'server_config_missing':
     case 'web_push_env_missing':
-    case 'supabase_server_env_missing':
+    case 'supabase_anon_env_missing':
       return 'Configurazione server notifiche mancante. Servono chiavi Web Push e service role su Vercel.';
+    case 'supabase_server_env_missing':
+      return 'Supabase non è configurato nelle funzioni server. Controlla VITE_SUPABASE_URL su Vercel.';
     case 'permission_denied':
       return 'Permesso notifiche negato. Riabilitalo dalle impostazioni del browser o del sistema operativo.';
     case 'subscription_sync_failed':
