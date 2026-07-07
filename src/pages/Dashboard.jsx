@@ -33,6 +33,8 @@ import {
   Zap,
 } from 'lucide-react';
 
+const MotionLink = motion(Link);
+
 const actionCards = [
   {
     action: 'assistant',
@@ -90,11 +92,32 @@ const actionCards = [
   },
 ];
 
-const priorityClass = {
-  critical: 'bg-destructive',
-  high: 'bg-chart-5',
-  medium: 'bg-primary',
-  low: 'bg-muted-foreground',
+const easeOutExpo = [0.22, 1, 0.36, 1];
+
+const staggerContainer = {
+  initial: {},
+  animate: {
+    transition: {
+      staggerChildren: 0.065,
+      delayChildren: 0.05,
+    },
+  },
+};
+
+const riseIn = {
+  initial: { opacity: 0, y: 18, filter: 'blur(8px)' },
+  animate: {
+    opacity: 1,
+    y: 0,
+    filter: 'blur(0px)',
+    transition: { duration: 0.55, ease: easeOutExpo },
+  },
+};
+
+const hoverLift = {
+  y: -7,
+  scale: 1.012,
+  transition: { type: 'spring', stiffness: 320, damping: 24 },
 };
 
 const formatToday = () =>
@@ -219,51 +242,62 @@ export default function Dashboard() {
   }, [alarms, freewayOS.tomatoTimer, todayKey, todayOnlyTasks]);
 
   return (
-    <PageShell maxWidth="max-w-5xl" contentClassName="space-y-4 sm:space-y-5">
+    <PageShell maxWidth="max-w-5xl" contentClassName="space-y-5 sm:space-y-6">
       <motion.header
-        initial={{ opacity: 0, y: -16 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-end md:justify-between"
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
+        className="relative flex flex-col gap-4 md:flex-row md:items-end md:justify-between"
       >
-        <div className="space-y-2">
+        <motion.div variants={riseIn} className="relative z-10 space-y-2">
           <p className="font-mono text-[11px] text-primary/70 uppercase tracking-widest">
             {formatToday()}
           </p>
           <div>
-            <h1 className="font-grotesk text-[2rem] font-bold leading-none text-foreground sm:text-4xl md:text-5xl">
+            <h1 className="font-grotesk text-[clamp(2.7rem,11vw,6.2rem)] font-black leading-[0.86] tracking-[-0.08em] text-foreground">
               Home
             </h1>
-            <p className="mt-1 max-w-[32rem] text-sm leading-relaxed text-muted-foreground">
-              Il punto di partenza: chiedi, pianifica, lavora, scarica la testa.
+            <p className="mt-3 max-w-[36rem] text-sm leading-relaxed text-muted-foreground sm:text-base">
+              Il punto di partenza: apri FreeW.A.I., lancia un focus, guarda la giornata e muoviti senza perdere tempo.
             </p>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
-          <button
+        <motion.div variants={riseIn} className="relative z-10 grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
+          <motion.button
             type="button"
             onClick={() => setAssistantOpen(true)}
             className="btn-cyber inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-4 text-xs sm:w-auto"
+            whileHover={{ y: -3 }}
+            whileTap={{ scale: 0.96 }}
           >
             <MessageCircle className="w-4 h-4" />
             FreeW.A.I.
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             type="button"
             onClick={openTutorial}
-            className="glass inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-3 text-sm text-muted-foreground transition-colors hover:bg-primary/5 hover:text-primary sm:w-auto sm:px-4"
+            className="holo-surface glass inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-3 text-sm text-muted-foreground transition-colors hover:bg-primary/5 hover:text-primary sm:w-auto sm:px-4"
+            whileHover={{ y: -3 }}
+            whileTap={{ scale: 0.96 }}
           >
-            <PlayCircle className="w-4 h-4" />
-            Tutorial
-          </button>
-          <Link
+            <span className="holo-content inline-flex items-center gap-2">
+              <PlayCircle className="w-4 h-4" />
+              Tutorial
+            </span>
+          </motion.button>
+          <MotionLink
             to="/themes"
-            className="glass inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-3 text-sm text-muted-foreground transition-colors hover:bg-primary/5 hover:text-primary sm:w-auto sm:px-4"
+            className="holo-surface glass inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-3 text-sm text-muted-foreground transition-colors hover:bg-primary/5 hover:text-primary sm:w-auto sm:px-4"
+            whileHover={{ y: -3 }}
+            whileTap={{ scale: 0.96 }}
           >
-            <Palette className="w-4 h-4" />
-            Temi
-          </Link>
-        </div>
+            <span className="holo-content inline-flex items-center gap-2">
+              <Palette className="w-4 h-4" />
+              Temi
+            </span>
+          </MotionLink>
+        </motion.div>
       </motion.header>
 
       <section className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
@@ -271,9 +305,10 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08 }}
-          className="glass-panel space-y-4 p-4 md:space-y-5 md:p-6"
+          whileHover={hoverLift}
+          className="holo-surface kinetic-card glass-panel space-y-4 p-4 md:space-y-5 md:p-6"
         >
-          <div className="flex items-center justify-between gap-3">
+          <div className="holo-content flex items-center justify-between gap-3">
             <div>
               <p className="font-mono text-[10px] text-primary/60 uppercase tracking-widest">
                 Stato operatore
@@ -288,19 +323,21 @@ export default function Dashboard() {
               </span>
             )}
           </div>
-          <XPBar totalXP={profile?.total_xp || 0} level={profile?.level || 1} />
-          <div className="grid grid-cols-3 gap-2">
-            <div className="glass rounded-xl p-3">
+          <div className="holo-content">
+            <XPBar totalXP={profile?.total_xp || 0} level={profile?.level || 1} />
+          </div>
+          <div className="holo-content grid grid-cols-3 gap-2">
+            <div className="energy-pill glass rounded-xl p-3">
               <p className="font-mono text-[9px] uppercase tracking-widest text-white/35 sm:text-[10px]">Prossimo livello</p>
               <p className="mt-1 font-grotesk text-base font-bold text-white sm:text-lg">
                 {Math.max(0, xpState.needed - xpState.current)} XP
               </p>
             </div>
-            <div className="glass rounded-xl p-3">
+            <div className="energy-pill glass rounded-xl p-3">
               <p className="font-mono text-[9px] uppercase tracking-widest text-white/35 sm:text-[10px]">Temi sbloccati</p>
               <p className="mt-1 font-grotesk text-base font-bold text-white sm:text-lg">{unlockedThemes}</p>
             </div>
-            <div className="glass rounded-xl p-3">
+            <div className="energy-pill glass rounded-xl p-3">
               <p className="font-mono text-[9px] uppercase tracking-widest text-white/35 sm:text-[10px]">Streak attuale</p>
               <p className="mt-1 font-grotesk text-base font-bold text-white sm:text-lg">{profile?.streak_days || 0}g</p>
             </div>
@@ -311,9 +348,10 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12 }}
-          className="glass-panel flex flex-col justify-between gap-4 p-4 md:p-6"
+          whileHover={hoverLift}
+          className="holo-surface kinetic-card glass-panel flex flex-col justify-between gap-4 p-4 md:p-6"
         >
-          <div className="space-y-1">
+          <div className="holo-content space-y-1">
             <p className="font-mono text-[10px] text-primary/60 uppercase tracking-widest">
               Prossima mossa
             </p>
@@ -324,46 +362,56 @@ export default function Dashboard() {
               {nextTask?.description || 'Apri il Piano o chiedi a FreeW.A.I. di prepararti una partenza semplice.'}
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="glass rounded-xl p-3">
+          <div className="holo-content grid grid-cols-2 gap-2">
+            <div className="energy-pill glass rounded-xl p-3">
               <p className="font-mono text-[10px] uppercase tracking-widest text-white/35">Carico reale</p>
               <p className="mt-1 font-grotesk text-lg font-bold text-white">
                 {loadSummary.weightedLoad}/{loadSummary.maxLoad}
               </p>
             </div>
-            <div className="glass rounded-xl p-3">
+            <div className="energy-pill glass rounded-xl p-3">
               <p className="font-mono text-[10px] uppercase tracking-widest text-white/35">Slot pesanti</p>
               <p className="mt-1 font-grotesk text-lg font-bold text-white">
                 {loadSummary.remainingImportantSlots} liberi
               </p>
             </div>
           </div>
-          <p className="text-xs text-white/42">
+          <p className="holo-content text-xs text-white/42">
             {loadSummary.message}
           </p>
           {nextTask ? (
-            <Link
+            <MotionLink
               to="/tomato"
-              className="btn-cyber h-11 rounded-xl inline-flex items-center justify-center gap-2 text-xs"
+              className="holo-content btn-cyber h-11 rounded-xl inline-flex items-center justify-center gap-2 text-xs"
+              whileHover={{ x: 2 }}
+              whileTap={{ scale: 0.97 }}
             >
               Avvia focus
               <ChevronRight className="w-4 h-4" />
-            </Link>
+            </MotionLink>
           ) : (
-            <button
+            <motion.button
               type="button"
               onClick={() => setAssistantOpen(true)}
-              className="btn-cyber h-11 rounded-xl inline-flex items-center justify-center gap-2 text-xs"
+              className="holo-content btn-cyber h-11 rounded-xl inline-flex items-center justify-center gap-2 text-xs"
+              whileHover={{ x: 2 }}
+              whileTap={{ scale: 0.97 }}
             >
               Chiedi aiuto
               <ChevronRight className="w-4 h-4" />
-            </button>
+            </motion.button>
           )}
         </motion.div>
       </section>
 
-      <section className="glass-panel p-4 md:p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <motion.section
+        className="holo-surface kinetic-card glass-panel p-4 md:p-5"
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        whileHover={hoverLift}
+        transition={{ delay: 0.16 }}
+      >
+        <div className="holo-content flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <p className="font-mono text-[10px] uppercase tracking-widest text-primary/60">
               Strumenti avanzati
@@ -383,7 +431,7 @@ export default function Dashboard() {
             {showSystemPanels ? 'Nascondi' : 'Apri strumenti'}
           </button>
         </div>
-      </section>
+      </motion.section>
 
       <AnimatePresence initial={false}>
         {showSystemPanels && (
@@ -420,10 +468,10 @@ export default function Dashboard() {
           {actionCards.map((action, index) => {
             const CardIcon = action.icon;
             const cardContent = (
-              <>
+              <div className="holo-content flex h-full flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 transition-all group-hover:glow-emerald sm:h-10 sm:w-10">
-                    <CardIcon className="h-[1.125rem] w-[1.125rem] text-primary sm:h-5 sm:w-5" />
+                  <div className="float-soft flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 transition-all group-hover:bg-primary group-hover:text-black group-hover:glow-emerald sm:h-10 sm:w-10">
+                    <CardIcon className="h-[1.125rem] w-[1.125rem] text-primary transition-colors group-hover:text-black sm:h-5 sm:w-5" />
                   </div>
                   <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
@@ -431,7 +479,7 @@ export default function Dashboard() {
                   <h3 className="font-grotesk text-sm font-semibold text-foreground sm:text-base">{action.title}</h3>
                   <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-muted-foreground sm:text-xs sm:leading-relaxed">{action.description}</p>
                 </div>
-              </>
+              </div>
             );
 
             return (
@@ -442,20 +490,24 @@ export default function Dashboard() {
                 transition={{ delay: 0.24 + index * 0.035 }}
               >
                 {action.action === 'assistant' ? (
-                  <button
+                  <motion.button
                     type="button"
                     onClick={() => setAssistantOpen(true)}
-                    className="glass flex min-h-[112px] w-full flex-col justify-between rounded-2xl p-3 text-left transition-colors hover:border-primary/20 hover:bg-primary/5 sm:min-h-[132px] sm:p-4 group"
+                    className="holo-surface kinetic-card glass flex min-h-[112px] w-full flex-col justify-between rounded-2xl p-3 text-left transition-colors hover:border-primary/20 hover:bg-primary/5 sm:min-h-[132px] sm:p-4 group"
+                    whileHover={{ y: -7, scale: 1.025 }}
+                    whileTap={{ scale: 0.97 }}
                   >
                     {cardContent}
-                  </button>
+                  </motion.button>
                 ) : (
-                  <Link
+                  <MotionLink
                     to={action.to}
-                    className="glass flex min-h-[112px] flex-col justify-between rounded-2xl p-3 transition-colors hover:border-primary/20 hover:bg-primary/5 sm:min-h-[132px] sm:p-4 group"
+                    className="holo-surface kinetic-card glass flex min-h-[112px] flex-col justify-between rounded-2xl p-3 transition-colors hover:border-primary/20 hover:bg-primary/5 sm:min-h-[132px] sm:p-4 group"
+                    whileHover={{ y: -7, scale: 1.025 }}
+                    whileTap={{ scale: 0.97 }}
                   >
                     {cardContent}
-                  </Link>
+                  </MotionLink>
                 )}
               </motion.div>
             );
@@ -474,9 +526,10 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.38 }}
-          className="glass rounded-2xl p-5 space-y-3"
+          whileHover={hoverLift}
+          className="holo-surface kinetic-card glass rounded-2xl p-5 space-y-3"
         >
-          <div className="flex items-center justify-between">
+          <div className="holo-content flex items-center justify-between">
             <h2 className="font-grotesk font-semibold text-foreground flex items-center gap-2">
               <CalendarCheck className="w-4 h-4 text-primary" />
               Timeline di oggi
@@ -487,23 +540,27 @@ export default function Dashboard() {
           </div>
 
           {dataLoading ? (
-            <div className="space-y-2">
+            <div className="holo-content space-y-2">
               {[0, 1, 2].map((item) => (
                 <div key={item} className="h-12 rounded-xl bg-secondary/45 animate-pulse" />
               ))}
             </div>
           ) : todayTimeline.length === 0 ? (
-            <div className="rounded-xl bg-secondary/35 p-4 text-sm text-muted-foreground">
+            <div className="holo-content rounded-xl bg-secondary/35 p-4 text-sm text-muted-foreground">
               Nessun evento utile in timeline. Piano, sveglie e timer sono pronti.
             </div>
           ) : (
-            <div className="space-y-2">
-              {todayTimeline.map((item) => {
+            <div className="holo-content space-y-2">
+              {todayTimeline.map((item, index) => {
                 const ItemIcon = item.icon;
                 return (
-                <div
+                <motion.div
                   key={item.id}
                   className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  whileHover={{ x: 4, scale: 1.01 }}
+                  transition={{ delay: 0.44 + index * 0.035 }}
                 >
                   <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-black/20 ${item.accent}`}>
                     <ItemIcon className="h-4 w-4" />
@@ -513,7 +570,7 @@ export default function Dashboard() {
                     <p className="mt-1 truncate text-xs text-muted-foreground">{item.detail}</p>
                   </div>
                   <span className="text-xs font-mono text-primary/80">{item.when}</span>
-                </div>
+                </motion.div>
                 );
               })}
             </div>
@@ -524,29 +581,34 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.42 }}
-          className="glass rounded-2xl p-5 space-y-3"
+          whileHover={hoverLift}
+          className="holo-surface kinetic-card glass rounded-2xl p-5 space-y-3"
         >
-          <h2 className="font-grotesk font-semibold text-foreground flex items-center gap-2">
+          <h2 className="holo-content font-grotesk font-semibold text-foreground flex items-center gap-2">
             <Timer className="w-4 h-4 text-primary" />
             Sessioni recenti
           </h2>
 
           {dataLoading ? (
-            <div className="space-y-2">
+            <div className="holo-content space-y-2">
               {[0, 1, 2].map((item) => (
                 <div key={item} className="h-12 rounded-xl bg-secondary/45 animate-pulse" />
               ))}
             </div>
           ) : recentSessions.length === 0 ? (
-            <div className="rounded-xl bg-secondary/35 p-4 text-sm text-muted-foreground">
+            <div className="holo-content rounded-xl bg-secondary/35 p-4 text-sm text-muted-foreground">
               Nessuna sessione registrata. Una da 15 minuti basta per partire.
             </div>
           ) : (
-            <div className="space-y-2">
-              {recentSessions.map((session) => (
-                <div
+            <div className="holo-content space-y-2">
+              {recentSessions.map((session, index) => (
+                <motion.div
                   key={session.id}
                   className="flex items-center justify-between gap-3 p-3 rounded-xl bg-secondary/50"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  whileHover={{ x: -4, scale: 1.01 }}
+                  transition={{ delay: 0.46 + index * 0.035 }}
                 >
                   <span className="text-sm font-medium text-foreground truncate">
                     {session.task_title || 'Sessione Focus'}
@@ -557,7 +619,7 @@ export default function Dashboard() {
                       <span className="text-xs font-mono text-primary">+{session.xp_earned || 0}</span>
                     )}
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           )}
