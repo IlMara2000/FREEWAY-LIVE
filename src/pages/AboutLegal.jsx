@@ -20,7 +20,7 @@ const INFO_BLOCKS = [
   {
     icon: CalendarDays,
     title: 'Come funziona',
-    text: 'Home, Calendario, Piano, Timer, Sfogo, Lavoro, Sveglie e Temi lavorano come un unico spazio operativo. Scrivi, organizzi, programmi, completi e misuri senza dover saltare tra mille app.',
+    text: 'Home, Calendario, Planner, Timer, Note, Lavoro, Sveglie e Temi lavorano come un unico spazio operativo. Scrivi, organizzi, programmi, completi e misuri senza dover saltare tra mille app.',
   },
   {
     icon: Bot,

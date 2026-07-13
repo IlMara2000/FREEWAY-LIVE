@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -7,6 +7,7 @@ import {
   Clock,
   GraduationCap,
   ReceiptText,
+  Save,
   Target,
   TrendingUp,
 } from 'lucide-react';
@@ -33,6 +34,7 @@ import {
 } from '@/lib/work-utils';
 import {
   DEFAULT_SCHOOL_PROFILE,
+  buildProfileWithAppPreferences,
   readLegacySchoolProfile,
   writeLegacySchoolProfile,
 } from '@/lib/app-preferences';
@@ -97,6 +99,7 @@ const buildStudentCopy = (profile) => {
 
 export default function School() {
   const { profile: userProfile, saveProfile } = useUserProfile();
+  const [saveStatus, setSaveStatus] = useState('idle');
   const [profile, setProfile] = useAccountPreference({
     profile: userProfile,
     saveProfile,
@@ -162,6 +165,21 @@ export default function School() {
 
   const resetProfile = () => setProfile(DEFAULT_SCHOOL_PROFILE);
 
+  const handleManualSave = async () => {
+    if (!userProfile || !saveProfile) return;
+
+    setSaveStatus('saving');
+    writeLegacySchoolProfile(profile);
+
+    try {
+      await saveProfile(buildProfileWithAppPreferences(userProfile, { schoolProfile: profile }));
+      setSaveStatus('saved');
+      window.setTimeout(() => setSaveStatus('idle'), 1800);
+    } catch {
+      setSaveStatus('error');
+    }
+  };
+
   const statCards = [
     { icon: BookOpen, label: 'Sessioni', value: schoolTasks.length },
     { icon: Clock, label: 'Ore studio', value: formatDuration(totalHours) },
@@ -183,7 +201,7 @@ export default function School() {
           <div className="mt-4 rounded-2xl border border-emerald-300/12 bg-emerald-400/[0.045] p-3">
             <p className="font-mono text-[10px] uppercase tracking-widest text-emerald-300/65">Come funziona nell'app</p>
             <p className="mt-1 max-w-3xl text-sm leading-relaxed text-white/58">
-              Configuri il tuo livello o percorso, poi in Piano o Calendario imposti le attività come “Studio”.
+              Configuri il tuo livello o percorso, poi in Planner o Calendario imposti le attività come “Studio”.
               Freeway raggruppa compiti, esami e sessioni per mese, stima ore, ripasso e distanza dal voto target.
             </p>
           </div>
@@ -465,7 +483,7 @@ export default function School() {
             </div>
           ) : monthlyRows.length === 0 ? (
             <div className="rounded-2xl border border-white/[0.06] bg-white/[0.035] p-4 text-sm text-white/42">
-              Nessuna task collegata a studio. Dal calendario o dal planner crea una task e mettila come "Studio".
+              Nessuna task collegata a studio. Dal Calendario o dal Planner crea una task e mettila come "Studio".
             </div>
           ) : (
             <div className="space-y-2">
@@ -537,6 +555,27 @@ export default function School() {
             </div>
           )}
         </div>
+      </section>
+
+      <section className="glass-panel flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between md:p-5">
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-emerald-400/60">Salvataggio</p>
+          <p className="mt-1 text-sm text-white/52">
+            Le modifiche vengono sincronizzate automaticamente. Usa questo pulsante se vuoi forzare il salvataggio subito.
+          </p>
+          {saveStatus === 'error' && (
+            <p className="mt-2 text-xs font-semibold text-amber-200">Non sono riuscito a salvare ora. Riprova tra poco.</p>
+          )}
+        </div>
+        <Button
+          type="button"
+          onClick={handleManualSave}
+          disabled={saveStatus === 'saving' || !userProfile || !saveProfile}
+          className="btn-cyber h-12 shrink-0 rounded-xl px-6 text-xs"
+        >
+          <Save className="mr-2 h-4 w-4" />
+          {saveStatus === 'saving' ? 'Salvo...' : saveStatus === 'saved' ? 'Salvato' : 'Salva'}
+        </Button>
       </section>
     </PageShell>
   );

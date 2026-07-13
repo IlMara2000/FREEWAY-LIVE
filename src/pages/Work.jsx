@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -7,6 +7,7 @@ import {
   Clock,
   Euro,
   ReceiptText,
+  Save,
   Shield,
   TrendingUp,
   WalletCards,
@@ -35,6 +36,7 @@ import {
 } from '@/lib/work-utils';
 import {
   DEFAULT_WORK_PROFILE,
+  buildProfileWithAppPreferences,
   readLegacyWorkProfile,
   writeLegacyWorkProfile,
 } from '@/lib/app-preferences';
@@ -103,6 +105,7 @@ const buildWorkerCopy = (profile) => {
 
 export default function Work() {
   const { profile: userProfile, saveProfile } = useUserProfile();
+  const [saveStatus, setSaveStatus] = useState('idle');
   const [profile, setProfile] = useAccountPreference({
     profile: userProfile,
     saveProfile,
@@ -155,6 +158,21 @@ export default function Work() {
 
   const resetProfile = () => setProfile(DEFAULT_WORK_PROFILE);
 
+  const handleManualSave = async () => {
+    if (!userProfile || !saveProfile) return;
+
+    setSaveStatus('saving');
+    writeLegacyWorkProfile(profile);
+
+    try {
+      await saveProfile(buildProfileWithAppPreferences(userProfile, { workProfile: profile }));
+      setSaveStatus('saved');
+      window.setTimeout(() => setSaveStatus('idle'), 1800);
+    } catch {
+      setSaveStatus('error');
+    }
+  };
+
   const statCards = [
     { icon: BriefcaseBusiness, label: 'Turni', value: workTasks.length },
     { icon: Clock, label: 'Ore registrate', value: formatDuration(totalHours) },
@@ -176,7 +194,7 @@ export default function Work() {
           <div className="mt-4 rounded-2xl border border-emerald-300/12 bg-emerald-400/[0.045] p-3">
             <p className="font-mono text-[10px] uppercase tracking-widest text-emerald-300/65">Come funziona nell'app</p>
             <p className="mt-1 max-w-3xl text-sm leading-relaxed text-white/58">
-              Configuri contratto, paga e buffer tasse. Poi in Piano o Calendario crei turni come “Lavoro” con data e orari:
+              Configuri contratto, paga e buffer tasse. Poi in Planner o Calendario crei turni come “Lavoro” con data e orari:
               questa pagina li trasforma in ore, lordo/netto stimato, media mensile e distanza dal target.
             </p>
           </div>
@@ -571,6 +589,27 @@ export default function Work() {
           <p className="font-mono text-[10px] uppercase tracking-widest text-white/40">Cartellino tipo</p>
           <p className="mt-1 font-grotesk text-2xl font-bold text-white">{formatDuration(hoursPerDay)}</p>
         </div>
+      </section>
+
+      <section className="glass-panel flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between md:p-5">
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-emerald-400/60">Salvataggio</p>
+          <p className="mt-1 text-sm text-white/52">
+            Le modifiche vengono sincronizzate automaticamente. Usa questo pulsante se vuoi forzare il salvataggio subito.
+          </p>
+          {saveStatus === 'error' && (
+            <p className="mt-2 text-xs font-semibold text-amber-200">Non sono riuscito a salvare ora. Riprova tra poco.</p>
+          )}
+        </div>
+        <Button
+          type="button"
+          onClick={handleManualSave}
+          disabled={saveStatus === 'saving' || !userProfile || !saveProfile}
+          className="btn-cyber h-12 shrink-0 rounded-xl px-6 text-xs"
+        >
+          <Save className="mr-2 h-4 w-4" />
+          {saveStatus === 'saving' ? 'Salvo...' : saveStatus === 'saved' ? 'Salvato' : 'Salva'}
+        </Button>
       </section>
     </PageShell>
   );

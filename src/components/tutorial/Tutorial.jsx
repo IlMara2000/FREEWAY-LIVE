@@ -23,8 +23,8 @@ const STEPS = [
   },
   {
     icon: Brain,
-    title: 'Sfogo',
-    text: 'Nel timer trovi Sfogo. Ogni volta che ti viene un pensiero, scaricalo lì — poi torna al focus.',
+    title: 'Note',
+    text: 'Nel timer trovi Note. Ogni volta che ti viene un pensiero, scaricalo lì — poi torna al focus.',
     color: 'emerald',
   },
 ];

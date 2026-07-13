@@ -348,7 +348,7 @@ export default function Planner() {
     <PageShell maxWidth="max-w-4xl" contentClassName="space-y-6">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-3xl font-grotesk font-bold text-foreground">
-          Piano
+          Planner
         </h1>
         <p className="text-sm text-muted-foreground mt-1">Organizza le tue missioni</p>
       </motion.div>

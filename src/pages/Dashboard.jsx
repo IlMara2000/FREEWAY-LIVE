@@ -51,7 +51,7 @@ const actionCards = [
   {
     to: '/planner',
     icon: ListTodo,
-    title: 'Piano',
+    title: 'Planner',
     description: 'Task, priorita e giornata.',
   },
   {
@@ -63,7 +63,7 @@ const actionCards = [
   {
     to: '/braindump',
     icon: Brain,
-    title: 'Sfogo',
+    title: 'Note',
     description: 'Svuota la testa e crea memo.',
   },
   {
@@ -359,7 +359,7 @@ export default function Dashboard() {
               {nextTask?.title || 'Scegli un task e parti leggero'}
             </h2>
             <p className="text-sm text-muted-foreground">
-              {nextTask?.description || 'Apri il Piano o chiedi a FreeW.A.I. di prepararti una partenza semplice.'}
+              {nextTask?.description || 'Apri il Planner o chiedi a FreeW.A.I. di prepararti una partenza semplice.'}
             </p>
           </div>
           <div className="holo-content grid grid-cols-2 gap-2">
@@ -547,7 +547,7 @@ export default function Dashboard() {
             </div>
           ) : todayTimeline.length === 0 ? (
             <div className="holo-content rounded-xl bg-secondary/35 p-4 text-sm text-muted-foreground">
-              Nessun evento utile in timeline. Piano, sveglie e timer sono pronti.
+              Nessun evento utile in timeline. Planner, sveglie e timer sono pronti.
             </div>
           ) : (
             <div className="holo-content space-y-2">

@@ -20,9 +20,9 @@ const NAV_ITEMS = [
   { path: '/', icon: LayoutDashboard, label: 'Home' },
   { action: 'assistant', icon: MessageCircle, label: 'FreeW.A.I.' },
   { path: '/calendar', icon: CalendarDays, label: 'Calendario' },
-  { path: '/planner', icon: ListTodo, label: 'Piano' },
+  { path: '/planner', icon: ListTodo, label: 'Planner' },
   { path: '/tomato', icon: Timer, label: 'Timer' },
-  { path: '/braindump', icon: Brain, label: 'Sfogo' },
+  { path: '/braindump', icon: Brain, label: 'Note' },
   { path: '/school', icon: BookOpen, label: 'Scuola' },
   { path: '/work', icon: BriefcaseBusiness, label: 'Lavoro' },
   { path: '/alarms', icon: AlarmClock, label: 'Sveglie' },
@@ -31,7 +31,7 @@ const NAV_ITEMS = [
 
 const MOBILE_NAV_ITEMS = [
   { path: '/', icon: LayoutDashboard, label: 'Home' },
-  { path: '/planner', icon: ListTodo, label: 'Piano' },
+  { path: '/planner', icon: ListTodo, label: 'Planner' },
   { path: '/calendar', icon: CalendarDays, label: 'Calendario' },
   { path: '/tomato', icon: Timer, label: 'Timer' },
   { action: 'menu', icon: MoreHorizontal, label: 'Menu' },

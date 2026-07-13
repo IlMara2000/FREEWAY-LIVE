@@ -205,7 +205,7 @@ export default function BrainDump() {
       await accountData.tasks.create(
         buildBrainDumpPayload(
           title,
-          'Memo nato da Sfogo. Puoi inviarlo alla chat per trasformarlo in piano, task o sveglia.',
+          'Memo nato da Note. Puoi inviarlo alla chat per trasformarlo in task, promemoria o sveglia.',
         ),
       );
       await awardBrainDumpXP();
@@ -438,7 +438,7 @@ export default function BrainDump() {
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="flex items-center gap-3 text-3xl font-grotesk font-bold text-foreground">
           <Brain className="h-8 w-8 text-primary" />
-          Sfogo
+          Note
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Scarica ogni pensiero. Da qui puoi creare note vere o mandare il caos dentro le task.

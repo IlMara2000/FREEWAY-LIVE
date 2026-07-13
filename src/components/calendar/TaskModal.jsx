@@ -148,7 +148,7 @@ export default function TaskModal({ task, onClose, onStartTomato, onDuplicate, o
                   className="glass rounded-xl p-4 border-t border-emerald-500/25"
                 >
                   <p className="font-mono text-[10px] text-emerald-400/70 uppercase tracking-widest mb-3 flex items-center gap-1">
-                    <Brain className="w-3 h-3" /> Piano ADHD-Friendly
+                    <Brain className="w-3 h-3" /> Planner ADHD-Friendly
                   </p>
                   <div className="text-sm text-white/80 leading-relaxed whitespace-pre-line break-words font-lexend">
                     {slicedContent}
