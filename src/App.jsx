@@ -18,6 +18,7 @@ import {
   Volume2,
   X,
 } from 'lucide-react'
+import NaraGame, { NaraPromo } from './components/NaraGame'
 
 const MAX_CHARACTERS = 4000
 const HISTORY_KEY = 'tradulimba:history:v1'
@@ -129,6 +130,7 @@ function App() {
   const [copied, setCopied] = useState(false)
   const [history, setHistory] = useState(readHistory)
   const [showInfo, setShowInfo] = useState(false)
+  const [showGame, setShowGame] = useState(false)
   const requestRef = useRef(null)
   const textAreaRef = useRef(null)
   const infoButtonRef = useRef(null)
@@ -382,6 +384,20 @@ function App() {
       ?.focus()
   }
 
+  if (showGame) {
+    return (
+      <NaraGame
+        onExit={() => {
+          setShowGame(false)
+          window.setTimeout(() => {
+            const launcher = document.querySelector('[data-nara-launcher]')
+            if (launcher instanceof HTMLElement) launcher.focus()
+          }, 0)
+        }}
+      />
+    )
+  }
+
   return (
     <div className="app-shell">
       <div className="page-texture" aria-hidden="true" />
@@ -603,6 +619,8 @@ function App() {
             </article>
           </div>
         </section>
+
+        <NaraPromo onPlay={() => setShowGame(true)} />
       </main>
 
       <footer className="site-footer">
