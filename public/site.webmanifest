@@ -1,32 +1,19 @@
 {
-  "name": "Freeway Life",
-  "short_name": "Freeway",
-  "description": "Focus hub operativo con routine Day by Day, task, tomato, XP e brain dump.",
+  "name": "TraduLimba — Traduttore italiano sardo",
+  "short_name": "TraduLimba",
+  "description": "Traduci tra italiano e sardo scegliendo LSC, campidanese o logudorese.",
+  "lang": "it",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#eef0f2",
+  "background_color": "#eef0f2",
   "icons": [
     {
-      "src": "/favicon-96x96.png",
-      "sizes": "96x96",
-      "type": "image/png"
-    },
-    {
-      "src": "/apple-touch-icon.png",
-      "sizes": "180x180",
-      "type": "image/png"
-    },
-    {
-      "src": "/web-app-manifest-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/web-app-manifest-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     }
-  ],
-  "theme_color": "#01030b",
-  "background_color": "#01030b",
-  "display": "standalone"
+  ]
 }

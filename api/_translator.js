@@ -1,0 +1,221 @@
+const APERTIUM_ENDPOINT = 'https://apertium.org/apy/translate'
+const AI_GATEWAY_ENDPOINT = 'https://ai-gateway.vercel.sh/v1/chat/completions'
+
+export const MAX_TRANSLATION_CHARACTERS = 4000
+export const VALID_LANGUAGES = new Set(['ita', 'srd'])
+export const VALID_VARIANTS = new Set(['lsc', 'campidanese', 'logudorese'])
+
+const VARIANT_NAMES = {
+  lsc: 'Limba Sarda Comuna (LSC)',
+  campidanese: 'campidanese',
+  logudorese: 'logudorese',
+}
+
+export class TranslatorError extends Error {
+  constructor(message, statusCode = 500, code = 'TRANSLATION_ERROR') {
+    super(message)
+    this.name = 'TranslatorError'
+    this.statusCode = statusCode
+    this.code = code
+  }
+}
+
+const timeoutSignal = (milliseconds) => {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), milliseconds)
+  return {
+    signal: controller.signal,
+    clear: () => clearTimeout(timeout),
+  }
+}
+
+export const normalizeTranslationInput = (input = {}) => {
+  const text = typeof input.text === 'string' ? input.text.trim() : ''
+  const source = typeof input.source === 'string' ? input.source : 'ita'
+  const target = typeof input.target === 'string' ? input.target : 'srd'
+  const variant = typeof input.variant === 'string' ? input.variant : 'lsc'
+
+  if (!text) {
+    throw new TranslatorError('Scrivi qualcosa da tradurre.', 400, 'EMPTY_TEXT')
+  }
+  if (text.length > MAX_TRANSLATION_CHARACTERS) {
+    throw new TranslatorError(
+      `Il testo può contenere al massimo ${MAX_TRANSLATION_CHARACTERS} caratteri.`,
+      413,
+      'TEXT_TOO_LONG',
+    )
+  }
+  if (!VALID_LANGUAGES.has(source) || !VALID_LANGUAGES.has(target) || source === target) {
+    throw new TranslatorError('La direzione di traduzione non è valida.', 400, 'INVALID_LANGUAGE_PAIR')
+  }
+  if (!VALID_VARIANTS.has(variant)) {
+    throw new TranslatorError('La varietà sarda selezionata non è valida.', 400, 'INVALID_VARIANT')
+  }
+
+  return { text, source, target, variant }
+}
+
+const requestApertium = async ({ text, source, target }) => {
+  const timer = timeoutSignal(14000)
+
+  try {
+    const body = new URLSearchParams({
+      q: text,
+      langpair: `${source}|${target}`,
+      markUnknown: 'no',
+    })
+    const response = await fetch(APERTIUM_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+        'User-Agent': 'TraduLimba/1.0',
+      },
+      body,
+      signal: timer.signal,
+    })
+
+    const data = await response.json().catch(() => null)
+    const translation = data?.responseData?.translatedText?.trim()
+
+    if (!response.ok || !translation) {
+      throw new TranslatorError(
+        'Il motore linguistico non ha restituito una traduzione.',
+        502,
+        'APERTIUM_UNAVAILABLE',
+      )
+    }
+
+    return translation
+  } catch (error) {
+    if (error instanceof TranslatorError) throw error
+    if (error.name === 'AbortError') {
+      throw new TranslatorError('Il motore linguistico sta impiegando troppo tempo.', 504, 'APERTIUM_TIMEOUT')
+    }
+    throw new TranslatorError('Il motore linguistico non è raggiungibile.', 502, 'APERTIUM_UNAVAILABLE')
+  } finally {
+    timer.clear()
+  }
+}
+
+const resolveGatewayToken = (env = process.env) => (
+  env.AI_GATEWAY_API_KEY || env.VERCEL_OIDC_TOKEN || ''
+)
+
+const extractMessageText = (content) => {
+  if (typeof content === 'string') return content.trim()
+  if (!Array.isArray(content)) return ''
+  return content
+    .map((part) => (typeof part === 'string' ? part : part?.text || ''))
+    .join('')
+    .trim()
+}
+
+const refineVariantWithAI = async ({ text, draft, source, target, variant, token, env }) => {
+  const variantName = VARIANT_NAMES[variant]
+  const direction = target === 'srd'
+    ? `dall'italiano al sardo ${variantName}`
+    : `dal sardo ${variantName} all'italiano`
+  const task = target === 'srd'
+    ? 'Adatta la bozza LSC alla varietà richiesta, senza italianismi aggiunti e senza cambiare il significato.'
+    : 'Correggi la bozza italiana tenendo conto che il testo di partenza appartiene alla varietà indicata.'
+  const timer = timeoutSignal(18000)
+
+  try {
+    const response = await fetch(AI_GATEWAY_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: env.TRANSLATION_AI_MODEL || 'openai/gpt-5-mini',
+        temperature: 0.1,
+        max_tokens: 1800,
+        messages: [
+          {
+            role: 'system',
+            content: [
+              'Sei un post-editor prudente specializzato in lingua sarda.',
+              'Restituisci soltanto la traduzione finale, senza virgolette, note, markdown o spiegazioni.',
+              'Conserva nomi propri, numeri, formattazione e significato. Non inventare parole.',
+              'Quando non sei sicuro, conserva la forma della bozza invece di indovinare.',
+            ].join(' '),
+          },
+          {
+            role: 'user',
+            content: [
+              `Direzione: ${direction}.`,
+              task,
+              `Testo originale:\n${text}`,
+              `Bozza del motore linguistico:\n${draft}`,
+            ].join('\n\n'),
+          },
+        ],
+      }),
+      signal: timer.signal,
+    })
+    const data = await response.json().catch(() => null)
+    const refined = extractMessageText(data?.choices?.[0]?.message?.content)
+
+    if (!response.ok || !refined) return null
+    return refined.slice(0, MAX_TRANSLATION_CHARACTERS * 2)
+  } catch {
+    return null
+  } finally {
+    timer.clear()
+  }
+}
+
+export const translateText = async (rawInput, env = process.env) => {
+  const input = normalizeTranslationInput(rawInput)
+  const draft = await requestApertium(input)
+
+  if (input.variant === 'lsc') {
+    return {
+      translation: draft,
+      source: input.source,
+      target: input.target,
+      variant: input.variant,
+      variantApplied: true,
+      engine: 'Apertium · srd-ita',
+      warning: '',
+    }
+  }
+
+  const token = resolveGatewayToken(env)
+  if (!token) {
+    return {
+      translation: draft,
+      source: input.source,
+      target: input.target,
+      variant: input.variant,
+      variantApplied: false,
+      engine: 'Apertium · srd-ita',
+      warning: `Il post-editor ${VARIANT_NAMES[input.variant]} non è disponibile: mostro la forma sarda standard.`,
+    }
+  }
+
+  const refined = await refineVariantWithAI({ ...input, draft, token, env })
+  if (!refined) {
+    return {
+      translation: draft,
+      source: input.source,
+      target: input.target,
+      variant: input.variant,
+      variantApplied: false,
+      engine: 'Apertium · srd-ita',
+      warning: `Non ho potuto verificare la variante ${VARIANT_NAMES[input.variant]}: mostro la forma sarda standard.`,
+    }
+  }
+
+  return {
+    translation: refined,
+    source: input.source,
+    target: input.target,
+    variant: input.variant,
+    variantApplied: true,
+    engine: `Apertium + ${env.TRANSLATION_AI_MODEL || 'AI post-editor'}`,
+    warning: `Variante ${VARIANT_NAMES[input.variant]} sperimentale: verifica la resa con un parlante nativo.`,
+  }
+}

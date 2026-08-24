@@ -1,34 +1,48 @@
-# FREEWAY LIVE
+# TraduLimba
 
-React/Vite app for planning tasks, saving brain dumps, running focus sessions, and tracking account XP.
+Traduttore web pubblico italiano ↔ sardo, con scelta esplicita tra:
 
-## Local Development
+- Limba Sarda Comuna (riferimento scritto)
+- Campidanese (beta)
+- Logudorese (beta)
 
-1. Install dependencies:
+Il frontend non importa Supabase, non richiede un account e conserva le traduzioni recenti soltanto nel `localStorage` del browser. Il backend storico resta separato come archivio e non viene modificato.
+
+Il design usa un neomorfismo minimale con una palette ispirata ai colori della Sardegna: blu, verde, giallo e arancio su superfici grigio-perla. Marchio e icona sono originali.
+
+## Motore linguistico
+
+La traduzione di base usa la coppia open source [`apertium-srd-ita`](https://github.com/apertium/apertium-srd-ita) attraverso l'API pubblica Apertium. Le varianti campidanese e logudorese possono essere rifinite da un modello AI tramite Vercel AI Gateway; se il servizio AI non è configurato, l'app restituisce la forma standard e lo dichiara nell'interfaccia.
+
+La voce è sperimentale. In produzione prova Vercel AI Gateway e, se non disponibile, usa la sintesi vocale italiana del dispositivo come fallback. Nessuna delle due soluzioni garantisce una pronuncia sarda nativa.
+
+Per un lancio commerciale su larga scala è consigliato ospitare Apertium in proprio, verificare gli obblighi GPL e introdurre un glossario revisionato da linguisti e parlanti delle diverse aree.
+
+## Avvio locale
 
 ```sh
 npm install
-```
-
-2. Create `.env.local` with the required public client configuration:
-
-```sh
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-GROQ_API_KEY=your_groq_server_key
-```
-
-`GROQ_API_KEY` is used only by the local dev middleware and Vercel serverless API route. Do not expose it with a `VITE_` prefix.
-If an older environment already has `NEXT_PUBLIC_GROQ_API_KEY`, rename it to `GROQ_API_KEY`.
-
-3. Run the app:
-
-```sh
 npm run dev
 ```
 
-## Build
+La traduzione LSC funziona senza segreti. Per il post-editing delle varianti e la voce AI, copia `.env.example` in `.env.local` e imposta `AI_GATEWAY_API_KEY`. Su Vercel si può usare l'identità OIDC automatica senza salvare una chiave permanente.
+
+## Verifiche
 
 ```sh
+npm test
+npm run lint
+npm run typecheck
 npm run build
 ```
+
+## Registrazione della voce
+
+Il [copione completo](docs/copione-registrazione-voce.md) divide la registrazione in fasi: fonetica di base, frasi naturali, numeri e date, parole moderne, prosodia e blocchi separati per campidanese e logudorese. Le registrazioni non vanno inviate a un fornitore senza consenso esplicito del parlante e verifica delle condizioni d’uso.
+
+## API
+
+- `POST /api/translate` — massimo 4.000 caratteri
+- `POST /api/speech` — massimo 1.000 caratteri
+
+Entrambe le route validano l'input, non salvano i testi e applicano un limite leggero per istanza. Prima di un traffico elevato va aggiunto un rate limit distribuito.

@@ -1,112 +1,92 @@
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
 import { defineConfig, loadEnv } from 'vite'
-import { createAppAssistantReply } from './api/_groqAppAssistant.js'
-import { createTaskBreakdown } from './api/_groqTaskBreakdown.js'
-import { createTaskDescriptionSuggestion } from './api/_groqTaskDescription.js'
+import { createSpeech, SpeechError } from './api/_speech.js'
+import { translateText, TranslatorError } from './api/_translator.js'
 
-const readRequestBody = (req) => new Promise((resolve, reject) => {
+const BODY_LIMIT_BYTES = 48 * 1024
+
+const readRequestBody = (request) => new Promise((resolve, reject) => {
   const chunks = []
+  let total = 0
 
-  req.on('data', (chunk) => chunks.push(chunk))
-  req.on('end', () => {
+  request.on('data', (chunk) => {
+    total += chunk.length
+    if (total > BODY_LIMIT_BYTES) {
+      reject(Object.assign(new Error('Richiesta troppo grande.'), { statusCode: 413 }))
+      request.destroy()
+      return
+    }
+    chunks.push(chunk)
+  })
+  request.on('end', () => {
     try {
-      const body = Buffer.concat(chunks).toString('utf8')
-      resolve(JSON.parse(body || '{}'))
-    } catch (error) {
-      reject(error)
+      resolve(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'))
+    } catch {
+      reject(Object.assign(new Error('Richiesta non valida.'), { statusCode: 400 }))
     }
   })
-  req.on('error', reject)
+  request.on('error', reject)
 })
 
-const sendJson = (res, statusCode, payload) => {
-  res.statusCode = statusCode
-  res.setHeader('Content-Type', 'application/json')
-  res.end(JSON.stringify(payload))
+const sendJson = (response, statusCode, payload) => {
+  response.statusCode = statusCode
+  response.setHeader('Cache-Control', 'no-store')
+  response.setHeader('Content-Type', 'application/json; charset=utf-8')
+  response.setHeader('X-Content-Type-Options', 'nosniff')
+  response.end(JSON.stringify(payload))
 }
 
-const resolveGroqApiKey = (env = process.env) =>
-  env.GROQ_API_KEY || env.NEXT_PUBLIC_GROQ_API_KEY || env.VITE_GROQ_API_KEY
+const methodGuard = (request, response) => {
+  if (request.method === 'POST') return false
+  response.setHeader('Allow', 'POST')
+  sendJson(response, 405, { error: 'Metodo non supportato.' })
+  return true
+}
 
-const groqDevApiPlugin = (groqApiKey) => ({
-  name: 'freeway-groq-dev-api',
+const translatorDevApi = (env) => ({
+  name: 'tradulimba-local-api',
   configureServer(server) {
-    server.middlewares.use('/api/groq/task-description', async (req, res) => {
-      if (req.method !== 'POST') {
-        sendJson(res, 405, { error: 'Metodo non supportato.' })
-        return
-      }
+    server.middlewares.use('/api/translate', async (request, response) => {
+      if (methodGuard(request, response)) return
 
       try {
-        const input = await readRequestBody(req)
-        const result = await createTaskDescriptionSuggestion({
-          input,
-          apiKey: groqApiKey,
-        })
-        sendJson(res, 200, result)
+        const input = await readRequestBody(request)
+        sendJson(response, 200, await translateText(input, env))
       } catch (error) {
-        sendJson(res, error.statusCode || 500, {
-          error: error.message || 'Errore durante la richiesta a Groq.',
+        sendJson(response, error instanceof TranslatorError ? error.statusCode : error.statusCode || 500, {
+          error: error.message || 'Errore durante la traduzione.',
+          code: error.code || 'INTERNAL_ERROR',
         })
       }
     })
-    server.middlewares.use('/api/groq/task-breakdown', async (req, res) => {
-      if (req.method !== 'POST') {
-        sendJson(res, 405, { error: 'Metodo non supportato.' })
-        return
-      }
+
+    server.middlewares.use('/api/speech', async (request, response) => {
+      if (methodGuard(request, response)) return
 
       try {
-        const input = await readRequestBody(req)
-        const result = await createTaskBreakdown({
-          input,
-          apiKey: groqApiKey,
-        })
-        sendJson(res, 200, result)
+        const input = await readRequestBody(request)
+        sendJson(response, 200, await createSpeech(input, env))
       } catch (error) {
-        sendJson(res, error.statusCode || 500, {
-          error: error.message || 'Errore durante la richiesta a Groq.',
-        })
-      }
-    })
-    server.middlewares.use('/api/groq/app-assistant', async (req, res) => {
-      if (req.method !== 'POST') {
-        sendJson(res, 405, { error: 'Metodo non supportato.' })
-        return
-      }
-
-      try {
-        const input = await readRequestBody(req)
-        const result = await createAppAssistantReply({
-          input,
-          apiKey: groqApiKey,
-        })
-        sendJson(res, 200, result)
-      } catch (error) {
-        sendJson(res, error.statusCode || 500, {
-          error: error.message || 'Errore durante la richiesta a Groq.',
+        sendJson(response, error instanceof SpeechError ? error.statusCode : error.statusCode || 500, {
+          error: error.message || 'Errore durante la generazione della voce.',
+          code: error.code || 'INTERNAL_ERROR',
         })
       }
     })
   },
 })
 
-// https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const groqApiKey = resolveGroqApiKey(env)
 
   return {
-    logLevel: 'error', // Suppress warnings, only show errors
+    logLevel: 'info',
     resolve: {
       alias: {
         '@': path.resolve(process.cwd(), 'src'),
       },
     },
-    plugins: [
-      react(),
-      groqDevApiPlugin(groqApiKey),
-    ],
+    plugins: [react(), translatorDevApi(env)],
   }
-});
+})

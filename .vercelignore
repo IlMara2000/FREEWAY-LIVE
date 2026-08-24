@@ -1,0 +1,14 @@
+# Local installers downloaded for maintenance are not part of the web app.
+gh_2.96.0_*
+
+# Vercel rebuilds these from the checked source.
+node_modules
+dist
+
+# Never upload local environment or database backup files.
+.env*
+*.backup
+*.backup.gz
+
+# Legacy database material is an offline archive, not part of TraduLimba.
+supabase
