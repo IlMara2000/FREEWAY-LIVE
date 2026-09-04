@@ -146,13 +146,21 @@ const refineVariantWithAI = async ({ text, draft, target, variant, env, provider
         `Testo originale:\n${text}`,
         `Bozza del motore linguistico:\n${draft}`,
       ].join('\n\n'),
-      maxOutputTokens: Math.min(1800, Math.max(80, Math.ceil(draft.length * 1.5))),
+      reasoning: 'minimal',
+      maxOutputTokens: Math.min(4000, Math.max(512, Math.ceil(draft.length * 1.2))),
       maxRetries: 1,
       abortSignal: timer.signal,
     })
     const refined = result.text?.trim()
 
-    if (!refined) return null
+    if (!refined) {
+      console.warn(JSON.stringify({
+        event: 'variant_refinement_empty',
+        variant,
+        finishReason: result.finishReason || 'unknown',
+      }))
+      return null
+    }
     return refined.slice(0, MAX_TRANSLATION_CHARACTERS * 2)
   } catch (error) {
     console.warn(JSON.stringify({

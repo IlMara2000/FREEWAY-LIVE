@@ -58,7 +58,6 @@ export const createSpeech = async (rawInput, env = process.env) => {
       voice: env.SPEECH_AI_VOICE || 'nova',
       outputFormat: 'mp3',
       speed: input.language === 'srd' ? 0.9 : 1,
-      language: input.language === 'srd' ? 'auto' : 'it',
       instructions: input.language === 'srd'
         ? VARIANT_INSTRUCTIONS[input.variant]
         : 'Leggi in italiano con tono naturale e chiaro.',
