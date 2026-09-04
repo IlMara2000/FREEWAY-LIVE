@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft,
   Check,
@@ -12,9 +12,7 @@ import {
   House,
   Languages,
   LockKeyhole,
-  MessageCircleMore,
   MessagesSquare,
-  Play,
   RotateCcw,
   Signpost,
   Sparkles,
@@ -46,6 +44,7 @@ import {
   selectNaraAnswer,
   submitNaraAnswer,
 } from '../features/nara/naraSession'
+import NaraMark from './NaraMark'
 
 const LEVEL_ICONS = {
   hand: Hand,
@@ -63,54 +62,6 @@ const LEVEL_ICONS = {
 function LevelIcon({ name, size = 26 }) {
   const Icon = LEVEL_ICONS[name] || Sparkles
   return <Icon size={size} aria-hidden="true" />
-}
-
-export function NaraMark({ compact = false }) {
-  return (
-    <span className={`nara-mark${compact ? ' nara-mark--compact' : ''}`} aria-hidden="true">
-      <MessageCircleMore />
-      <Sparkles className="nara-mark__spark" />
-    </span>
-  )
-}
-
-export function NaraPromo({ onPlay }) {
-  const [progress] = useState(() => loadNaraProgress(NARA_LEVEL_IDS))
-  const completedCount = getCompletedLevelCount(progress, NARA_LEVEL_IDS)
-  const hasStarted = completedCount > 0
-
-  return (
-    <section id="gioca" className="nara-promo" aria-labelledby="nara-promo-title">
-      <div className="nara-promo__identity">
-        <NaraMark />
-        <div>
-          <span className="eyebrow">Impara giocando</span>
-          <strong>NARA!</strong>
-        </div>
-      </div>
-      <div className="nara-promo__copy">
-        <h2 id="nara-promo-title">Dieci passi per iniziare a parlare sardo.</h2>
-        <p>Lezioni brevi, tre vite e un percorso base in Limba Sarda Comuna.</p>
-        <div
-          className="nara-promo__levels"
-          role="progressbar"
-          aria-label="Progresso NARA"
-          aria-valuemin={0}
-          aria-valuemax={NARA_LEVELS.length}
-          aria-valuenow={completedCount}
-        >
-          {NARA_LEVELS.map((level, index) => (
-            <span key={level.id} className={index < completedCount ? 'is-complete' : ''} />
-          ))}
-        </div>
-        <small>{hasStarted ? `${completedCount} livelli su 10 completati` : 'Il progresso resta su questo dispositivo'}</small>
-      </div>
-      <button type="button" className="nara-play-button" data-nara-launcher onClick={onPlay}>
-        <Play size={19} fill="currentColor" />
-        {hasStarted ? 'Riprendi' : 'Gioca ora'}
-      </button>
-    </section>
-  )
 }
 
 function NaraTopbar({ completedCount, totalXp, isMap, onBack }) {
@@ -203,10 +154,16 @@ function NaraMap({ progress, onStart }) {
 }
 
 function Dialogue({ lines }) {
+  const detailsRef = useRef(null)
+
+  useEffect(() => {
+    if (detailsRef.current) detailsRef.current.open = true
+  }, [])
+
   if (!lines) return null
 
   return (
-    <details className="nara-dialogue" open>
+    <details ref={detailsRef} className="nara-dialogue">
       <summary>Rileggi il dialogo</summary>
       <div>
         {lines.map(([speaker, text], index) => (
@@ -366,35 +323,39 @@ export default function NaraGame({ onExit }) {
   const [activeLevelId, setActiveLevelId] = useState(null)
   const [session, setSession] = useState(null)
   const [result, setResult] = useState({ awardedXp: 0, score: 100 })
+  const [storageNotice, setStorageNotice] = useState('')
   const activeLevel = useMemo(
     () => NARA_LEVELS.find(({ id }) => id === activeLevelId) || null,
     [activeLevelId],
   )
   const completedCount = getCompletedLevelCount(progress, NARA_LEVEL_IDS)
 
-  const returnToMap = () => {
+  const returnToMap = useCallback(() => {
     setScreen('map')
     setSession(null)
-  }
+  }, [])
 
-  const handleBack = () => {
-    if (screen === 'map') onExit()
-    else returnToMap()
-  }
+  const handleBack = useCallback(() => {
+    if (screen === 'map') {
+      onExit()
+      return
+    }
+
+    if (screen === 'lesson' && !window.confirm('Vuoi lasciare questa lezione? Le risposte del tentativo in corso andranno perse.')) {
+      return
+    }
+    returnToMap()
+  }, [onExit, returnToMap, screen])
 
   useEffect(() => {
     const handleEscape = (event) => {
       if (event.key !== 'Escape') return
       event.preventDefault()
-      if (screen === 'map') onExit()
-      else {
-        setScreen('map')
-        setSession(null)
-      }
+      handleBack()
     }
     window.addEventListener('keydown', handleEscape)
     return () => window.removeEventListener('keydown', handleEscape)
-  }, [onExit, screen])
+  }, [handleBack])
 
   const startLevel = (level) => {
     if (!isNaraLevelUnlocked(progress, level.id, NARA_LEVEL_IDS)) return
@@ -430,7 +391,9 @@ export default function NaraGame({ onExit }) {
         new Date().toISOString(),
       )
       setProgress(completion.progress)
-      saveNaraProgress(completion.progress)
+      if (!saveNaraProgress(completion.progress)) {
+        setStorageNotice('Livello completato, ma il browser non consente di salvare il progresso in modo permanente.')
+      }
       setResult({ awardedXp: completion.awardedXp, score })
       setSession(nextSession)
       setScreen('result')
@@ -448,6 +411,7 @@ export default function NaraGame({ onExit }) {
         isMap={screen === 'map'}
         onBack={handleBack}
       />
+      {storageNotice && <div className="nara-storage-notice" role="status">{storageNotice}</div>}
       {screen === 'map' && <NaraMap progress={progress} onStart={startLevel} />}
       {screen === 'lesson' && activeLevel && session && (
         <NaraLesson

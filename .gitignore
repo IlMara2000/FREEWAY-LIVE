@@ -34,3 +34,6 @@ dist-ssr
 .vercel
 supabase/.temp
 .env*.local
+
+# Local GitHub CLI installers
+gh_2.96.0_*

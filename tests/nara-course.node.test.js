@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { NARA_LEVEL_IDS, NARA_LEVELS } from '../src/features/nara/naraCourse.js'
+import { NARA_LEVEL_IDS as NARA_CATALOG_IDS } from '../src/features/nara/naraCatalog.js'
 
 test('il corso contiene 10 livelli ordinati e 4 sfide ciascuno', () => {
   assert.equal(NARA_LEVELS.length, 10)
   assert.equal(new Set(NARA_LEVEL_IDS).size, 10)
+  assert.deepEqual(NARA_CATALOG_IDS, NARA_LEVEL_IDS)
 
   NARA_LEVELS.forEach((level, levelIndex) => {
     assert.equal(level.number, levelIndex + 1)

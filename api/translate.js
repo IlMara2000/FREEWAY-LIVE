@@ -1,51 +1,55 @@
-import { translateText, TranslatorError } from './_translator.js'
+import { normalizeTranslationInput, translateText, TranslatorError } from './_translator.js'
+import {
+  ApiRequestError,
+  createRateLimiter,
+  getClientId,
+  getRequestId,
+  setApiHeaders,
+  validateJsonRequest,
+} from './_requestGuard.js'
 
 const RATE_WINDOW_MS = 60_000
 const RATE_LIMIT = 40
-const requestsByClient = new Map()
-
-const getClientId = (request) => {
-  const forwarded = request.headers['x-forwarded-for']
-  if (typeof forwarded === 'string') return forwarded.split(',')[0].trim()
-  return request.socket?.remoteAddress || 'anonymous'
-}
-
-const isRateLimited = (clientId) => {
-  const now = Date.now()
-  const recent = (requestsByClient.get(clientId) || []).filter((time) => now - time < RATE_WINDOW_MS)
-  recent.push(now)
-  requestsByClient.set(clientId, recent)
-  return recent.length > RATE_LIMIT
-}
-
-const setHeaders = (response) => {
-  response.setHeader('Cache-Control', 'no-store')
-  response.setHeader('Content-Type', 'application/json; charset=utf-8')
-  response.setHeader('X-Content-Type-Options', 'nosniff')
-}
+const rateLimiter = createRateLimiter({ limit: RATE_LIMIT, windowMs: RATE_WINDOW_MS })
 
 export default async function handler(request, response) {
-  setHeaders(response)
+  const requestId = getRequestId(request)
+  setApiHeaders(response, null, requestId)
 
   if (request.method !== 'POST') {
     response.setHeader('Allow', 'POST')
     return response.status(405).json({ error: 'Metodo non supportato.' })
   }
 
-  if (isRateLimited(getClientId(request))) {
-    return response.status(429).json({ error: 'Troppe traduzioni ravvicinate. Riprova tra un minuto.' })
-  }
-
   try {
-    const result = await translateText(request.body || {})
+    validateJsonRequest(request)
+    const input = normalizeTranslationInput(request.body || {})
+    const rateLimit = rateLimiter.consume(getClientId(request))
+    setApiHeaders(response, { ...rateLimit, limit: RATE_LIMIT }, requestId)
+    if (rateLimit.limited) {
+      response.setHeader('Retry-After', String(Math.max(1, Math.ceil((rateLimit.resetAt - Date.now()) / 1000))))
+      return response.status(429).json({ error: 'Troppe traduzioni ravvicinate. Riprova tra un minuto.' })
+    }
+
+    const result = await translateText(input)
     return response.status(200).json(result)
   } catch (error) {
-    const statusCode = error instanceof TranslatorError ? error.statusCode : 500
+    const knownError = error instanceof TranslatorError || error instanceof ApiRequestError
+    const statusCode = knownError ? error.statusCode : 500
+    if (statusCode >= 500) {
+      console.warn(JSON.stringify({
+        event: 'translation_request_failed',
+        requestId,
+        code: knownError ? error.code : 'INTERNAL_ERROR',
+        statusCode,
+      }))
+    }
     return response.status(statusCode).json({
-      error: error instanceof TranslatorError
+      error: knownError
         ? error.message
         : 'Si è verificato un errore durante la traduzione.',
-      code: error instanceof TranslatorError ? error.code : 'INTERNAL_ERROR',
+      code: knownError ? error.code : 'INTERNAL_ERROR',
+      requestId,
     })
   }
 }

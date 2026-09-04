@@ -1,5 +1,5 @@
-import { createGateway } from '@ai-sdk/gateway'
 import { generateSpeech } from 'ai'
+import { resolveGatewayProvider } from './_aiGateway.js'
 
 export const MAX_SPEECH_CHARACTERS = 1000
 
@@ -20,8 +20,8 @@ export class SpeechError extends Error {
 
 export const normalizeSpeechInput = (input = {}) => {
   const text = typeof input.text === 'string' ? input.text.trim() : ''
-  const language = input.language === 'ita' ? 'ita' : 'srd'
-  const variant = ['lsc', 'campidanese', 'logudorese'].includes(input.variant) ? input.variant : 'lsc'
+  const language = input.language === undefined ? 'srd' : input.language
+  const variant = input.variant === undefined ? 'lsc' : input.variant
 
   if (!text) throw new SpeechError('Non c’è ancora una traduzione da ascoltare.', 400, 'EMPTY_TEXT')
   if (text.length > MAX_SPEECH_CHARACTERS) {
@@ -31,14 +31,20 @@ export const normalizeSpeechInput = (input = {}) => {
       'TEXT_TOO_LONG',
     )
   }
+  if (!['ita', 'srd'].includes(language)) {
+    throw new SpeechError('La lingua della voce non è valida.', 400, 'INVALID_LANGUAGE')
+  }
+  if (!['lsc', 'campidanese', 'logudorese'].includes(variant)) {
+    throw new SpeechError('La varietà della voce non è valida.', 400, 'INVALID_VARIANT')
+  }
 
   return { text, language, variant }
 }
 
 export const createSpeech = async (rawInput, env = process.env) => {
   const input = normalizeSpeechInput(rawInput)
-  const token = env.AI_GATEWAY_API_KEY || env.VERCEL_OIDC_TOKEN
-  if (!token) {
+  const provider = resolveGatewayProvider(env)
+  if (!provider) {
     throw new SpeechError('La voce AI non è configurata.', 503, 'SPEECH_NOT_CONFIGURED')
   }
 
@@ -46,14 +52,13 @@ export const createSpeech = async (rawInput, env = process.env) => {
   const timeout = setTimeout(() => controller.abort(), 22000)
 
   try {
-    const gateway = createGateway({ apiKey: token })
     const result = await generateSpeech({
-      model: gateway.speechModel(env.SPEECH_AI_MODEL || 'openai/tts-1'),
+      model: provider.speechModel(env.SPEECH_AI_MODEL || 'openai/tts-1'),
       text: input.text,
       voice: env.SPEECH_AI_VOICE || 'nova',
       outputFormat: 'mp3',
       speed: input.language === 'srd' ? 0.9 : 1,
-      language: 'it',
+      language: input.language === 'srd' ? 'auto' : 'it',
       instructions: input.language === 'srd'
         ? VARIANT_INSTRUCTIONS[input.variant]
         : 'Leggi in italiano con tono naturale e chiaro.',

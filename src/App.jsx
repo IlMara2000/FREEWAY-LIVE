@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowRightLeft,
   AudioLines,
@@ -14,14 +14,23 @@ import {
   MapPinned,
   ShieldCheck,
   Sparkles,
+  Square,
   Trash2,
   Volume2,
   X,
 } from 'lucide-react'
-import NaraGame, { NaraPromo } from './components/NaraGame'
+import NaraPromo from './components/NaraPromo'
+import {
+  addTranslationHistoryEntry,
+  loadTranslationHistory,
+  saveTranslationHistory,
+} from './features/translation/history'
+
+const loadNaraGame = () => import('./components/NaraGame')
+const NaraGame = lazy(loadNaraGame)
 
 const MAX_CHARACTERS = 4000
-const HISTORY_KEY = 'tradulimba:history:v1'
+const MAX_SPEECH_CHARACTERS = 1000
 
 const LANGUAGE_LABELS = {
   ita: 'Italiano',
@@ -30,8 +39,8 @@ const LANGUAGE_LABELS = {
 
 const VARIANTS = [
   { id: 'lsc', short: 'Sardu comune', label: 'Limba Sarda Comuna', note: 'Standard scritto' },
-  { id: 'campidanese', short: 'Campidanesu', label: 'Campidanesu', note: 'Beta · sud' },
-  { id: 'logudorese', short: 'Logudoresu', label: 'Logudoresu', note: 'Beta · centro-nord' },
+  { id: 'campidanese', short: 'Campidanesu', label: 'Campidanesu', note: 'Assistito · sud' },
+  { id: 'logudorese', short: 'Logudoresu', label: 'Logudoresu', note: 'Assistito · centro-nord' },
 ]
 
 const EXAMPLES = [
@@ -40,35 +49,20 @@ const EXAMPLES = [
   'Dove si trova la fermata dell’autobus?',
 ]
 
-const readHistory = () => {
-  try {
-    const value = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]')
-    return Array.isArray(value) ? value.slice(0, 8) : []
-  } catch {
-    return []
-  }
-}
-
-const saveHistory = (items) => {
-  try {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(items))
-  } catch {
-    // La traduzione continua a funzionare anche se il browser blocca lo storage.
-  }
-}
-
 const getVariant = (variantId) => (
   VARIANTS.find((variant) => variant.id === variantId) || VARIANTS[0]
 )
 
-const browserSpeech = (text, language, variant) => {
-  if (!('speechSynthesis' in window)) return false
+const browserSpeech = (text, language, variant, onEnd, onError) => {
+  if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) return null
 
   window.speechSynthesis.cancel()
   const utterance = new SpeechSynthesisUtterance(text)
-  utterance.lang = language === 'srd' ? 'it-IT' : 'it-IT'
+  utterance.lang = 'it-IT'
   utterance.rate = language === 'srd' ? 0.86 : 0.94
   utterance.pitch = variant === 'campidanese' ? 1.03 : 0.98
+  utterance.onend = onEnd
+  utterance.onerror = onError
 
   const italianVoice = window.speechSynthesis
     .getVoices()
@@ -76,7 +70,7 @@ const browserSpeech = (text, language, variant) => {
   if (italianVoice) utterance.voice = italianVoice
 
   window.speechSynthesis.speak(utterance)
-  return true
+  return utterance
 }
 
 function BrandMark({ compact = false }) {
@@ -126,21 +120,61 @@ function App() {
   const [status, setStatus] = useState('idle')
   const [audioStatus, setAudioStatus] = useState('idle')
   const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
+  const [translationNotice, setTranslationNotice] = useState('')
+  const [audioNotice, setAudioNotice] = useState('')
+  const [resultMeta, setResultMeta] = useState(null)
   const [copied, setCopied] = useState(false)
-  const [history, setHistory] = useState(readHistory)
+  const [history, setHistory] = useState(loadTranslationHistory)
   const [showInfo, setShowInfo] = useState(false)
   const [showGame, setShowGame] = useState(false)
   const requestRef = useRef(null)
+  const requestSequenceRef = useRef(0)
+  const speechRequestRef = useRef(null)
+  const audioRef = useRef(null)
+  const utteranceRef = useRef(null)
   const textAreaRef = useRef(null)
   const infoButtonRef = useRef(null)
   const modalRef = useRef(null)
   const closeButtonRef = useRef(null)
 
-  const selectedVariant = useMemo(() => getVariant(variant), [variant])
   const isLoading = status === 'loading'
+  const resultVariantLabel = useMemo(() => {
+    if (output && resultMeta?.variantApplied === false) {
+      return target === 'srd' ? 'LSC · fallback' : 'Da LSC · fallback'
+    }
+    const effectiveVariant = getVariant(resultMeta?.effectiveVariant || variant)
+    return target === 'srd' ? effectiveVariant.short : `Da ${effectiveVariant.short}`
+  }, [output, resultMeta, target, variant])
 
-  useEffect(() => () => requestRef.current?.abort(), [])
+  const cancelTranslation = useCallback(() => {
+    requestSequenceRef.current += 1
+    requestRef.current?.abort()
+    requestRef.current = null
+  }, [])
+
+  const stopPlayback = useCallback(() => {
+    speechRequestRef.current?.abort()
+    speechRequestRef.current = null
+
+    const currentAudio = audioRef.current
+    audioRef.current = null
+    if (currentAudio) {
+      currentAudio.pause()
+      currentAudio.removeAttribute('src')
+      currentAudio.load()
+    }
+
+    utteranceRef.current = null
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+    setAudioStatus('idle')
+  }, [])
+
+  useEffect(() => () => {
+    requestRef.current?.abort()
+    speechRequestRef.current?.abort()
+    audioRef.current?.pause()
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+  }, [])
 
   useEffect(() => {
     if (!showInfo) return undefined
@@ -183,17 +217,11 @@ function App() {
   }, [showInfo])
 
   const addToHistory = (entry) => {
-    const next = [
-      entry,
-      ...history.filter((item) => (
-        item.input !== entry.input ||
-        item.source !== entry.source ||
-        item.variant !== entry.variant
-      )),
-    ].slice(0, 8)
-
-    setHistory(next)
-    saveHistory(next)
+    setHistory((current) => {
+      const next = addTranslationHistoryEntry(current, entry)
+      saveTranslationHistory(next)
+      return next
+    })
   }
 
   const translate = async (textOverride, directionOverride = {}) => {
@@ -201,14 +229,19 @@ function App() {
     const activeSource = directionOverride.source || source
     const activeTarget = directionOverride.target || target
     const activeVariant = directionOverride.variant || variant
-    if (!text || isLoading) return
+    if (!text) return
 
     requestRef.current?.abort()
     const controller = new AbortController()
+    const requestId = requestSequenceRef.current + 1
+    requestSequenceRef.current = requestId
     requestRef.current = controller
+    stopPlayback()
     setStatus('loading')
     setError('')
-    setNotice('')
+    setTranslationNotice('')
+    setAudioNotice('')
+    setResultMeta(null)
     setCopied(false)
 
     try {
@@ -225,49 +258,88 @@ function App() {
       })
       const data = await response.json().catch(() => ({}))
 
+      if (requestId !== requestSequenceRef.current || controller.signal.aborted) return
+
       if (!response.ok) {
         throw new Error(data.error || 'La traduzione non è disponibile in questo momento.')
       }
 
-      setOutput(data.translation)
+      const translatedText = typeof data.translation === 'string' ? data.translation.trim() : ''
+      if (!translatedText) {
+        throw new Error('Il servizio non ha restituito una traduzione valida. Riprova tra poco.')
+      }
+
+      const variantApplied = data.variantApplied !== false
+      const effectiveVariant = variantApplied ? activeVariant : 'lsc'
+      const warning = typeof data.warning === 'string' ? data.warning : ''
+
+      setOutput(translatedText)
       setStatus('success')
-      setNotice(data.warning || '')
+      setTranslationNotice(warning)
+      setResultMeta({
+        requestedVariant: activeVariant,
+        effectiveVariant,
+        variantApplied,
+        engine: typeof data.engine === 'string' ? data.engine : '',
+      })
       addToHistory({
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         input: text,
-        output: data.translation,
+        output: translatedText,
         source: activeSource,
         target: activeTarget,
         variant: activeVariant,
+        effectiveVariant,
+        variantApplied,
         createdAt: new Date().toISOString(),
         engine: data.engine,
+        warning,
       })
     } catch (translationError) {
-      if (translationError.name === 'AbortError') return
+      if (translationError.name === 'AbortError' || requestId !== requestSequenceRef.current) return
       setStatus('error')
       setError(translationError.message || 'Non sono riuscito a tradurre il testo.')
+    } finally {
+      if (requestId === requestSequenceRef.current) requestRef.current = null
     }
   }
 
   const swapLanguages = () => {
-    requestRef.current?.abort()
+    const hasResult = Boolean(output)
+    const swappedVariant = hasResult ? resultMeta?.effectiveVariant || variant : variant
+    cancelTranslation()
+    stopPlayback()
     setSource(target)
     setTarget(source)
     setInput(output || input)
     setOutput(output ? input : '')
+    if (hasResult) setVariant(swappedVariant)
+    setResultMeta(hasResult ? {
+      requestedVariant: resultMeta?.requestedVariant || swappedVariant,
+      effectiveVariant: swappedVariant,
+      variantApplied: resultMeta?.variantApplied !== false,
+      engine: resultMeta?.engine || '',
+    } : null)
     setStatus('idle')
     setError('')
-    setNotice('')
+    setTranslationNotice('')
+    setAudioNotice('')
     window.setTimeout(() => textAreaRef.current?.focus(), 0)
   }
 
   const pasteText = async () => {
+    cancelTranslation()
+    stopPlayback()
     try {
       const clipboardText = await navigator.clipboard.readText()
       if (clipboardText) {
         setInput(clipboardText.slice(0, MAX_CHARACTERS))
         setOutput('')
+        setResultMeta(null)
         setStatus('idle')
+        setError('')
+        setTranslationNotice('')
+        setAudioNotice('')
       }
     } catch {
       setError('Il browser non consente di leggere gli appunti. Incolla il testo manualmente.')
@@ -286,79 +358,162 @@ function App() {
   }
 
   const playTranslation = async () => {
-    if (!output || audioStatus === 'loading') return
+    if (!output) return
+    if (audioStatus === 'loading' || audioStatus === 'playing') {
+      stopPlayback()
+      return
+    }
+
+    const spokenText = output
+    const spokenLanguage = target
+    const spokenVariant = resultMeta?.effectiveVariant || variant
+    const playDeviceVoice = (reason = '') => {
+      const utterance = browserSpeech(
+        spokenText,
+        spokenLanguage,
+        spokenVariant,
+        () => {
+          if (utteranceRef.current !== utterance) return
+          utteranceRef.current = null
+          setAudioStatus('idle')
+        },
+        () => {
+          if (utteranceRef.current !== utterance) return
+          utteranceRef.current = null
+          setAudioStatus('idle')
+          setError('La voce si è interrotta su questo dispositivo.')
+        },
+      )
+
+      if (!utterance) {
+        setAudioStatus('idle')
+        setError('La voce non è disponibile su questo dispositivo.')
+        return
+      }
+
+      utteranceRef.current = utterance
+      setAudioStatus('playing')
+      setAudioNotice(reason || (spokenLanguage === 'srd'
+        ? 'Voce del dispositivo attiva: la pronuncia sarda è solo indicativa.'
+        : 'Voce italiana del dispositivo attiva.'))
+    }
+
+    if (spokenText.length > MAX_SPEECH_CHARACTERS) {
+      playDeviceVoice(`Per testi oltre ${MAX_SPEECH_CHARACTERS.toLocaleString('it-IT')} caratteri uso la voce del dispositivo; la pronuncia sarda resta indicativa.`)
+      return
+    }
+
+    const controller = new AbortController()
+    speechRequestRef.current = controller
     setAudioStatus('loading')
     setError('')
+    setAudioNotice('')
 
     try {
       const response = await fetch('/api/speech', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: output, language: target, variant }),
+        body: JSON.stringify({ text: spokenText, language: spokenLanguage, variant: spokenVariant }),
+        signal: controller.signal,
       })
       const data = await response.json().catch(() => ({}))
 
       if (!response.ok || !data.audio) throw new Error(data.error || 'Voce AI non disponibile')
+      if (controller.signal.aborted) return
 
       const audio = new Audio(`data:${data.mediaType || 'audio/mpeg'};base64,${data.audio}`)
+      audioRef.current = audio
+      audio.addEventListener('ended', () => {
+        if (audioRef.current !== audio) return
+        audioRef.current = null
+        setAudioStatus('idle')
+      }, { once: true })
+      audio.addEventListener('error', () => {
+        if (audioRef.current !== audio) return
+        audioRef.current = null
+        setAudioStatus('idle')
+        setError('Non riesco a riprodurre l’audio generato.')
+      }, { once: true })
       await audio.play()
       setAudioStatus('playing')
-      audio.addEventListener('ended', () => setAudioStatus('idle'), { once: true })
-    } catch {
-      const played = browserSpeech(output, target, variant)
-      setAudioStatus(played ? 'playing' : 'idle')
-      if (played) {
-        setNotice(target === 'srd'
-          ? 'Voce del dispositivo attiva: la pronuncia sarda è solo indicativa.'
-          : 'Voce italiana del dispositivo attiva.')
-        window.setTimeout(() => setAudioStatus('idle'), Math.min(12000, output.length * 75))
-      } else {
-        setError('La voce non è disponibile su questo dispositivo.')
+      if (Array.isArray(data.warnings) && data.warnings.length > 0) {
+        setAudioNotice('Audio generato, con resa della pronuncia indicativa segnalata dal servizio vocale.')
+      } else if (spokenLanguage === 'srd') {
+        setAudioNotice('Audio assistito: la pronuncia può variare da paese a paese.')
       }
+    } catch (speechError) {
+      if (speechError.name === 'AbortError' || controller.signal.aborted) return
+      const failedAudio = audioRef.current
+      audioRef.current = null
+      failedAudio?.pause()
+      playDeviceVoice(spokenLanguage === 'srd'
+        ? 'Il servizio vocale assistito non è disponibile: uso la voce del dispositivo, con pronuncia sarda indicativa.'
+        : 'Il servizio vocale assistito non è disponibile: uso la voce italiana del dispositivo.')
+    } finally {
+      if (speechRequestRef.current === controller) speechRequestRef.current = null
     }
   }
 
   const clearAll = () => {
-    requestRef.current?.abort()
+    cancelTranslation()
+    stopPlayback()
     setInput('')
     setOutput('')
+    setResultMeta(null)
     setStatus('idle')
     setError('')
-    setNotice('')
+    setTranslationNotice('')
+    setAudioNotice('')
     textAreaRef.current?.focus()
   }
 
   const handleExample = (example) => {
+    cancelTranslation()
+    stopPlayback()
     setSource('ita')
     setTarget('srd')
     setInput(example)
     setOutput('')
     setStatus('idle')
-    window.setTimeout(() => translate(example, { source: 'ita', target: 'srd', variant }), 0)
+    translate(example, { source: 'ita', target: 'srd', variant })
   }
 
   const restoreHistory = (item) => {
+    cancelTranslation()
+    stopPlayback()
     setSource(item.source)
     setTarget(item.target)
     setVariant(item.variant)
     setInput(item.input)
     setOutput(item.output)
+    setResultMeta({
+      requestedVariant: item.variant,
+      effectiveVariant: item.effectiveVariant,
+      variantApplied: item.variantApplied,
+      engine: item.engine,
+    })
     setStatus('success')
     setError('')
-    setNotice('')
+    setTranslationNotice(item.warning || '')
+    setAudioNotice('')
     document.querySelector('.translator-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
 
   const clearHistory = () => {
+    if (!window.confirm('Vuoi eliminare tutte le traduzioni salvate su questo dispositivo?')) return
     setHistory([])
-    saveHistory([])
+    saveTranslationHistory([])
   }
 
   const selectVariant = (variantId) => {
+    cancelTranslation()
+    stopPlayback()
     setVariant(variantId)
     setOutput('')
+    setResultMeta(null)
     setStatus('idle')
-    setNotice('')
+    setTranslationNotice('')
+    setAudioNotice('')
   }
 
   const handleVariantKeyDown = (event, currentIndex) => {
@@ -386,21 +541,24 @@ function App() {
 
   if (showGame) {
     return (
-      <NaraGame
-        onExit={() => {
-          setShowGame(false)
-          window.setTimeout(() => {
-            const launcher = document.querySelector('[data-nara-launcher]')
-            if (launcher instanceof HTMLElement) launcher.focus()
-          }, 0)
-        }}
-      />
+      <Suspense fallback={<main className="nara-loading" role="status"><LoaderCircle className="spin" /><span>Carico il percorso NARA…</span></main>}>
+        <NaraGame
+          onExit={() => {
+            setShowGame(false)
+            window.setTimeout(() => {
+              const launcher = document.querySelector('[data-nara-launcher]')
+              if (launcher instanceof HTMLElement) launcher.focus()
+            }, 0)
+          }}
+        />
+      </Suspense>
     )
   }
 
   return (
     <div className="app-shell">
       <div className="page-texture" aria-hidden="true" />
+      <a className="skip-link" href="#traduttore">Vai al traduttore</a>
 
       <header className="site-header">
         <a className="brand" href="#top" aria-label="TraduLimba, torna all’inizio">
@@ -414,7 +572,7 @@ function App() {
             <span className="nav-info__label">Il progetto</span>
           </button>
         </nav>
-        <span className="beta-badge">Beta · Sardu</span>
+        <span className="release-badge"><span className="release-badge__wide">Versione </span>1.0</span>
       </header>
 
       <main id="top">
@@ -427,7 +585,7 @@ function App() {
           </p>
         </section>
 
-        <section className="translator-wrap" aria-label="Traduttore italiano sardo">
+        <section id="traduttore" className="translator-wrap" aria-label="Traduttore italiano sardo" tabIndex={-1}>
           <div className="translator-card">
             <LanguageSwitch source={source} target={target} onSwap={swapLanguages} />
 
@@ -479,11 +637,15 @@ function App() {
                   value={input}
                   maxLength={MAX_CHARACTERS}
                   onChange={(event) => {
+                    cancelTranslation()
+                    stopPlayback()
                     setInput(event.target.value)
                     setOutput('')
+                    setResultMeta(null)
                     setStatus('idle')
                     setError('')
-                    setNotice('')
+                    setTranslationNotice('')
+                    setAudioNotice('')
                   }}
                   onKeyDown={(event) => {
                     if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
@@ -493,19 +655,20 @@ function App() {
                   }}
                   placeholder="Scrivi o incolla un testo…"
                   aria-label={`Testo in ${LANGUAGE_LABELS[source]}`}
+                  lang={source === 'srd' ? 'sc' : 'it'}
                 />
                 <div className="text-panel__footer">
                   <span className="character-count">{input.length.toLocaleString('it-IT')} / {MAX_CHARACTERS.toLocaleString('it-IT')}</span>
-                  <span className="keyboard-hint">⌘ Invio per tradurre</span>
+                  <span className="keyboard-hint">Ctrl/⌘ Invio per tradurre</span>
                 </div>
               </section>
 
               <section className="text-panel text-panel--result" aria-live="polite" aria-busy={isLoading}>
                 <div className="text-panel__heading">
                   <span>{LANGUAGE_LABELS[target]}</span>
-                  <span className="result-variant">{selectedVariant.short}</span>
+                  <span className="result-variant">{resultVariantLabel}</span>
                 </div>
-                <div className={`translation-output${!output ? ' is-empty' : ''}`}>
+                <div className={`translation-output${!output ? ' is-empty' : ''}`} lang={output && target === 'srd' ? 'sc' : 'it'}>
                   {isLoading ? (
                     <div className="loading-copy">
                       <LoaderCircle className="spin" size={25} />
@@ -518,25 +681,34 @@ function App() {
                     {copied ? <Check size={18} /> : <Copy size={18} />}
                     {copied ? 'Copiata' : 'Copia'}
                   </button>
-                  <button type="button" onClick={playTranslation} disabled={!output || audioStatus === 'loading'}>
-                    {audioStatus === 'loading' ? <LoaderCircle className="spin" size={18} /> : <Volume2 size={18} />}
-                    Ascolta <span className="experimental-tag">beta</span>
+                  <button type="button" onClick={playTranslation} disabled={!output}>
+                    {audioStatus === 'loading' && <LoaderCircle className="spin" size={18} />}
+                    {audioStatus === 'playing' && <Square size={17} fill="currentColor" />}
+                    {audioStatus === 'idle' && <Volume2 size={18} />}
+                    {audioStatus === 'loading' ? 'Annulla' : audioStatus === 'playing' ? 'Ferma' : 'Ascolta'}
+                    <span className="voice-tag">assistita</span>
                   </button>
                 </div>
               </section>
             </div>
 
-            {(error || notice) && (
+            {(error || translationNotice) && (
               <div className={`inline-message${error ? ' inline-message--error' : ''}`} role={error ? 'alert' : 'status'}>
                 <Info size={17} />
-                <span>{error || notice}</span>
+                <span>{error || translationNotice}</span>
+              </div>
+            )}
+            {audioNotice && !error && (
+              <div className="inline-message inline-message--audio" role="status">
+                <AudioLines size={17} />
+                <span>{audioNotice}</span>
               </div>
             )}
 
             <div className="translate-row">
               <div className="engine-note">
                 <ShieldCheck size={17} />
-                <span>Nessun account. La cronologia resta su questo dispositivo.</span>
+                <span>Il testo passa ai servizi linguistici; solo la cronologia resta su questo dispositivo.</span>
               </div>
               <button
                 type="button"
@@ -577,9 +749,9 @@ function App() {
                   <span className="history-card__route">
                     {LANGUAGE_LABELS[item.source]} <ArrowRightLeft size={13} /> {LANGUAGE_LABELS[item.target]}
                   </span>
-                  <strong>{item.input}</strong>
-                  <p>{item.output}</p>
-                  <small>{getVariant(item.variant).short}</small>
+                  <strong lang={item.source === 'srd' ? 'sc' : 'it'}>{item.input}</strong>
+                  <p lang={item.target === 'srd' ? 'sc' : 'it'}>{item.output}</p>
+                  <small>{item.variantApplied === false ? 'Sardu comune · fallback' : getVariant(item.effectiveVariant).short}</small>
                 </button>
               ))}
             </div>
@@ -592,7 +764,7 @@ function App() {
             <h2 id="how-title">Il sardo cambia<br />da zona a zona.</h2>
             <p>
               Per questo TraduLimba mostra sempre la varietà scelta. La LSC è il riferimento
-              scritto; campidanese e logudorese sono esperimenti da affinare con parlanti e linguisti.
+              scritto; campidanese e logudorese usano un adattamento automatico da verificare con parlanti e linguisti.
             </p>
           </div>
           <div className="principles-grid">
@@ -614,13 +786,13 @@ function App() {
             <article>
               <span className="principle-number">03</span>
               <AudioLines size={24} />
-              <h3>Voce sperimentale</h3>
-              <p>L’audio AI prova a rendere la cadenza, ma non sostituisce la pronuncia di un parlante nativo.</p>
+              <h3>Voce assistita</h3>
+              <p>L’audio offre un riferimento d’ascolto, ma non sostituisce la pronuncia di un parlante nativo.</p>
             </article>
           </div>
         </section>
 
-        <NaraPromo onPlay={() => setShowGame(true)} />
+        <NaraPromo onPlay={() => setShowGame(true)} onWarmup={loadNaraGame} />
       </main>
 
       <footer className="site-footer">
@@ -629,7 +801,8 @@ function App() {
           <span className="brand__name">Tradu<span>Limba</span></span>
         </div>
         <p className="site-footer__tagline">Il sardo, in tutte le sue voci.</p>
-        <span>Prototipo pubblico · 2026</span>
+        <button type="button" className="footer-info" onClick={() => setShowInfo(true)}>Privacy e limiti</button>
+        <span>Versione ufficiale 1.0 · 2026</span>
         <p className="footer-declaration">SARDINIA NO EST ITALIA</p>
       </footer>
 
@@ -650,8 +823,14 @@ function App() {
             <span className="eyebrow">Perché TraduLimba</span>
             <h2 id="info-title">Tecnologia al servizio di una lingua viva.</h2>
             <p>
-              Questo è un primo passo: una traduzione automatica utile, trasparente sui propri limiti
-              e costruita per accogliere più varietà del sardo.
+              TraduLimba è un servizio pubblico di traduzione automatica, trasparente sui propri limiti
+              e costruito per accogliere più varietà del sardo.
+            </p>
+            <h3>Come viene trattato il testo</h3>
+            <p>
+              Per tradurre, il contenuto viene inviato ad Apertium; gli adattamenti di varietà e la voce
+              possono usare Vercel AI Gateway e il relativo fornitore AI. TraduLimba non richiede un account
+              e salva nel browser soltanto cronologia e progressi NARA. Non inserire dati personali o sensibili.
             </p>
             <div className="modal-note">
               <Info size={19} />

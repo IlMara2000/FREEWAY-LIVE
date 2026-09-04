@@ -1,10 +1,10 @@
-# TraduLimba
+# TraduLimba 1.0
 
-Traduttore web pubblico italiano ↔ sardo, con scelta esplicita tra:
+Release stabile del traduttore web pubblico italiano ↔ sardo, con scelta esplicita tra:
 
 - Limba Sarda Comuna (riferimento scritto)
-- Campidanese (beta)
-- Logudorese (beta)
+- Campidanese (adattamento assistito)
+- Logudorese (adattamento assistito)
 
 Il frontend non importa Supabase, non richiede un account e conserva le traduzioni recenti soltanto nel `localStorage` del browser. Il backend storico resta separato come archivio e non viene modificato.
 
@@ -14,7 +14,9 @@ Il design usa un neomorfismo minimale con una palette ispirata ai colori della S
 
 La traduzione di base usa la coppia open source [`apertium-srd-ita`](https://github.com/apertium/apertium-srd-ita) attraverso l'API pubblica Apertium. Le varianti campidanese e logudorese possono essere rifinite da un modello AI tramite Vercel AI Gateway; se il servizio AI non è configurato, l'app restituisce la forma standard e lo dichiara nell'interfaccia.
 
-La voce è sperimentale. In produzione prova Vercel AI Gateway e, se non disponibile, usa la sintesi vocale italiana del dispositivo come fallback. Nessuna delle due soluzioni garantisce una pronuncia sarda nativa.
+La funzione vocale prova Vercel AI Gateway e, se non disponibile, usa la sintesi vocale italiana del dispositivo come fallback. Nessuna delle due soluzioni garantisce una pronuncia sarda nativa.
+
+La dicitura “release stabile” riguarda affidabilità e completezza dell'applicazione, non costituisce una certificazione linguistica. Gli adattamenti di varietà e la pronuncia vanno verificati con parlanti competenti prima di usi editoriali, didattici o istituzionali.
 
 Per un lancio commerciale su larga scala è consigliato ospitare Apertium in proprio, verificare gli obblighi GPL e introdurre un glossario revisionato da linguisti e parlanti delle diverse aree.
 
